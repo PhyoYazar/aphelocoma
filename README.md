@@ -59,6 +59,9 @@ aph add
 # For Claude Code
 aph deploy claude
 
+# For Codex
+aph deploy codex
+
 # For Cursor (run inside a project directory)
 cd ~/your-project
 aph deploy cursor
@@ -68,7 +71,7 @@ aph deploy cursor
 
 Open your AI tool in the project. It now knows who you are, what you're working on, and your preferences.
 
-In Claude Code, use `/sync` to keep aphelocoma updated as you work.
+In Claude Code or Codex, use `/sync` to keep aphelocoma updated as you work. Context syncs automatically via background skills (`auto-sync`, `session-end`).
 
 ---
 
@@ -78,8 +81,8 @@ In Claude Code, use `/sync` to keep aphelocoma updated as you work.
 ~/.aphelocoma/
 ├── tool/              ← this repo (public, installable)
 │   ├── bin/aph        # CLI
-│   ├── skills/        # 11 built-in skills
-│   └── adapters/      # Claude Code, Cursor generators
+│   ├── skills/        # 13 built-in skills
+│   └── adapters/      # Claude Code, Codex, Cursor generators
 │
 └── data/              ← your private data (never shared)
     └── core/
@@ -106,7 +109,9 @@ Work on a project
 aph setup                    # First-time setup
 aph add [path]               # Add a project (default: current dir)
 aph deploy claude            # Deploy to Claude Code
+aph deploy codex             # Deploy to Codex
 aph deploy cursor            # Deploy to Cursor (in project dir)
+aph sync [path]              # Sync project context from git history
 aph update                   # Update tool (data untouched)
 aph status                   # Dashboard of your second brain
 aph view full                # Generate context for web AI (Claude.ai, ChatGPT)
@@ -122,6 +127,7 @@ aph skills                   # List all skills
 | Tool | Command | What it does |
 |------|---------|-------------|
 | **Claude Code** | `aph deploy claude` | Deploys skills to `~/.claude/skills/`, CLAUDE.md, and agents |
+| **Codex** | `aph deploy codex` | Deploys skills to `~/.codex/skills/`, AGENTS.md, and hooks |
 | **Cursor** | `aph deploy cursor` | Generates `.cursor/rules/*.mdc` with your context |
 | **Web AI** | `aph view full` | Generates a pasteable context summary for Claude.ai, ChatGPT, Gemini |
 
@@ -172,6 +178,6 @@ Updates the tool only. Your data is never touched.
 ## Uninstall
 
 ```bash
-rm -rf ~/.aphelocoma/tool    # Remove tool
+aph uninstall
 # Your data at ~/.aphelocoma/data/ is preserved unless you delete it
 ```
