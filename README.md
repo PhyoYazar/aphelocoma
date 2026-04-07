@@ -21,24 +21,12 @@ Aphelocoma is your **single source of truth** — who you are, what you're worki
 ### 1. Install
 
 ```bash
-git clone https://github.com/PhyoYazar/aphelocoma.git ~/.aphelocoma/tool
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/main/install.sh | bash
 ```
 
-### 2. Add to PATH
+This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
 
-**zsh** (macOS default):
-```bash
-echo 'export PATH="$HOME/.aphelocoma/tool/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-**bash**:
-```bash
-echo 'export PATH="$HOME/.aphelocoma/tool/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 3. Setup
+### 2. Setup
 
 ```bash
 aph setup
