@@ -64,6 +64,7 @@ usage() {
     echo "  aph setup                         First-time setup (creates data directory)"
     echo "  aph add [path]                    Add a project (default: current directory)"
     echo "  aph deploy <tool> [project-dir]   Deploy context to an AI tool"
+    echo "  aph sync [path]                   Sync project context from git history"
     echo "  aph update                        Update to latest release (data untouched)"
     echo "  aph status                        Show second brain dashboard"
     echo "  aph view [full|brief]             Generate context for web AI"
@@ -704,6 +705,136 @@ cmd_uninstall() {
     echo "Restart your terminal to complete uninstall."
 }
 
+# --- sync ---
+cmd_sync() {
+    local project_path="${1:-.}"
+    project_path="$(cd "$project_path" 2>/dev/null && pwd)" || {
+        echo -e "${RED}Error: directory '$1' does not exist.${RESET}"
+        exit 1
+    }
+
+    if [ ! -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${RED}Error: Run 'aph setup' first.${RESET}"
+        exit 1
+    fi
+
+    # Detect project from registry
+    local project_name
+    project_name=$(python3 -c "
+import json, os, sys
+registry_path = os.path.expanduser('$APHELOCOMA_DATA/core/projects/registry.json')
+if not os.path.exists(registry_path):
+    sys.exit(1)
+with open(registry_path) as f:
+    registry = json.load(f)
+target = '$project_path'
+for name, config in registry.items():
+    for path in config.get('paths', []):
+        expanded = os.path.expanduser(path)
+        if target.startswith(expanded) or expanded.startswith(target):
+            print(name)
+            sys.exit(0)
+sys.exit(1)
+" 2>/dev/null) || {
+        echo -e "${RED}Error: Project not found in registry.${RESET}"
+        echo "Run 'aph add' in your project directory first."
+        exit 1
+    }
+
+    local project_dir="$APHELOCOMA_DATA/core/projects/$project_name"
+
+    echo -e "${BOLD}Syncing: $project_name${RESET}"
+    echo "  Path: $project_path"
+    echo ""
+
+    # Show recent git activity
+    if [ -d "$project_path/.git" ]; then
+        echo -e "${CYAN}Recent commits (last 7 days)${RESET}"
+        cd "$project_path"
+        local recent
+        recent=$(git log --oneline --since="7 days ago" 2>/dev/null)
+        if [ -n "$recent" ]; then
+            echo "$recent" | while read -r line; do echo "  $line"; done
+        else
+            echo "  No commits in the last 7 days."
+        fi
+        echo ""
+
+        # Today's commits for journal
+        local today_commits
+        today_commits=$(git log --oneline --since="midnight" 2>/dev/null)
+        if [ -n "$today_commits" ]; then
+            echo -e "${CYAN}Today's commits${RESET}"
+            echo "$today_commits" | while read -r line; do echo "  $line"; done
+            echo ""
+
+            # Offer to create journal entry
+            local journal_dir="$APHELOCOMA_DATA/core/journal/$(date +%Y-%m)"
+            local journal_file="$journal_dir/$(date +%Y-%m-%d).md"
+
+            echo -e "${YELLOW}Create journal entry from today's commits?${RESET} [y/N] "
+            read -r answer
+            if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+                mkdir -p "$journal_dir"
+                {
+                    echo ""
+                    echo "## $(date +%H:%M) — $project_name"
+                    echo ""
+                    echo "### What was done"
+                    echo "$today_commits" | while read -r line; do
+                        echo "- $line"
+                    done
+                    echo ""
+                    echo "### Key decisions"
+                    echo "- (fill in manually)"
+                    echo ""
+                    echo "### Open threads"
+                    echo "- (fill in manually)"
+                } >> "$journal_file"
+                echo -e "${GREEN}Appended to${RESET} $journal_file"
+            fi
+            echo ""
+        fi
+    fi
+
+    # Check project record health
+    echo -e "${CYAN}Project record${RESET}"
+
+    if [ -f "$project_dir/context.md" ]; then
+        local days_old
+        days_old=$(python3 -c "
+import os, datetime
+mtime = datetime.datetime.fromtimestamp(os.path.getmtime('$project_dir/context.md'))
+print((datetime.datetime.now() - mtime).days)
+" 2>/dev/null)
+        if [ "$days_old" -gt 30 ] 2>/dev/null; then
+            echo -e "  context.md: ${YELLOW}stale ($days_old days old)${RESET}"
+        else
+            echo -e "  context.md: ${GREEN}ok${RESET} (${days_old}d old)"
+        fi
+    else
+        echo -e "  context.md: ${RED}missing${RESET}"
+    fi
+
+    if [ -f "$project_dir/tasks.md" ]; then
+        local in_progress planned done
+        in_progress=$(grep -c '^\- \[.\]' "$project_dir/tasks.md" 2>/dev/null || echo 0)
+        done=$(grep -c '^\- \[x\]' "$project_dir/tasks.md" 2>/dev/null || echo 0)
+        echo -e "  tasks.md: ${GREEN}ok${RESET} ($in_progress active, $done done)"
+    else
+        echo -e "  tasks.md: ${RED}missing${RESET}"
+    fi
+
+    local adr_count=0
+    if [ -d "$project_dir/adrs" ]; then
+        adr_count=$(find "$project_dir/adrs" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+    fi
+    echo "  adrs: $adr_count"
+
+    echo ""
+    echo -e "${GREEN}Sync complete.${RESET}"
+}
+
 # --- version ---
 cmd_version() {
     local version="unknown"
@@ -715,6 +846,7 @@ cmd_version() {
 case "${1:-}" in
     setup)    cmd_setup ;;
     add)      shift; cmd_add "$@" ;;
+    sync)     shift; cmd_sync "$@" ;;
     update)   cmd_update ;;
     deploy)   shift; cmd_deploy "$@" ;;
     status)   cmd_status ;;
