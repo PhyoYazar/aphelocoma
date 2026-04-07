@@ -56,18 +56,21 @@ list_all_skills() {
 }
 
 usage() {
-    echo -e "${BOLD}aph${RESET} — Aphelocoma CLI"
+    local version="unknown"
+    [ -f "$APHELOCOMA_TOOL/VERSION" ] && version=$(cat "$APHELOCOMA_TOOL/VERSION" | tr -d '\n')
+    echo -e "${BOLD}aph${RESET} — Aphelocoma CLI (v$version)"
     echo ""
     echo -e "${BOLD}Usage:${RESET}"
     echo "  aph setup                         First-time setup (creates data directory)"
     echo "  aph add [path]                    Add a project (default: current directory)"
     echo "  aph deploy <tool> [project-dir]   Deploy context to an AI tool"
-    echo "  aph update                        Update tool (git pull, data untouched)"
+    echo "  aph update                        Update to latest release (data untouched)"
     echo "  aph status                        Show second brain dashboard"
     echo "  aph view [full|brief]             Generate context for web AI"
     echo "  aph projects                      List registered projects"
     echo "  aph skills                        List all available skills"
     echo "  aph uninstall                     Remove aphelocoma (data preserved)"
+    echo "  aph version                       Show current version"
     echo "  aph help                          Show this help"
     echo ""
     echo -e "${BOLD}Deploy targets:${RESET}"
@@ -296,23 +299,38 @@ cmd_update() {
 
     if [ ! -d "$APHELOCOMA_TOOL/.git" ]; then
         echo -e "${RED}Error: $APHELOCOMA_TOOL is not a git repo.${RESET}"
-        echo "Reinstall with: git clone https://github.com/phyoyarzar/aphelocoma $APHELOCOMA_ROOT/tool"
+        echo "Reinstall with: git clone https://github.com/PhyoYazar/aphelocoma $APHELOCOMA_ROOT/tool"
         exit 1
     fi
 
     cd "$APHELOCOMA_TOOL"
-    local before=$(git rev-parse HEAD)
-    git pull --ff-only 2>/dev/null || {
-        echo -e "${RED}Error: git pull failed. You may have local changes in the tool directory.${RESET}"
+
+    local current_version="unknown"
+    [ -f "$APHELOCOMA_TOOL/VERSION" ] && current_version=$(cat "$APHELOCOMA_TOOL/VERSION" | tr -d '\n')
+
+    git fetch --tags 2>/dev/null || {
+        echo -e "${RED}Error: git fetch failed. Check your network connection.${RESET}"
         exit 1
     }
-    local after=$(git rev-parse HEAD)
 
-    if [ "$before" = "$after" ]; then
-        echo -e "${GREEN}Already up to date.${RESET}"
+    local latest_tag
+    latest_tag=$(git tag --sort=-v:refname | head -1)
+
+    if [ -z "$latest_tag" ]; then
+        echo -e "${RED}Error: No release tags found.${RESET}"
+        exit 1
+    fi
+
+    local latest_version="${latest_tag#v}"
+
+    if [ "$current_version" = "$latest_version" ]; then
+        echo -e "${GREEN}Already on latest version: v$current_version${RESET}"
     else
-        echo -e "${GREEN}Updated: $(git log --oneline "$before".."$after" | wc -l | tr -d ' ') new commits.${RESET}"
-        git log --oneline "$before".."$after"
+        git checkout "$latest_tag" 2>/dev/null || {
+            echo -e "${RED}Error: Failed to checkout $latest_tag.${RESET}"
+            exit 1
+        }
+        echo -e "${GREEN}Updated: v$current_version → v$latest_version${RESET}"
     fi
 
     echo ""
@@ -686,6 +704,13 @@ cmd_uninstall() {
     echo "Restart your terminal to complete uninstall."
 }
 
+# --- version ---
+cmd_version() {
+    local version="unknown"
+    [ -f "$APHELOCOMA_TOOL/VERSION" ] && version=$(cat "$APHELOCOMA_TOOL/VERSION" | tr -d '\n')
+    echo "aph v$version"
+}
+
 # --- main ---
 case "${1:-}" in
     setup)    cmd_setup ;;
@@ -697,6 +722,7 @@ case "${1:-}" in
     projects) cmd_projects ;;
     skills)   cmd_skills ;;
     uninstall|remove) cmd_uninstall ;;
+    version|--version|-v) cmd_version ;;
     help|-h|--help) usage ;;
     "")       usage ;;
     *)        echo "Unknown command: $1"; echo "Run 'aph help' for usage."; exit 1 ;;

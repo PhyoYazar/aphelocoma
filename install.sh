@@ -33,17 +33,39 @@ fi
 # --- Install or update tool ---
 mkdir -p "$APHELOCOMA_ROOT"
 
-if [ -d "$TOOL_DIR" ]; then
+checkout_latest_tag() {
+    local dir="$1"
+    cd "$dir"
+    local latest_tag
+    latest_tag=$(git tag --sort=-v:refname | head -1)
+    if [ -n "$latest_tag" ]; then
+        git checkout "$latest_tag" 2>/dev/null
+        echo -e "${GREEN}Checked out $latest_tag${RESET}"
+    fi
+}
+
+if [ -L "$TOOL_DIR" ]; then
+    # Symlink (local dev setup) — skip clone, just verify
+    if [ -x "$TOOL_DIR/bin/aph" ]; then
+        echo -e "${GREEN}Tool symlink found at $TOOL_DIR — skipping install.${RESET}"
+    else
+        echo -e "${RED}Error: $TOOL_DIR is a symlink but bin/aph not found.${RESET}"
+        echo "Check your symlink target: $(readlink "$TOOL_DIR")"
+        exit 1
+    fi
+elif [ -d "$TOOL_DIR" ]; then
     echo -e "${CYAN}Updating tool...${RESET}"
     cd "$TOOL_DIR"
-    git pull --ff-only 2>/dev/null || {
-        echo -e "${RED}Error: git pull failed. Try: rm -rf $TOOL_DIR && re-run installer.${RESET}"
+    git fetch --tags 2>/dev/null || {
+        echo -e "${RED}Error: git fetch failed. Try: rm -rf $TOOL_DIR && re-run installer.${RESET}"
         exit 1
     }
+    checkout_latest_tag "$TOOL_DIR"
     echo -e "${GREEN}Tool updated.${RESET}"
 else
     echo -e "${CYAN}Cloning aphelocoma...${RESET}"
     git clone "$REPO_URL" "$TOOL_DIR"
+    checkout_latest_tag "$TOOL_DIR"
     echo -e "${GREEN}Tool installed at $TOOL_DIR${RESET}"
 fi
 

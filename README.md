@@ -21,7 +21,7 @@ Aphelocoma is your **single source of truth** — who you are, what you're worki
 ### 1. Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.0.1-alpha/install.sh | bash
 ```
 
 This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
@@ -39,21 +39,21 @@ This creates your private data directory at `~/.aphelocoma/data/` with:
 - `core/projects/` — your project records
 - `core/journal/` — your work session logs
 
-### 4. Edit your profile
+### 3. Edit your profile
 
 ```bash
 # Use any editor
 nano ~/.aphelocoma/data/core/identity/profile.md
 ```
 
-### 5. Add a project
+### 4. Add a project
 
 ```bash
 cd ~/your-project
 aph add
 ```
 
-### 6. Deploy to your AI tool
+### 5. Deploy to your AI tool
 
 ```bash
 # For Claude Code
@@ -64,7 +64,7 @@ cd ~/your-project
 aph deploy cursor
 ```
 
-### 7. Start working
+### 6. Start working
 
 Open your AI tool in the project. It now knows who you are, what you're working on, and your preferences.
 
