@@ -1,0 +1,4 @@
+name: adr
+description: Create a numbered Architecture Decision Record for a project.
+type: manual
+arguments: "<project> <title>"

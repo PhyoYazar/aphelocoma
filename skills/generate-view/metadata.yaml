@@ -1,0 +1,4 @@
+name: generate-view
+description: Generate a context summary for web AI tools (Claude.ai, ChatGPT, Gemini) — paste-ready.
+type: manual
+arguments: "[full|brief|project <name>]"

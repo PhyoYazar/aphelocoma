@@ -1,0 +1,4 @@
+name: deploy
+description: Deploy aphelocoma skills and context to AI tool configs (Claude Code, Cursor).
+type: manual
+arguments: "[claude|cursor]"

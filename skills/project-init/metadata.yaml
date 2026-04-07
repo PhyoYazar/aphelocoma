@@ -1,0 +1,4 @@
+name: project-init
+description: Bootstrap a new project record in aphelocoma with context, tasks, and ADR directory.
+type: manual
+arguments: "<name>"

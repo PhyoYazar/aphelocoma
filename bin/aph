@@ -1,0 +1,662 @@
+#!/bin/bash
+# aph — Aphelocoma CLI
+# Universal entry point for the aphelocoma second brain.
+# Works without any AI tool — pure shell.
+
+set -e
+
+# --- Path resolution ---
+# tool/ = the aphelocoma repo (skills, adapters, bin)
+# data/ = user's private data (core/, custom skills, views)
+APHELOCOMA_ROOT="${APHELOCOMA_ROOT:-$HOME/.aphelocoma}"
+APHELOCOMA_TOOL="$(cd "$(dirname "$0")/.." && pwd)"  # resolve from bin/aph location
+APHELOCOMA_DATA="$APHELOCOMA_ROOT/data"
+export APHELOCOMA_HOME="$APHELOCOMA_DATA"  # backward compat for skills
+
+# Colors
+BOLD='\033[1m'
+DIM='\033[2m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+CYAN='\033[36m'
+RED='\033[31m'
+RESET='\033[0m'
+
+# --- Resolve a skill: check data/skills first, fall back to tool/skills ---
+resolve_skill() {
+    local name="$1"
+    if [ -d "$APHELOCOMA_DATA/skills/$name" ]; then
+        echo "$APHELOCOMA_DATA/skills/$name"
+    elif [ -d "$APHELOCOMA_TOOL/skills/$name" ]; then
+        echo "$APHELOCOMA_TOOL/skills/$name"
+    else
+        echo ""
+    fi
+}
+
+# --- List all skills (merged: data overrides tool) ---
+list_all_skills() {
+    local overridden=""
+    # Collect data skill names
+    if [ -d "$APHELOCOMA_DATA/skills" ]; then
+        for d in "$APHELOCOMA_DATA"/skills/*/; do
+            [ -d "$d" ] || continue
+            local name=$(basename "$d")
+            overridden="$overridden|$name|"
+            echo "$d"
+        done
+    fi
+    # Tool skills (skip if overridden)
+    for d in "$APHELOCOMA_TOOL"/skills/*/; do
+        [ -d "$d" ] || continue
+        local name=$(basename "$d")
+        echo "$overridden" | grep -q "|$name|" && continue
+        echo "$d"
+    done
+}
+
+usage() {
+    echo -e "${BOLD}aph${RESET} — Aphelocoma CLI"
+    echo ""
+    echo -e "${BOLD}Usage:${RESET}"
+    echo "  aph setup                         First-time setup (creates data directory)"
+    echo "  aph add [path]                    Add a project (default: current directory)"
+    echo "  aph deploy <tool> [project-dir]   Deploy context to an AI tool"
+    echo "  aph update                        Update tool (git pull, data untouched)"
+    echo "  aph status                        Show second brain dashboard"
+    echo "  aph view [full|brief]             Generate context for web AI"
+    echo "  aph projects                      List registered projects"
+    echo "  aph skills                        List all available skills"
+    echo "  aph help                          Show this help"
+    echo ""
+    echo -e "${BOLD}Deploy targets:${RESET}"
+    echo "  aph deploy cursor [dir]           Generate .cursor/rules/ in project"
+    echo "  aph deploy claude                 Generate ~/.claude/ skills + config"
+    echo ""
+    echo -e "${BOLD}Paths:${RESET}"
+    echo "  Tool: $APHELOCOMA_TOOL"
+    echo "  Data: $APHELOCOMA_DATA"
+}
+
+# --- setup ---
+cmd_setup() {
+    if [ -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${YELLOW}Data directory already exists at $APHELOCOMA_DATA${RESET}"
+        echo "Your existing data is preserved."
+        return 0
+    fi
+
+    echo -e "${BOLD}Setting up aphelocoma...${RESET}"
+    echo ""
+
+    # Create structure
+    mkdir -p "$APHELOCOMA_DATA/core/identity"
+    mkdir -p "$APHELOCOMA_DATA/core/knowledge"
+    mkdir -p "$APHELOCOMA_DATA/core/projects"
+    mkdir -p "$APHELOCOMA_DATA/core/journal"
+    mkdir -p "$APHELOCOMA_DATA/skills"
+    mkdir -p "$APHELOCOMA_DATA/views"
+
+    # Identity — starter files
+    cat > "$APHELOCOMA_DATA/core/identity/profile.md" << 'PROFILE'
+# Profile
+
+## Role
+<!-- Your role, e.g.: Software developer focused on React/TypeScript -->
+
+## Current Focus
+<!-- What you're working on right now -->
+
+## Expertise
+<!-- Your areas of expertise -->
+PROFILE
+
+    cat > "$APHELOCOMA_DATA/core/identity/preferences.md" << 'PREFS'
+# Preferences
+
+## Communication
+- Concise responses, no unnecessary summaries
+
+## Workflow
+- Plan before implementing — show approach and get approval first
+- Propose changes one at a time, confirm before writing
+
+## Task Management
+- High-level task tracking (epics, not fine-grained steps)
+- Tasks in checkbox format grouped by In Progress / Planned / Done
+PREFS
+
+    # Knowledge index
+    cat > "$APHELOCOMA_DATA/core/knowledge/INDEX.md" << 'INDEX'
+# Knowledge Index
+
+Auto-maintained by /capture. Read this file first to find relevant knowledge.
+INDEX
+
+    # Empty registry
+    echo '{}' > "$APHELOCOMA_DATA/core/projects/registry.json"
+
+    # Project template
+    mkdir -p "$APHELOCOMA_DATA/core/projects/template/adrs"
+    cat > "$APHELOCOMA_DATA/core/projects/template/context.md" << 'CTX'
+# Project Name
+
+## Overview
+
+## Tech Stack
+
+## Architecture
+
+## Current State
+
+## Open Questions
+CTX
+
+    cat > "$APHELOCOMA_DATA/core/projects/template/tasks.md" << 'TASKS'
+# Tasks
+
+## In Progress
+
+## Planned
+
+## Done
+TASKS
+
+    echo -e "${GREEN}Setup complete!${RESET}"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Edit your profile:  $APHELOCOMA_DATA/core/identity/profile.md"
+    echo "  2. Add a project:      cd ~/your-project && aph add"
+    echo "  3. Deploy to AI tool:  aph deploy claude"
+}
+
+# --- add ---
+cmd_add() {
+    local project_path="${1:-.}"
+
+    # Resolve to absolute path
+    project_path="$(cd "$project_path" 2>/dev/null && pwd)" || {
+        echo -e "${RED}Error: directory '$1' does not exist.${RESET}"
+        exit 1
+    }
+
+    # Derive project name from folder name (kebab-case)
+    local project_name
+    project_name=$(basename "$project_path" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')
+
+    local project_dir="$APHELOCOMA_DATA/core/projects/$project_name"
+    local registry="$APHELOCOMA_DATA/core/projects/registry.json"
+
+    # Check if data exists
+    if [ ! -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${RED}Error: Run 'aph setup' first.${RESET}"
+        exit 1
+    fi
+
+    # Check if already registered
+    if [ -d "$project_dir" ]; then
+        echo -e "${YELLOW}Project '$project_name' already exists.${RESET}"
+        echo "  Record: $project_dir"
+
+        # Check if this path is registered
+        if python3 -c "
+import json, os
+with open(os.path.expanduser('$registry')) as f:
+    registry = json.load(f)
+paths = registry.get('$project_name', {}).get('paths', [])
+expanded = [os.path.expanduser(p) for p in paths]
+if '$project_path' in expanded:
+    exit(0)
+exit(1)
+" 2>/dev/null; then
+            echo "  Path already registered."
+        else
+            # Add additional path
+            python3 -c "
+import json, os
+with open(os.path.expanduser('$registry')) as f:
+    registry = json.load(f)
+if '$project_name' not in registry:
+    registry['$project_name'] = {'paths': []}
+registry['$project_name']['paths'].append('$project_path')
+with open(os.path.expanduser('$registry'), 'w') as f:
+    json.dump(registry, f, indent=2)
+    f.write('\n')
+"
+            echo -e "${GREEN}Added path $project_path to existing project.${RESET}"
+        fi
+        return 0
+    fi
+
+    echo -e "${BOLD}Adding project: $project_name${RESET}"
+    echo "  Path: $project_path"
+    echo ""
+
+    # Create project directory from template
+    mkdir -p "$project_dir/adrs"
+
+    # Copy templates
+    local template_dir="$APHELOCOMA_DATA/core/projects/template"
+    if [ -f "$template_dir/context.md" ]; then
+        sed "s/Project Name/$project_name/" "$template_dir/context.md" > "$project_dir/context.md"
+    else
+        cat > "$project_dir/context.md" << EOF
+# $project_name
+
+## Overview
+
+## Tech Stack
+
+## Architecture
+
+## Current State
+
+## Open Questions
+EOF
+    fi
+
+    if [ -f "$template_dir/tasks.md" ]; then
+        cp "$template_dir/tasks.md" "$project_dir/tasks.md"
+    else
+        cat > "$project_dir/tasks.md" << 'EOF'
+# Tasks
+
+## In Progress
+
+## Planned
+
+## Done
+EOF
+    fi
+
+    # Register in registry.json
+    python3 -c "
+import json, os
+registry_path = os.path.expanduser('$registry')
+with open(registry_path) as f:
+    registry = json.load(f)
+registry['$project_name'] = {'paths': ['$project_path']}
+with open(registry_path, 'w') as f:
+    json.dump(registry, f, indent=2)
+    f.write('\n')
+"
+
+    echo -e "${GREEN}Project added!${RESET}"
+    echo ""
+    echo "  Record: $project_dir"
+    echo "  Registered path: $project_path"
+    echo ""
+    echo "Next: open an AI tool in the project and run /sync to fill in context."
+}
+
+# --- update ---
+cmd_update() {
+    echo -e "${BOLD}Updating aphelocoma tool...${RESET}"
+
+    if [ ! -d "$APHELOCOMA_TOOL/.git" ]; then
+        echo -e "${RED}Error: $APHELOCOMA_TOOL is not a git repo.${RESET}"
+        echo "Reinstall with: git clone https://github.com/phyoyarzar/aphelocoma $APHELOCOMA_ROOT/tool"
+        exit 1
+    fi
+
+    cd "$APHELOCOMA_TOOL"
+    local before=$(git rev-parse HEAD)
+    git pull --ff-only 2>/dev/null || {
+        echo -e "${RED}Error: git pull failed. You may have local changes in the tool directory.${RESET}"
+        exit 1
+    }
+    local after=$(git rev-parse HEAD)
+
+    if [ "$before" = "$after" ]; then
+        echo -e "${GREEN}Already up to date.${RESET}"
+    else
+        echo -e "${GREEN}Updated: $(git log --oneline "$before".."$after" | wc -l | tr -d ' ') new commits.${RESET}"
+        git log --oneline "$before".."$after"
+    fi
+
+    echo ""
+    echo -e "${DIM}Data at $APHELOCOMA_DATA — untouched.${RESET}"
+}
+
+# --- deploy ---
+cmd_deploy() {
+    local tool="${1:-}"
+    local project_dir="${2:-.}"
+
+    if [ ! -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${RED}Error: No data directory found. Run 'aph init' first.${RESET}"
+        exit 1
+    fi
+
+    case "$tool" in
+        cursor)
+            bash "$APHELOCOMA_TOOL/adapters/cursor/scripts/deploy.sh" "$project_dir"
+            ;;
+        claude)
+            echo -e "${BOLD}Deploying to Claude Code...${RESET}"
+            # Skills — merge from both locations
+            local count=0
+            while IFS= read -r skill_dir; do
+                local skill_name
+                skill_name=$(basename "$skill_dir")
+                mkdir -p "$HOME/.claude/skills/$skill_name"
+                cp "$skill_dir/skill.md" "$HOME/.claude/skills/$skill_name/SKILL.md"
+                for subdir in templates examples scripts; do
+                    if [ -d "$skill_dir/$subdir" ]; then
+                        cp -r "$skill_dir/$subdir" "$HOME/.claude/skills/$skill_name/"
+                    fi
+                done
+                count=$((count + 1))
+            done < <(list_all_skills)
+            # CLAUDE.md
+            cp "$APHELOCOMA_TOOL/adapters/claude-code/claude-md-template.md" "$HOME/.claude/CLAUDE.md"
+            # Agents
+            mkdir -p "$HOME/.claude/agents"
+            cp "$APHELOCOMA_TOOL/adapters/claude-code/agents/"*.md "$HOME/.claude/agents/" 2>/dev/null || true
+            echo -e "${GREEN}Deployed${RESET} $count skills to ~/.claude/skills/"
+            echo -e "${GREEN}Deployed${RESET} CLAUDE.md to ~/.claude/"
+            echo -e "${GREEN}Deployed${RESET} agents to ~/.claude/agents/"
+            ;;
+        "")
+            echo "Error: specify a tool (cursor, claude)"
+            echo "  aph deploy cursor"
+            echo "  aph deploy claude"
+            exit 1
+            ;;
+        *)
+            echo "Error: unknown tool '$tool'"
+            echo "Available: cursor, claude"
+            exit 1
+            ;;
+    esac
+}
+
+# --- status ---
+cmd_status() {
+    if [ ! -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${RED}No data found. Run 'aph init' first.${RESET}"
+        exit 1
+    fi
+
+    echo -e "${BOLD}Aphelocoma Status${RESET}"
+    echo ""
+
+    # Projects
+    echo -e "${CYAN}Projects${RESET}"
+    if [ -f "$APHELOCOMA_DATA/core/projects/registry.json" ]; then
+        python3 -c "
+import json, os
+from datetime import datetime
+
+registry_path = os.path.expanduser('$APHELOCOMA_DATA/core/projects/registry.json')
+with open(registry_path) as f:
+    registry = json.load(f)
+
+if not registry:
+    print('  No projects registered. Run /project-init to add one.')
+else:
+    for name, config in registry.items():
+        project_dir = '$APHELOCOMA_DATA/core/projects/' + name
+        paths = ', '.join(config.get('paths', []))
+
+        tasks_file = os.path.join(project_dir, 'tasks.md')
+        in_progress = planned = done = 0
+        if os.path.exists(tasks_file):
+            section = ''
+            with open(tasks_file) as f:
+                for line in f:
+                    if '## In Progress' in line: section = 'ip'
+                    elif '## Planned' in line: section = 'p'
+                    elif '## Done' in line: section = 'd'
+                    elif line.strip().startswith('- ['):
+                        if section == 'ip': in_progress += 1
+                        elif section == 'p': planned += 1
+                        elif section == 'd': done += 1
+
+        adrs_dir = os.path.join(project_dir, 'adrs')
+        adr_count = len([f for f in os.listdir(adrs_dir) if f.endswith('.md')]) if os.path.isdir(adrs_dir) else 0
+
+        context_file = os.path.join(project_dir, 'context.md')
+        stale = ''
+        if os.path.exists(context_file):
+            mtime = datetime.fromtimestamp(os.path.getmtime(context_file))
+            days_old = (datetime.now() - mtime).days
+            if days_old > 30:
+                stale = f' (stale: {days_old}d)'
+
+        print(f'  {name}: {in_progress} in-progress, {planned} planned, {done} done, {adr_count} ADRs{stale}')
+        print(f'    path: {paths}')
+"
+    fi
+    echo ""
+
+    # Knowledge
+    echo -e "${CYAN}Knowledge${RESET}"
+    if [ -f "$APHELOCOMA_DATA/core/knowledge/INDEX.md" ]; then
+        local topics files
+        topics=$(grep -c '^## ' "$APHELOCOMA_DATA/core/knowledge/INDEX.md" 2>/dev/null || echo 0)
+        files=$(grep -c '^\- \*\*' "$APHELOCOMA_DATA/core/knowledge/INDEX.md" 2>/dev/null || echo 0)
+        echo "  $topics topics, $files files"
+    else
+        echo "  No INDEX.md found"
+    fi
+    echo ""
+
+    # Journal
+    echo -e "${CYAN}Journal${RESET}"
+    local latest
+    latest=$(find "$APHELOCOMA_DATA/core/journal" -name "*.md" -type f 2>/dev/null | sort | tail -1)
+    if [ -n "$latest" ]; then
+        local date_part month_dir entries_this_month
+        date_part=$(basename "$latest" .md)
+        month_dir=$(dirname "$latest")
+        entries_this_month=$(find "$month_dir" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+        echo "  Last entry: $date_part"
+        echo "  Entries this month: $entries_this_month"
+
+        local threads
+        threads=$(sed -n '/### Open threads/,/^##\|^$/p' "$latest" | grep '^\- ' 2>/dev/null || true)
+        if [ -n "$threads" ]; then
+            echo ""
+            echo -e "${CYAN}Open Threads${RESET}"
+            echo "$threads" | while read -r line; do echo "  $line"; done
+        fi
+    else
+        echo "  No journal entries found"
+    fi
+    echo ""
+
+    # Skills
+    echo -e "${CYAN}Skills${RESET}"
+    local tool_count=0 user_count=0
+    for d in "$APHELOCOMA_TOOL"/skills/*/; do [ -d "$d" ] && tool_count=$((tool_count + 1)); done
+    if [ -d "$APHELOCOMA_DATA/skills" ]; then
+        for d in "$APHELOCOMA_DATA"/skills/*/; do [ -d "$d" ] && user_count=$((user_count + 1)); done
+    fi
+    echo "  $tool_count built-in, $user_count custom"
+}
+
+# --- view ---
+cmd_view() {
+    local type="${1:-full}"
+    local output_dir="$APHELOCOMA_DATA/views"
+    mkdir -p "$output_dir"
+
+    case "$type" in
+        full)
+            local output="$output_dir/full-context.md"
+            {
+                echo "# Context (generated $(date +%Y-%m-%d))"
+                echo ""
+
+                if [ -f "$APHELOCOMA_DATA/core/identity/profile.md" ]; then
+                    cat "$APHELOCOMA_DATA/core/identity/profile.md"
+                    echo ""
+                fi
+
+                echo "---"
+                echo ""
+                echo "## Active Projects"
+                echo ""
+                if [ -f "$APHELOCOMA_DATA/core/projects/registry.json" ]; then
+                    python3 -c "
+import json, os
+registry_path = os.path.expanduser('$APHELOCOMA_DATA/core/projects/registry.json')
+with open(registry_path) as f:
+    registry = json.load(f)
+for name in registry:
+    context_file = '$APHELOCOMA_DATA/core/projects/' + name + '/context.md'
+    if os.path.exists(context_file):
+        with open(context_file) as f:
+            content = f.read()
+        lines = content.split('\n')
+        in_section = False
+        for line in lines:
+            if line.startswith('## Overview') or line.startswith('## Current State'):
+                in_section = True
+                continue
+            elif line.startswith('## ') and in_section:
+                in_section = False
+                continue
+            if in_section and line.strip():
+                print(line)
+        print()
+"
+                fi
+
+                local latest
+                latest=$(find "$APHELOCOMA_DATA/core/journal" -name "*.md" -type f 2>/dev/null | sort | tail -1)
+                if [ -n "$latest" ]; then
+                    echo "## Open Threads"
+                    echo ""
+                    sed -n '/### Open threads/,/^##\|^$/p' "$latest" | grep '^\- ' 2>/dev/null || echo "None"
+                    echo ""
+                fi
+
+                echo "## Domain Expertise"
+                echo ""
+                if [ -f "$APHELOCOMA_DATA/core/knowledge/INDEX.md" ]; then
+                    grep '^\- \*\*\|^## ' "$APHELOCOMA_DATA/core/knowledge/INDEX.md" | grep -v '^# '
+                fi
+
+                echo ""
+                echo "---"
+                echo ""
+
+                if [ -f "$APHELOCOMA_DATA/core/identity/preferences.md" ]; then
+                    cat "$APHELOCOMA_DATA/core/identity/preferences.md"
+                fi
+            } > "$output"
+            echo -e "${GREEN}Generated${RESET} $output"
+            echo ""
+            cat "$output"
+            ;;
+        brief)
+            local output="$output_dir/brief-context.md"
+            {
+                echo "# Context ($(date +%Y-%m-%d))"
+                echo ""
+                head -5 "$APHELOCOMA_DATA/core/identity/profile.md" 2>/dev/null | grep -v '^#\|^$' | head -1
+                echo ""
+                echo "**Projects:**"
+                python3 -c "
+import json, os
+with open(os.path.expanduser('$APHELOCOMA_DATA/core/projects/registry.json')) as f:
+    registry = json.load(f)
+for name in registry:
+    print(f'- {name}')
+" 2>/dev/null
+                echo ""
+                echo "**Preferences:** Concise, plan-before-implement, propose-confirm-write."
+            } > "$output"
+            echo -e "${GREEN}Generated${RESET} $output"
+            echo ""
+            cat "$output"
+            ;;
+        *)
+            echo "Error: unknown view type '$type'"
+            echo "Available: full, brief"
+            exit 1
+            ;;
+    esac
+}
+
+# --- projects ---
+cmd_projects() {
+    echo -e "${BOLD}Registered Projects${RESET}"
+    echo ""
+    if [ -f "$APHELOCOMA_DATA/core/projects/registry.json" ]; then
+        python3 -c "
+import json, os
+with open(os.path.expanduser('$APHELOCOMA_DATA/core/projects/registry.json')) as f:
+    registry = json.load(f)
+if not registry:
+    print('  No projects registered.')
+else:
+    for name, config in registry.items():
+        paths = ', '.join(config.get('paths', []))
+        print(f'  {name}')
+        print(f'    {paths}')
+"
+    else
+        echo "  No registry found. Run 'aph init' first."
+    fi
+}
+
+# --- skills ---
+cmd_skills() {
+    echo -e "${BOLD}Available Skills${RESET}"
+    echo ""
+
+    echo -e "${CYAN}Built-in (from tool)${RESET}"
+    for d in "$APHELOCOMA_TOOL"/skills/*/; do
+        [ -d "$d" ] || continue
+        local name=$(basename "$d")
+        local desc=""
+        if [ -f "$d/metadata.yaml" ]; then
+            desc=$(grep '^description:' "$d/metadata.yaml" | sed 's/^description: //')
+        fi
+        local overridden=""
+        if [ -d "$APHELOCOMA_DATA/skills/$name" ]; then
+            overridden=" ${YELLOW}(overridden by custom)${RESET}"
+        fi
+        echo -e "  ${BOLD}$name${RESET} — $desc$overridden"
+    done
+
+    if [ -d "$APHELOCOMA_DATA/skills" ]; then
+        local has_custom=false
+        for d in "$APHELOCOMA_DATA"/skills/*/; do
+            [ -d "$d" ] || continue
+            has_custom=true
+            break
+        done
+        if $has_custom; then
+            echo ""
+            echo -e "${CYAN}Custom (from data)${RESET}"
+            for d in "$APHELOCOMA_DATA"/skills/*/; do
+                [ -d "$d" ] || continue
+                local name=$(basename "$d")
+                local desc=""
+                if [ -f "$d/metadata.yaml" ]; then
+                    desc=$(grep '^description:' "$d/metadata.yaml" | sed 's/^description: //')
+                fi
+                echo -e "  ${BOLD}$name${RESET} — $desc"
+            done
+        fi
+    fi
+}
+
+# --- main ---
+case "${1:-}" in
+    setup)    cmd_setup ;;
+    add)      shift; cmd_add "$@" ;;
+    update)   cmd_update ;;
+    deploy)   shift; cmd_deploy "$@" ;;
+    status)   cmd_status ;;
+    view)     shift; cmd_view "$@" ;;
+    projects) cmd_projects ;;
+    skills)   cmd_skills ;;
+    help|-h|--help) usage ;;
+    "")       usage ;;
+    *)        echo "Unknown command: $1"; echo "Run 'aph help' for usage."; exit 1 ;;
+esac

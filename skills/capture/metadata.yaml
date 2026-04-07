@@ -1,0 +1,4 @@
+name: capture
+description: Distill insights from journal entries or conversation into reusable knowledge files.
+type: manual
+arguments: "[topic]"
