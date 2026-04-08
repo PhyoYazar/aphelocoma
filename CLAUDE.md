@@ -18,6 +18,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 - `skills/` — Universal skills in folder format (skill.md + metadata.yaml + templates)
 - `adapters/` — Tool-specific delivery
   - `adapters/claude-code/` — Claude Code config generation (agents, overrides, CLAUDE.md template)
+  - `adapters/codex/` — Codex config generation (AGENTS.md template, overrides, hooks)
   - `adapters/cursor/` — Cursor .mdc rule generation
 - `views/` — Generated context summaries for web AI (gitignored)
 - `.claude/commands/` — Commands for working on aphelocoma itself
@@ -30,14 +31,16 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 - ADRs: `NNNN-kebab-case-title.md` with Status, Context, Decision, Consequences.
 - Tasks: checkbox format `- [ ]` / `- [x]`, grouped under In Progress / Planned / Done.
 - Skills: folder format with `skill.md` (instructions) + `metadata.yaml` (name, description, type).
-- All paths use `$APHELOCOMA_HOME` (default: `~/Desktop/aphelocoma`).
+- All paths use `$APHELOCOMA_HOME` (default: `~/.aphelocoma/data`).
 
-## Skills (11)
+## Skills (13)
 
 | Skill | Type | Purpose |
 |-------|------|---------|
 | `project-context` | background | Loads project context on session start |
 | `knowledge-lookup` | background | Surfaces relevant knowledge silently |
+| `auto-sync` | background | Proactively syncs tasks, context, ADRs as you work |
+| `session-end` | background | Offers to journal when session wraps up |
 | `sync` | manual | Sync current project with aphelocoma |
 | `status` | manual | Dashboard of projects, knowledge, journal |
 | `journal` | manual | Capture end-of-session work entry |
@@ -45,7 +48,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 | `capture` | manual | Distill insights into knowledge files |
 | `reflect` | manual | Propose knowledge captures from recent work |
 | `project-init` | manual | Bootstrap a new project record |
-| `deploy` | manual | Deploy to AI tool configs (Claude Code, Cursor) |
+| `deploy` | manual | Deploy to AI tool configs (Claude Code, Codex, Cursor) |
 | `generate-view` | manual | Context summary for web AI (Claude.ai, ChatGPT) |
 
 ## Working in this repo
@@ -57,4 +60,5 @@ After modifying `skills/`, `adapters/`, `core/`, or root files, proactively offe
 ## Deploy
 
 Run `/deploy` or `/deploy claude` inside this repo to generate Claude Code configs at `~/.claude/`.
+Run `/deploy codex` to generate Codex configs at `~/.codex/`.
 Run `/deploy cursor` to generate Cursor rules in the current project.

@@ -56,23 +56,28 @@ list_all_skills() {
 }
 
 usage() {
-    echo -e "${BOLD}aph${RESET} — Aphelocoma CLI"
+    local version="unknown"
+    [ -f "$APHELOCOMA_TOOL/VERSION" ] && version=$(cat "$APHELOCOMA_TOOL/VERSION" | tr -d '\n')
+    echo -e "${BOLD}aph${RESET} — Aphelocoma CLI (v$version)"
     echo ""
     echo -e "${BOLD}Usage:${RESET}"
     echo "  aph setup                         First-time setup (creates data directory)"
     echo "  aph add [path]                    Add a project (default: current directory)"
     echo "  aph deploy <tool> [project-dir]   Deploy context to an AI tool"
-    echo "  aph update                        Update tool (git pull, data untouched)"
+    echo "  aph sync [path]                   Sync project context from git history"
+    echo "  aph update                        Update to latest release (data untouched)"
     echo "  aph status                        Show second brain dashboard"
     echo "  aph view [full|brief]             Generate context for web AI"
     echo "  aph projects                      List registered projects"
     echo "  aph skills                        List all available skills"
     echo "  aph uninstall                     Remove aphelocoma (data preserved)"
+    echo "  aph version                       Show current version"
     echo "  aph help                          Show this help"
     echo ""
     echo -e "${BOLD}Deploy targets:${RESET}"
     echo "  aph deploy cursor [dir]           Generate .cursor/rules/ in project"
     echo "  aph deploy claude                 Generate ~/.claude/ skills + config"
+    echo "  aph deploy codex                  Generate ~/.codex/ skills + config"
     echo ""
     echo -e "${BOLD}Paths:${RESET}"
     echo "  Tool: $APHELOCOMA_TOOL"
@@ -296,23 +301,38 @@ cmd_update() {
 
     if [ ! -d "$APHELOCOMA_TOOL/.git" ]; then
         echo -e "${RED}Error: $APHELOCOMA_TOOL is not a git repo.${RESET}"
-        echo "Reinstall with: git clone https://github.com/phyoyarzar/aphelocoma $APHELOCOMA_ROOT/tool"
+        echo "Reinstall with: git clone https://github.com/PhyoYazar/aphelocoma $APHELOCOMA_ROOT/tool"
         exit 1
     fi
 
     cd "$APHELOCOMA_TOOL"
-    local before=$(git rev-parse HEAD)
-    git pull --ff-only 2>/dev/null || {
-        echo -e "${RED}Error: git pull failed. You may have local changes in the tool directory.${RESET}"
+
+    local current_version="unknown"
+    [ -f "$APHELOCOMA_TOOL/VERSION" ] && current_version=$(cat "$APHELOCOMA_TOOL/VERSION" | tr -d '\n')
+
+    git fetch --tags 2>/dev/null || {
+        echo -e "${RED}Error: git fetch failed. Check your network connection.${RESET}"
         exit 1
     }
-    local after=$(git rev-parse HEAD)
 
-    if [ "$before" = "$after" ]; then
-        echo -e "${GREEN}Already up to date.${RESET}"
+    local latest_tag
+    latest_tag=$(git tag --sort=-v:refname | head -1)
+
+    if [ -z "$latest_tag" ]; then
+        echo -e "${RED}Error: No release tags found.${RESET}"
+        exit 1
+    fi
+
+    local latest_version="${latest_tag#v}"
+
+    if [ "$current_version" = "$latest_version" ]; then
+        echo -e "${GREEN}Already on latest version: v$current_version${RESET}"
     else
-        echo -e "${GREEN}Updated: $(git log --oneline "$before".."$after" | wc -l | tr -d ' ') new commits.${RESET}"
-        git log --oneline "$before".."$after"
+        git checkout "$latest_tag" 2>/dev/null || {
+            echo -e "${RED}Error: Failed to checkout $latest_tag.${RESET}"
+            exit 1
+        }
+        echo -e "${GREEN}Updated: v$current_version → v$latest_version${RESET}"
     fi
 
     echo ""
@@ -358,15 +378,83 @@ cmd_deploy() {
             echo -e "${GREEN}Deployed${RESET} CLAUDE.md to ~/.claude/"
             echo -e "${GREEN}Deployed${RESET} agents to ~/.claude/agents/"
             ;;
+        codex)
+            echo -e "${BOLD}Deploying to Codex...${RESET}"
+            local count=0
+            while IFS= read -r skill_dir; do
+                local skill_name
+                skill_name=$(basename "$skill_dir")
+                local metadata="$skill_dir/metadata.yaml"
+                local skill_file="$skill_dir/skill.md"
+
+                [ -f "$metadata" ] || continue
+                [ -f "$skill_file" ] || continue
+
+                # Read metadata
+                local name desc skill_type
+                name=$(grep '^name:' "$metadata" | sed 's/^name:[[:space:]]*//')
+                desc=$(grep '^description:' "$metadata" | sed 's/^description:[[:space:]]*//')
+                skill_type=$(grep '^type:' "$metadata" | sed 's/^type:[[:space:]]*//')
+
+                # Build frontmatter
+                local frontmatter="---\nname: $name\ndescription: $desc"
+
+                # Type mapping
+                if [ "$skill_type" = "background" ]; then
+                    frontmatter="$frontmatter\nuser-invocable: false"
+                elif [ "$skill_type" = "manual" ]; then
+                    frontmatter="$frontmatter\ndisable-model-invocation: true"
+                fi
+
+                # Apply overrides (skip keys already in frontmatter)
+                local override="$APHELOCOMA_TOOL/adapters/codex/overrides/${skill_name}.yaml"
+                if [ -f "$override" ]; then
+                    while IFS=': ' read -r key value; do
+                        [ -z "$key" ] && continue
+                        [[ "$key" == \#* ]] && continue
+                        echo -e "$frontmatter" | grep -q "^$key:" && continue
+                        frontmatter="$frontmatter\n$key: $value"
+                    done < "$override"
+                fi
+
+                frontmatter="$frontmatter\n---"
+
+                # Write SKILL.md
+                mkdir -p "$HOME/.codex/skills/$skill_name"
+                {
+                    echo -e "$frontmatter"
+                    echo ""
+                    cat "$skill_file"
+                } > "$HOME/.codex/skills/$skill_name/SKILL.md"
+
+                # Copy subdirectories
+                for subdir in templates examples scripts; do
+                    if [ -d "$skill_dir/$subdir" ]; then
+                        cp -r "$skill_dir/$subdir" "$HOME/.codex/skills/$skill_name/"
+                    fi
+                done
+                count=$((count + 1))
+            done < <(list_all_skills)
+
+            # AGENTS.md
+            cp "$APHELOCOMA_TOOL/adapters/codex/agents-md-template.md" "$HOME/.codex/AGENTS.md"
+            # Hooks
+            cp "$APHELOCOMA_TOOL/adapters/codex/hooks.json" "$HOME/.codex/hooks.json"
+
+            echo -e "${GREEN}Deployed${RESET} $count skills to ~/.codex/skills/"
+            echo -e "${GREEN}Deployed${RESET} AGENTS.md to ~/.codex/"
+            echo -e "${GREEN}Deployed${RESET} hooks.json to ~/.codex/"
+            ;;
         "")
-            echo "Error: specify a tool (cursor, claude)"
+            echo "Error: specify a tool (cursor, claude, codex)"
             echo "  aph deploy cursor"
             echo "  aph deploy claude"
+            echo "  aph deploy codex"
             exit 1
             ;;
         *)
             echo "Error: unknown tool '$tool'"
-            echo "Available: cursor, claude"
+            echo "Available: cursor, claude, codex"
             exit 1
             ;;
     esac
@@ -686,10 +774,148 @@ cmd_uninstall() {
     echo "Restart your terminal to complete uninstall."
 }
 
+# --- sync ---
+cmd_sync() {
+    local project_path="${1:-.}"
+    project_path="$(cd "$project_path" 2>/dev/null && pwd)" || {
+        echo -e "${RED}Error: directory '$1' does not exist.${RESET}"
+        exit 1
+    }
+
+    if [ ! -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${RED}Error: Run 'aph setup' first.${RESET}"
+        exit 1
+    fi
+
+    # Detect project from registry
+    local project_name
+    project_name=$(python3 -c "
+import json, os, sys
+registry_path = os.path.expanduser('$APHELOCOMA_DATA/core/projects/registry.json')
+if not os.path.exists(registry_path):
+    sys.exit(1)
+with open(registry_path) as f:
+    registry = json.load(f)
+target = '$project_path'
+for name, config in registry.items():
+    for path in config.get('paths', []):
+        expanded = os.path.expanduser(path)
+        if target.startswith(expanded) or expanded.startswith(target):
+            print(name)
+            sys.exit(0)
+sys.exit(1)
+" 2>/dev/null) || {
+        echo -e "${RED}Error: Project not found in registry.${RESET}"
+        echo "Run 'aph add' in your project directory first."
+        exit 1
+    }
+
+    local project_dir="$APHELOCOMA_DATA/core/projects/$project_name"
+
+    echo -e "${BOLD}Syncing: $project_name${RESET}"
+    echo "  Path: $project_path"
+    echo ""
+
+    # Show recent git activity
+    if [ -d "$project_path/.git" ]; then
+        echo -e "${CYAN}Recent commits (last 7 days)${RESET}"
+        cd "$project_path"
+        local recent
+        recent=$(git log --oneline --since="7 days ago" 2>/dev/null)
+        if [ -n "$recent" ]; then
+            echo "$recent" | while read -r line; do echo "  $line"; done
+        else
+            echo "  No commits in the last 7 days."
+        fi
+        echo ""
+
+        # Today's commits for journal
+        local today_commits
+        today_commits=$(git log --oneline --since="midnight" 2>/dev/null)
+        if [ -n "$today_commits" ]; then
+            echo -e "${CYAN}Today's commits${RESET}"
+            echo "$today_commits" | while read -r line; do echo "  $line"; done
+            echo ""
+
+            # Offer to create journal entry
+            local journal_dir="$APHELOCOMA_DATA/core/journal/$(date +%Y-%m)"
+            local journal_file="$journal_dir/$(date +%Y-%m-%d).md"
+
+            echo -e "${YELLOW}Create journal entry from today's commits?${RESET} [y/N] "
+            read -r answer
+            if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+                mkdir -p "$journal_dir"
+                {
+                    echo ""
+                    echo "## $(date +%H:%M) — $project_name"
+                    echo ""
+                    echo "### What was done"
+                    echo "$today_commits" | while read -r line; do
+                        echo "- $line"
+                    done
+                    echo ""
+                    echo "### Key decisions"
+                    echo "- (fill in manually)"
+                    echo ""
+                    echo "### Open threads"
+                    echo "- (fill in manually)"
+                } >> "$journal_file"
+                echo -e "${GREEN}Appended to${RESET} $journal_file"
+            fi
+            echo ""
+        fi
+    fi
+
+    # Check project record health
+    echo -e "${CYAN}Project record${RESET}"
+
+    if [ -f "$project_dir/context.md" ]; then
+        local days_old
+        days_old=$(python3 -c "
+import os, datetime
+mtime = datetime.datetime.fromtimestamp(os.path.getmtime('$project_dir/context.md'))
+print((datetime.datetime.now() - mtime).days)
+" 2>/dev/null)
+        if [ "$days_old" -gt 30 ] 2>/dev/null; then
+            echo -e "  context.md: ${YELLOW}stale ($days_old days old)${RESET}"
+        else
+            echo -e "  context.md: ${GREEN}ok${RESET} (${days_old}d old)"
+        fi
+    else
+        echo -e "  context.md: ${RED}missing${RESET}"
+    fi
+
+    if [ -f "$project_dir/tasks.md" ]; then
+        local in_progress planned done
+        in_progress=$(grep -c '^\- \[.\]' "$project_dir/tasks.md" 2>/dev/null || echo 0)
+        done=$(grep -c '^\- \[x\]' "$project_dir/tasks.md" 2>/dev/null || echo 0)
+        echo -e "  tasks.md: ${GREEN}ok${RESET} ($in_progress active, $done done)"
+    else
+        echo -e "  tasks.md: ${RED}missing${RESET}"
+    fi
+
+    local adr_count=0
+    if [ -d "$project_dir/adrs" ]; then
+        adr_count=$(find "$project_dir/adrs" -name "*.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+    fi
+    echo "  adrs: $adr_count"
+
+    echo ""
+    echo -e "${GREEN}Sync complete.${RESET}"
+}
+
+# --- version ---
+cmd_version() {
+    local version="unknown"
+    [ -f "$APHELOCOMA_TOOL/VERSION" ] && version=$(cat "$APHELOCOMA_TOOL/VERSION" | tr -d '\n')
+    echo "aph v$version"
+}
+
 # --- main ---
 case "${1:-}" in
     setup)    cmd_setup ;;
     add)      shift; cmd_add "$@" ;;
+    sync)     shift; cmd_sync "$@" ;;
     update)   cmd_update ;;
     deploy)   shift; cmd_deploy "$@" ;;
     status)   cmd_status ;;
@@ -697,6 +923,7 @@ case "${1:-}" in
     projects) cmd_projects ;;
     skills)   cmd_skills ;;
     uninstall|remove) cmd_uninstall ;;
+    version|--version|-v) cmd_version ;;
     help|-h|--help) usage ;;
     "")       usage ;;
     *)        echo "Unknown command: $1"; echo "Run 'aph help' for usage."; exit 1 ;;
