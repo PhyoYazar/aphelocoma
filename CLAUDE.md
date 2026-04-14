@@ -36,7 +36,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 - Skills: folder format with `skill.md` (instructions) + `metadata.yaml` (name, description, type).
 - All paths use `$APHELOCOMA_HOME` (default: `~/.aphelocoma/data`).
 
-## Skills (14)
+## Skills (15)
 
 | Skill | Type | Purpose |
 |-------|------|---------|
@@ -44,6 +44,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 | `knowledge-lookup` | background | Surfaces relevant knowledge silently |
 | `auto-sync` | background | Proactively syncs tasks, context, ADRs as you work |
 | `session-end` | background | Offers session record or journal when session wraps up |
+| `ux-guardian` | background | UX nudges during frontend work, full codebase UX audits on demand |
 | `sync` | manual | Sync current project with aphelocoma |
 | `status` | manual | Dashboard of projects, knowledge, journal, sessions |
 | `journal` | manual | Capture end-of-session work entry (summary layer) |
