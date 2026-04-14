@@ -1,3 +1,10 @@
+---
+type: journal
+date: YYYY-MM-DD
+projects: []
+sessions: []
+---
+
 ## HH:MM — [Project Name]
 
 ### What was done

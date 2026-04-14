@@ -14,7 +14,8 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
   - `core/identity/` — Profile, preferences (who you are)
   - `core/knowledge/` — Domain expertise with INDEX.md for fast lookup
   - `core/projects/` — Per-project records (context.md, tasks.md, adrs/, local.md), with registry.json for path mapping
-  - `core/journal/` — Work session logs (YYYY-MM/YYYY-MM-DD.md)
+  - `core/journal/` — Work session logs (YYYY-MM/YYYY-MM-DD.md), short summaries referencing sessions
+  - `core/sessions/` — Structured session records with reasoning chains (YYYY-MM/YYYY-MM-DD-HHMMSS-slug.md)
 - `skills/` — Universal skills in folder format (skill.md + metadata.yaml + templates)
 - `adapters/` — Tool-specific delivery
   - `adapters/claude-code/` — Claude Code config generation (agents, overrides, CLAUDE.md template)
@@ -25,25 +26,28 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 
 ## Conventions
 
+- All core files use YAML frontmatter (`---` block) with `type`, `date`/`updated`, and relevant metadata fields.
 - Knowledge files: markdown with `# Title` and concise sections.
-- Journal entries: `core/journal/YYYY-MM/YYYY-MM-DD.md`. Append, don't overwrite.
+- Journal entries: `core/journal/YYYY-MM/YYYY-MM-DD.md`. Append, don't overwrite. Short summaries when session records exist.
+- Session records: `core/sessions/YYYY-MM/YYYY-MM-DD-HHMMSS-<slug>.md`. Primary capture artifact — preserves reasoning chains.
 - Project records: context.md, tasks.md, adrs/, local.md (personal notes snapshot).
 - ADRs: `NNNN-kebab-case-title.md` with Status, Context, Decision, Consequences.
 - Tasks: checkbox format `- [ ]` / `- [x]`, grouped under In Progress / Planned / Done.
 - Skills: folder format with `skill.md` (instructions) + `metadata.yaml` (name, description, type).
 - All paths use `$APHELOCOMA_HOME` (default: `~/.aphelocoma/data`).
 
-## Skills (13)
+## Skills (14)
 
 | Skill | Type | Purpose |
 |-------|------|---------|
 | `project-context` | background | Loads project context on session start |
 | `knowledge-lookup` | background | Surfaces relevant knowledge silently |
 | `auto-sync` | background | Proactively syncs tasks, context, ADRs as you work |
-| `session-end` | background | Offers to journal when session wraps up |
+| `session-end` | background | Offers session record or journal when session wraps up |
 | `sync` | manual | Sync current project with aphelocoma |
-| `status` | manual | Dashboard of projects, knowledge, journal |
-| `journal` | manual | Capture end-of-session work entry |
+| `status` | manual | Dashboard of projects, knowledge, journal, sessions |
+| `journal` | manual | Capture end-of-session work entry (summary layer) |
+| `session-record` | manual | Capture structured session record with reasoning chains |
 | `adr` | manual | Create Architecture Decision Record |
 | `capture` | manual | Distill insights into knowledge files |
 | `reflect` | manual | Propose knowledge captures from recent work |

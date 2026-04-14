@@ -272,6 +272,8 @@ After 30-90 days, summarize old entries into monthly digests (`journal/YYYY-MM/s
 
 Items from previous brainstorms that are now done:
 
+- [x] YAML frontmatter on all core files — `aph migrate-frontmatter` command migrates existing files; new files get frontmatter from skills (ADR-0015)
+- [x] Structured session records — `core/sessions/` with `/session-record` skill; journal becomes summary layer referencing sessions (ADR-0015)
 - [x] `$APHELOCOMA_HOME` env var (ADR-0009)
 - [x] `projects/registry.json` for path-based detection (ADR-0009)
 - [x] `knowledge/INDEX.md` for fast lookup (ADR-0009)
@@ -327,7 +329,8 @@ What to build next, in rough order:
 - [ ] Project lifecycle (active/paused/archived)
 
 ### Phase 3: Intelligence
-- [ ] YAML frontmatter on knowledge files
+- [x] YAML frontmatter on all core files (expanded beyond knowledge files — all 38 files migrated)
+- [x] Structured session records — reasoning chains, key findings, decisions (new core/sessions/ layer)
 - [ ] Weekly review command
 - [ ] Journal compression
 - [ ] Global search across all content

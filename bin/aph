@@ -100,6 +100,7 @@ cmd_setup() {
     mkdir -p "$APHELOCOMA_DATA/core/knowledge"
     mkdir -p "$APHELOCOMA_DATA/core/projects"
     mkdir -p "$APHELOCOMA_DATA/core/journal"
+    mkdir -p "$APHELOCOMA_DATA/core/sessions"
     mkdir -p "$APHELOCOMA_DATA/skills"
     mkdir -p "$APHELOCOMA_DATA/views"
 
@@ -134,10 +135,27 @@ PREFS
 
     # Knowledge index
     cat > "$APHELOCOMA_DATA/core/knowledge/INDEX.md" << 'INDEX'
+---
+type: knowledge-index
+updated: PLACEHOLDER_DATE
+---
 # Knowledge Index
 
 Auto-maintained by /capture. Read this file first to find relevant knowledge.
 INDEX
+    sed -i '' "s/PLACEHOLDER_DATE/$(date +%Y-%m-%d)/" "$APHELOCOMA_DATA/core/knowledge/INDEX.md"
+
+    # Sessions index
+    cat > "$APHELOCOMA_DATA/core/sessions/INDEX.md" << 'SIDX'
+---
+type: session-index
+updated: PLACEHOLDER_DATE
+---
+# Session Index
+
+Auto-maintained by /session-record.
+SIDX
+    sed -i '' "s/PLACEHOLDER_DATE/$(date +%Y-%m-%d)/" "$APHELOCOMA_DATA/core/sessions/INDEX.md"
 
     # Empty registry
     echo '{}' > "$APHELOCOMA_DATA/core/projects/registry.json"
@@ -555,6 +573,29 @@ else:
     fi
     echo ""
 
+    # Sessions
+    echo -e "${CYAN}Sessions${RESET}"
+    local sessions_dir="$APHELOCOMA_DATA/core/sessions"
+    if [ -d "$sessions_dir" ]; then
+        local session_count latest_session
+        session_count=$(find "$sessions_dir" -name "*.md" -not -name "INDEX.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+        latest_session=$(find "$sessions_dir" -name "*.md" -not -name "INDEX.md" -type f 2>/dev/null | sort | tail -1)
+        if [ "$session_count" -gt 0 ] && [ -n "$latest_session" ]; then
+            local latest_name latest_month_count
+            latest_name=$(basename "$latest_session" .md)
+            latest_month=$(dirname "$latest_session")
+            latest_month_count=$(find "$latest_month" -name "*.md" -not -name "INDEX.md" -type f 2>/dev/null | wc -l | tr -d ' ')
+            echo "  Total: $session_count sessions"
+            echo "  Latest: $latest_name"
+            echo "  This month: $latest_month_count"
+        else
+            echo "  No sessions yet. Run /session-record at the end of a work session."
+        fi
+    else
+        echo "  Sessions directory not found. Run 'aph setup'."
+    fi
+    echo ""
+
     # Skills
     echo -e "${CYAN}Skills${RESET}"
     local tool_count=0 user_count=0
@@ -904,6 +945,177 @@ print((datetime.datetime.now() - mtime).days)
     echo -e "${GREEN}Sync complete.${RESET}"
 }
 
+# --- migrate-frontmatter ---
+cmd_migrate_frontmatter() {
+    local dry_run=false
+    if [ "${1:-}" = "--dry-run" ]; then
+        dry_run=true
+        echo -e "${YELLOW}Dry run — no files will be modified.${RESET}"
+        echo ""
+    fi
+
+    if [ ! -d "$APHELOCOMA_DATA/core" ]; then
+        echo -e "${RED}Error: Run 'aph setup' first.${RESET}"
+        exit 1
+    fi
+
+    echo -e "${BOLD}Migrating frontmatter to core files...${RESET}"
+    echo ""
+
+    python3 << PYEOF
+import os, re
+from datetime import datetime
+
+data_dir = os.path.expanduser("$APHELOCOMA_DATA")
+core_dir = os.path.join(data_dir, "core")
+dry_run = $( [ "$dry_run" = true ] && echo "True" || echo "False" )
+
+skipped = []
+migrated = []
+already_done = []
+
+def get_mtime(path):
+    return datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%d")
+
+def extract_adr_status(content):
+    m = re.search(r'##\s+Status\s*\n+(\w+)', content)
+    return m.group(1).lower() if m else "accepted"
+
+def extract_journal_projects(content):
+    projects = re.findall(r'##\s+\d+:\d+\s+[—-]+\s+(.+)', content)
+    normalized = []
+    for p in projects:
+        n = re.sub(r'[^a-z0-9]+', '-', p.strip().lower()).strip('-')
+        if n and n not in normalized:
+            normalized.append(n)
+    return normalized
+
+def extract_knowledge_source(content):
+    m = re.search(r'##\s+Source\s*\n+(.+)', content)
+    if not m:
+        return "manual"
+    src = m.group(1).strip()
+    # "Journal 2026-04-08" -> "journal-2026-04-08"
+    date_m = re.search(r'(\d{4}-\d{2}-\d{2})', src)
+    if date_m:
+        return "journal-" + date_m.group(1)
+    return "manual"
+
+def build_frontmatter(fields):
+    lines = ["---"]
+    for k, v in fields.items():
+        if isinstance(v, list):
+            if v:
+                items = ", ".join(f'"{x}"' for x in v)
+                lines.append(f"{k}: [{items}]")
+            else:
+                lines.append(f"{k}: []")
+        else:
+            lines.append(f"{k}: {v}")
+    lines.append("---")
+    return "\n".join(lines)
+
+for root, dirs, files in os.walk(core_dir):
+    # Skip template directory
+    rel = os.path.relpath(root, core_dir)
+    if rel.startswith("projects/template"):
+        continue
+
+    for fname in sorted(files):
+        if not fname.endswith(".md"):
+            continue
+
+        fpath = os.path.join(root, fname)
+        rel_path = os.path.relpath(fpath, core_dir)
+
+        with open(fpath, "r") as f:
+            content = f.read()
+
+        # Skip if already has frontmatter
+        if content.startswith("---"):
+            already_done.append(rel_path)
+            continue
+
+        mtime = get_mtime(fpath)
+        parts = rel_path.split(os.sep)
+        fm = None
+
+        # identity
+        if parts[0] == "identity":
+            subtype = "profile" if "profile" in fname else "preferences"
+            fm = build_frontmatter({"type": "identity", "subtype": subtype, "updated": mtime})
+
+        # knowledge/INDEX.md
+        elif parts[0] == "knowledge" and fname == "INDEX.md":
+            fm = build_frontmatter({"type": "knowledge-index", "updated": mtime})
+
+        # knowledge/<topic>/<file>.md
+        elif parts[0] == "knowledge" and len(parts) == 3:
+            topic = parts[1]
+            source = extract_knowledge_source(content)
+            fm = build_frontmatter({"type": "knowledge", "topic": topic, "tags": [], "created": mtime, "source": source})
+
+        # journal/<YYYY-MM>/<date>.md
+        elif parts[0] == "journal" and len(parts) == 3:
+            date = fname.replace(".md", "")
+            projects = extract_journal_projects(content)
+            fm = build_frontmatter({"type": "journal", "date": date, "projects": projects, "sessions": []})
+
+        # projects/<name>/context.md
+        elif parts[0] == "projects" and len(parts) == 3 and fname == "context.md":
+            project = parts[1]
+            fm = build_frontmatter({"type": "project-context", "project": project, "status": "active", "updated": mtime})
+
+        # projects/<name>/tasks.md
+        elif parts[0] == "projects" and len(parts) == 3 and fname == "tasks.md":
+            project = parts[1]
+            fm = build_frontmatter({"type": "project-tasks", "project": project, "updated": mtime})
+
+        # projects/<name>/local.md
+        elif parts[0] == "projects" and len(parts) == 3 and fname == "local.md":
+            project = parts[1]
+            fm = build_frontmatter({"type": "project-local", "project": project, "updated": mtime})
+
+        # projects/<name>/adrs/<NNNN-...>.md
+        elif parts[0] == "projects" and len(parts) == 4 and parts[2] == "adrs":
+            project = parts[1]
+            adr_num = int(fname[:4]) if fname[:4].isdigit() else 0
+            status = extract_adr_status(content)
+            fm = build_frontmatter({"type": "adr", "project": project, "adr_number": adr_num, "status": status, "created": mtime, "tags": []})
+
+        if fm is None:
+            skipped.append(rel_path)
+            continue
+
+        new_content = fm + "\n" + content
+
+        if dry_run:
+            print(f"  [DRY RUN] {rel_path}")
+            print(f"    → type: {fm.split(chr(10))[1]}")
+        else:
+            with open(fpath, "w") as f:
+                f.write(new_content)
+            migrated.append(rel_path)
+
+print()
+if dry_run:
+    print(f"Would migrate: {len(migrated) if not dry_run else len([r for r in os.walk(core_dir)])} files")
+else:
+    print(f"Migrated:      {len(migrated)} files")
+    print(f"Already done:  {len(already_done)} files")
+    print(f"Skipped:       {len(skipped)} files")
+    if skipped:
+        for s in skipped:
+            print(f"  (skipped) {s}")
+PYEOF
+
+    echo ""
+    if [ "$dry_run" = false ]; then
+        echo -e "${GREEN}Migration complete.${RESET}"
+        echo "Run 'aph status' to verify."
+    fi
+}
+
 # --- version ---
 cmd_version() {
     local version="unknown"
@@ -923,6 +1135,7 @@ case "${1:-}" in
     projects) cmd_projects ;;
     skills)   cmd_skills ;;
     uninstall|remove) cmd_uninstall ;;
+    migrate-frontmatter) shift; cmd_migrate_frontmatter "$@" ;;
     version|--version|-v) cmd_version ;;
     help|-h|--help) usage ;;
     "")       usage ;;
