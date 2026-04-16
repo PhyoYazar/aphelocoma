@@ -36,7 +36,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 - Skills: folder format with `skill.md` (instructions) + `metadata.yaml` (name, description, type).
 - All paths use `$APHELOCOMA_HOME` (default: `~/.aphelocoma/data`).
 
-## Skills (15)
+## Skills (16)
 
 | Skill | Type | Purpose |
 |-------|------|---------|
@@ -55,6 +55,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 | `project-init` | manual | Bootstrap a new project record |
 | `deploy` | manual | Deploy to AI tool configs (Claude Code, Codex, Cursor) |
 | `generate-view` | manual | Context summary for web AI (Claude.ai, ChatGPT) |
+| `wrap-up` | manual | One-command session wrap-up — runs needed recording steps |
 
 ## Working in this repo
 
