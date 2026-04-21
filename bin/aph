@@ -776,6 +776,54 @@ cmd_skills() {
     fi
 }
 
+# --- undeploy ---
+_undeploy_claude() {
+    local skill_dir="$HOME/.claude/skills"
+    for skill_path in "$APHELOCOMA_HOME/skills"/*/; do
+        [ -d "$skill_path" ] || continue
+        local name
+        name="$(basename "$skill_path")"
+        rm -rf "${skill_dir:?}/$name"
+    done
+    rm -f "$HOME/.claude/agents/architect.md" "$HOME/.claude/agents/reviewer.md"
+    rm -f "$HOME/.claude/CLAUDE.md"
+    echo "Undeployed aphelocoma from Claude Code."
+}
+
+_undeploy_codex() {
+    local skill_dir="$HOME/.codex/skills"
+    for skill_path in "$APHELOCOMA_HOME/skills"/*/; do
+        [ -d "$skill_path" ] || continue
+        local name
+        name="$(basename "$skill_path")"
+        rm -rf "${skill_dir:?}/$name"
+    done
+    rm -f "$HOME/.codex/AGENTS.md"
+    rm -f "$HOME/.codex/hooks.json"
+    echo "Undeployed aphelocoma from Codex."
+}
+
+_undeploy_cursor() {
+    local project_dir="${1:-$(pwd)}"
+    local rules_dir="$project_dir/.cursor/rules"
+    if [ -d "$rules_dir" ]; then
+        rm -f "$rules_dir"/aphelocoma-*.mdc
+        echo "Undeployed aphelocoma from Cursor in $project_dir."
+    else
+        echo "No .cursor/rules directory found in $project_dir."
+    fi
+}
+
+cmd_undeploy() {
+    local tool="${1:-}"
+    case "$tool" in
+        claude)        _undeploy_claude ;;
+        codex)         _undeploy_codex ;;
+        cursor)        shift; _undeploy_cursor "$@" ;;
+        *)             echo "Usage: aph undeploy <claude|codex|cursor>"; exit 1 ;;
+    esac
+}
+
 # --- uninstall ---
 cmd_uninstall() {
     echo -e "${BOLD}Uninstalling aphelocoma...${RESET}"
@@ -1134,6 +1182,7 @@ case "${1:-}" in
     view)     shift; cmd_view "$@" ;;
     projects) cmd_projects ;;
     skills)   cmd_skills ;;
+    undeploy|deploy-down) shift; cmd_undeploy "$@" ;;
     uninstall|remove) cmd_uninstall ;;
     migrate-frontmatter) shift; cmd_migrate_frontmatter "$@" ;;
     version|--version|-v) cmd_version ;;

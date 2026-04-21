@@ -46,7 +46,7 @@ Everything is markdown and YAML. No build step, no runtime, no dependencies. Git
 | `session-end` | background | Offers session record or journal when session wraps up |
 | `ux-guardian` | background | UX nudges during frontend work, full codebase UX audits on demand |
 | `sync` | manual | Sync current project with aphelocoma |
-| `status` | manual | Dashboard of projects, knowledge, journal, sessions |
+| `aph-status` | manual | Dashboard of projects, knowledge, journal, sessions |
 | `journal` | manual | Capture end-of-session work entry (summary layer) |
 | `session-record` | manual | Capture structured session record with reasoning chains |
 | `adr` | manual | Create Architecture Decision Record |

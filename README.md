@@ -140,7 +140,7 @@ These skills are available inside AI tools after deploying:
 | Skill | What it does |
 |-------|-------------|
 | `/sync` | Sync current project with aphelocoma |
-| `/status` | Dashboard of projects, knowledge, journal |
+| `/aph-status` | Dashboard of projects, knowledge, journal |
 | `/journal` | Capture end-of-session work entry |
 | `/reflect` | Propose knowledge captures from recent work |
 | `/capture [topic]` | Distill insights into knowledge files |
