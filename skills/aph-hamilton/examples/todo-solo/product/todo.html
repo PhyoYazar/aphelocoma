@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<!--
+  Simple Todo List App — project "simple-todo-list-app", task T1.
+  Self-contained: no build step, no external dependencies. Open this file in a browser.
+  Core operations: add, list/view, complete, remove.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Simple Todo List</title>
+</head>
+<body>
+  <h1>Simple Todo List</h1>
+  <p>Core operations: <b>add</b>, <b>list/view</b>, <b>complete</b>, <b>remove</b>.</p>
+
+  <input id="newTodo" placeholder="What needs doing?">
+  <button onclick="addTodo()">Add</button>
+  <ul id="list"></ul>
+
+  <script>
+    // Minimal in-memory todo store implementing the four core operations.
+    const todos = [];
+    function render() {            // list / view
+      const ul = document.getElementById('list');
+      ul.innerHTML = '';
+      todos.forEach((t, i) => {
+        const li = document.createElement('li');
+        li.textContent = (t.done ? '[x] ' : '[ ] ') + t.text + ' ';
+        const c = document.createElement('button');
+        c.textContent = 'complete';
+        c.onclick = () => { todos[i].done = true; render(); };   // complete
+        const r = document.createElement('button');
+        r.textContent = 'remove';
+        r.onclick = () => { todos.splice(i, 1); render(); };      // remove
+        li.append(c, r);
+        ul.appendChild(li);
+      });
+    }
+    function addTodo() {           // add
+      const input = document.getElementById('newTodo');
+      if (input.value.trim()) { todos.push({ text: input.value.trim(), done: false }); input.value = ''; render(); }
+    }
+    render();
+  </script>
+</body>
+</html>

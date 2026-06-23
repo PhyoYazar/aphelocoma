@@ -14,7 +14,7 @@ Steps:
      - From metadata.yaml: `name`, `description`
      - Type mapping: `type: manual` → add `disable-model-invocation: true`; `type: background` → add `user-invocable: false`
      - Merge any fields from the override file
-     - If metadata.yaml has `arguments`, add as `argument-hint`
+     - If metadata.yaml has `arguments`, add as `argument-hint` — **single-quote the value** so hints that start with `[` or contain `:` (e.g. `custom:[roles]`) stay valid YAML; an unquoted `[`-leading value parses as a flow sequence and breaks skill loading
    - Write the generated `SKILL.md` to `~/.claude/skills/<skill-name>/SKILL.md`
    - Copy any templates/, examples/, scripts/, references/ directories alongside the SKILL.md
 2. Generate `~/.claude/CLAUDE.md` from `$APHELOCOMA_HOME/adapters/claude-code/claude-md-template.md`
