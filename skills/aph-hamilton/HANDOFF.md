@@ -54,6 +54,22 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
 - `sync-agents`: generate `.claude/agents/<role>.md` from `references/roles/` (derived, regenerable).
 - Orchestrator-owned-state parallelism (manager dispatches; manager is the single writer of
   `tasks.json` + `events.jsonl`). Cold-start test the parallel path.
+- **De-risked already (Phase 1 finding):** `disable-model-invocation: true` does NOT conflict with
+  native agents. In the Phase-1 cold-start, a subagent couldn't *invoke* `/aph-hamilton` (manual skills
+  are off the model-invocable list) yet ran the entire protocol by reading the role file + PROTOCOL +
+  `.aphelocoma/` directly — exactly how a generated `.claude/agents/<role>.md` subagent will operate.
+  So the generated agents read the definition/state directly; they never re-invoke the skill.
+
+## Phase 1 deferred residuals (non-blocking — fold into Phase 2 verification)
+- **`resume` + version-drift warning is unexercised.** Phase 1 proved the *write* side of the pin
+  (`definition_version` recorded). The drift *detection* on `resume` is untested (same file-reading
+  machinery, low risk). Cheap smoke test: bump installed `references/VERSION` to `1.0.1`, point a fresh
+  agent at the example's populated `.aphelocoma/` (pin `1.0.0`) with `resume`, expect a drift warning.
+- **Spec §4 content not asserted.** Phase 1 confirmed `specs/T1.md` exists but not that it carries
+  Goal / Scope / Interfaces / Acceptance-criteria. Trivial to add to the next cold-start's checks.
+- **Real Claude `/aph-hamilton` not run.** The `${CLAUDE_SKILL_DIR}` path (var *set*) is the easy case
+  vs. the self-location path Phase 1 already proved with the var unset; backed by adr/journal in prod.
+  Final confirmation is one interactive `/aph-hamilton` in a real Claude session.
 
 ## How to work
 - Treat the spec as approved. Use the `writing-plans` skill to turn Phase 1 into a concrete plan,
