@@ -11,11 +11,28 @@ is an **executed** cold-start plus a cross-tool definition-reach proof.
   (mirroring the `deploy` adapter steps with `APHELOCOMA_HOME` = repo, so the freshly-edited skill is
   the source). `references/`, `templates/`, `examples/` copied beside a generated `SKILL.md`.
 - **Claude cold-start:** a fresh, context-isolated subagent was given ONLY the bare kickoff
-  `/aph-hamilton start "a simple todo list app" solo`, in an empty throwaway project dir, told to
-  invoke the skill through its own skill mechanism and resolve the definition itself (not fed the
-  path). It ran the full protocol loop unaided.
+  `/aph-hamilton start "a simple todo list app" solo`, in an empty throwaway project dir, and resolved
+  the definition itself (it was NOT fed the `references/` path). It ran the full protocol loop unaided.
 - **Codex reach:** a real `codex exec` (gpt-5.5, read-only) read the deployed `SKILL.md`, followed
   its "Locating the definition" wording, and self-resolved `references/` with no `CLAUDE_SKILL_DIR`.
+
+## Which resolution path was exercised (fidelity — stated honestly)
+
+`aph-hamilton` is `type: manual` → `disable-model-invocation: true`, which (correctly) keeps it off the
+**model-invocable** Skill list: a model/subagent cannot auto-invoke it; only a human typing
+`/aph-hamilton` can. Consequence for this test: the Claude subagent's Skill-tool call was rejected, so
+it **fell back to the skill's tool-neutral self-location** (read `SKILL.md` → resolve `references/`
+beside it) with `${CLAUDE_SKILL_DIR}` **unset**, and still reached the installed definition at
+`/Users/…/.claude/skills/aph-hamilton/references` and ran a–e to completion.
+
+- **Proven on BOTH platforms:** the portable **self-location** path (find `references/` beside
+  `SKILL.md`, no env var). This is the platform-agnostic core of the design — and it works even with
+  `${CLAUDE_SKILL_DIR}` unset (belt-and-suspenders).
+- **Not exercised here:** the Claude `${CLAUDE_SKILL_DIR}`-via-Skill-tool path — a subagent can't
+  invoke a `disable-model-invocation` skill, and a real human `/aph-hamilton` can't be simulated from
+  this harness. It rests on the **established aphelocoma convention** (adr/journal/project-init use
+  `${CLAUDE_SKILL_DIR}` in real user sessions) and is **redundant** with the self-location the run
+  proved. Final confirmation = one real `/aph-hamilton` in an interactive Claude session.
 
 ## Deploy defect found and fixed (the cold-start earned its keep)
 
@@ -62,5 +79,7 @@ Throwaway project: `…/scratchpad/cold-start-claude/`.
 
 **Phase 1 PASS** — portable thin+global-ref Hamilton bootstraps and runs end-to-end from a fresh
 agent given only the kickoff, reads its installed definition, keeps a schema-valid monotonic ledger,
-applies §7 coverage unprompted, and records the version pin — with cross-tool definition reach proven
-on **both** Claude and Codex.
+applies §7 coverage unprompted, and records the version pin — with the **tool-neutral self-location
+path** (the platform-agnostic core) proven on **both** Claude and Codex. The Claude
+`${CLAUDE_SKILL_DIR}` convenience path is unverified-for-Hamilton-here (subagents can't invoke a
+manual skill) but is backed by repo convention and made redundant by the proven self-location.
