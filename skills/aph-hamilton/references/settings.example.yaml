@@ -1,0 +1,25 @@
+# OPTIONAL configuration — an EXAMPLE. The live file (if you want one) is the per-project
+# .aphelocoma/settings.yaml. Hamilton MUST run correctly when it is absent or empty —
+# every value here has a built-in default described in PROTOCOL.md. Uncomment and edit.
+
+# --- Where the running agent writes the actual product. Default: the project root.
+# Use ./product to keep the product in a subdirectory instead.
+# product_dir: ./product
+
+# --- Parallel execution. Default: false (sequential single-agent role-play).
+# Set true ONLY if your coding-agent platform can spawn subagents (e.g. Claude Code,
+# Codex). When true, manager roles MAY dispatch independent implementer tasks in
+# parallel; the system still works if left false. See PROTOCOL.md §1.
+# parallel_dispatch: false
+
+# --- Role -> model mapping (opt-in). Heavy-reasoning roles can use a stronger model;
+# bulk implementation can use a cheaper/faster one. Interpreted by whatever platform
+# runs Hamilton; ignored if unsupported.
+# models:
+#   default: <your-default-model>
+#   cto: <strong-reasoning-model>
+#   software-architect: <strong-reasoning-model>
+#   product-manager: <strong-reasoning-model>
+#   frontend-developer: <fast-cheap-model>
+#   backend-developer: <fast-cheap-model>
+#   fullstack-developer: <fast-cheap-model>
