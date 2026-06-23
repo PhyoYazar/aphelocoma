@@ -34,7 +34,7 @@ Background: `<skill>/references/ABOUT.md`. Example run: `<skill>/examples/todo-s
    `<skill>/references/sizes.yaml` (`solo | startup | mid | big | custom:[role-id,…]`). The preset
    (or explicit custom list) gives the **active role list**.
 2. Create per-project state: copy `<skill>/templates/aphelocoma/` → `./.aphelocoma/` in the current
-   project (leaves `ledger/events.jsonl` empty so `seq` starts at 1).
+   project (leaves `.aphelocoma/ledger/events.jsonl` empty so `seq` starts at 1).
 3. Write `./.aphelocoma/hamilton.json`: `project` (slug from the brief / directory name), `size`, the
    active `roles`, `definition_version` (read verbatim from `<skill>/references/VERSION`), `created`
    (ISO-8601 now), `phase: "kickoff"`.

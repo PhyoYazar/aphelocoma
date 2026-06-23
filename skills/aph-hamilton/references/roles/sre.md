@@ -12,7 +12,7 @@ manages: []
 Keep the system available, observable, and performant.
 
 ## Responsibilities
-- Define monitoring, alerting, and reliability targets (as config/docs under product/).
+- Define monitoring, alerting, and reliability targets (as configuration/docs under product/).
 - Review the integrated build for operational readiness.
 - Flag reliability risks before release.
 
