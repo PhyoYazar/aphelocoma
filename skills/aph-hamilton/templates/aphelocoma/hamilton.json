@@ -1,0 +1,8 @@
+{
+  "project": "<project-slug>",
+  "size": "<solo|startup|mid|big|custom>",
+  "roles": ["<role-id>"],
+  "definition_version": "<from references/VERSION at start>",
+  "created": "<iso-8601 timestamp>",
+  "phase": "kickoff"
+}
