@@ -32,7 +32,14 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
   deployed to Claude + Codex, and a fresh agent ran the full solo loop with a schema-valid monotonic
   ledger + §7 coverage. Plan: `docs/superpowers/plans/2026-06-23-hamilton-phase-1.md`. Verdict:
   `docs/superpowers/notes/2026-06-23-hamilton-coldstart.md`.
-- **Pending:** Phase 2 (native parallel agents) below.
+- **Phase 2: DONE & parallel-cold-start-verified** (definition version bumped to `1.1.0`).
+  `sync-agents` generation + orchestrator-owned-state parallelism implemented; an executed parallel run
+  kept the shared ledger schema-valid + gap-free-monotonic under concurrent subagents. Plan:
+  `docs/superpowers/plans/2026-06-24-hamilton-phase-2.md`. Verdict:
+  `docs/superpowers/notes/2026-06-24-hamilton-parallel-coldstart.md`.
+- **Remaining (user-owned):** deploy (`/deploy claude` + `/deploy codex`) and `git push`; then the
+  three low-risk residuals below (resume drift-warning, spec §4 content, a real interactive
+  `/aph-hamilton`). Note: installed skills are still at `1.0.0` until you redeploy.
 
 > **Source of truth:** `ceo/company/` was the prototype origin; the canonical copy now lives here in
 > `skills/aph-hamilton/references/`. Make future edits here, not in `ceo/company/`.
@@ -85,17 +92,13 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
 
 ---
 
-## Paste-this prompt to continue (Phase 2)
+## Paste-this prompt to continue (remaining work)
 
-> Read `docs/superpowers/specs/2026-06-23-hamilton-design.md`, `skills/aph-hamilton/HANDOFF.md`, and
-> the Phase 2 plan `docs/superpowers/plans/2026-06-24-hamilton-phase-2.md` in full. **Phase 1 is done
-> and cold-start-verified** on branch `hamilton-phase-1` (verdict:
-> `docs/superpowers/notes/2026-06-23-hamilton-coldstart.md`); Hamilton is deployed to Claude + Codex at
-> definition version 1.0.0. Execute **Phase 2 (native parallel agents)** from the plan: `sync-agents`
-> generation from `references/roles/`, orchestrator-owned-state parallel dispatch (the orchestrator is
-> the single writer of `tasks.json` + `events.jsonl`; subagents return structured results + write only
-> `product/` and their own per-role ledger), version bump to 1.1.0, redeploy. Use `executing-plans`.
-> Do NOT claim it works until an executed parallel cold-start passes with a gap-free monotonic ledger
-> and no lost task updates, and the sequential path still works. Where cheap, fold in the three
-> Phase-1 deferred residuals listed above (resume drift-warning, spec §4 content, a real interactive
-> `/aph-hamilton` invocation).
+> Read `skills/aph-hamilton/HANDOFF.md` and the two verdict notes under `docs/superpowers/notes/`.
+> **Both Phase 1 and Phase 2 are implemented and cold-start-verified** on branch `hamilton-phase-1`
+> (definition version `1.1.0` in the repo; installed skills may still be `1.0.0` until redeployed).
+> What remains: (1) deploy with `/deploy claude` and `/deploy codex`, and `git push` the branch;
+> (2) the three low-risk residuals — exercise the `resume` version-drift warning (bump installed
+> `VERSION`, point a fresh agent at a `1.0.0`-pinned `.aphelocoma/` with `resume`, expect a warning),
+> assert spec §4 content in a run, and run one real interactive `/aph-hamilton` in a Claude session to
+> confirm the `${CLAUDE_SKILL_DIR}` path. Don't claim a fix works without an executed check.
