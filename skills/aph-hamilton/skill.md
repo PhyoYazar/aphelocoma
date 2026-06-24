@@ -19,8 +19,9 @@ the skill's own install folder. Nothing is copied into projects. Resolve the ins
   definition is the `references/` folder beside this file, e.g. `~/.codex/skills/aph-hamilton/references/`.
 
 From `<skill>`, these are fixed:
-- **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `roles/<id>.md`, `sizes.yaml`,
-  `roles.index.md`, `settings.example.yaml`, `VERSION` are siblings inside it.
+- **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`, `roles/<id>.md`,
+  `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md`, `VERSION` are siblings
+  inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
 - **The product:** the project proper — repo root, or `./product`. Never inside `.aphelocoma/`.
@@ -54,12 +55,24 @@ if they differ, **warn** (definition drift) and let the user choose to continue 
 Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, plus the
 last few `./.aphelocoma/ledger/events.jsonl` entries. Read-only — no state changes.
 
-### `sync-agents`  (Phase 2 — Claude Code only; not yet implemented)
-Generate `.claude/agents/<role>.md` for the **active** roles, **derived from**
-`<skill>/references/roles/`, so a manager role can dispatch implementers as native **parallel**
-subagents with orchestrator-owned state (the manager is the single writer of `tasks.json` +
-`events.jsonl`). Regenerable; never hand-edited. On non-Claude platforms, skip this and run the
-sequential file-based role-play that is the portable default.
+### `sync-agents`  (Claude Code only)
+Generate native role-agents so the orchestrator can dispatch implementers as **parallel** subagents
+(see `<skill>/references/PARALLEL.md`). Steps:
+1. Read the active roles from `./.aphelocoma/hamilton.json`.
+2. For each active role (one per instance — `<role-id>`, or `<role-id>#N` for repeats), fill
+   `<skill>/references/agent-template.md`: `{{ROLE_ID}}`, `{{AGENT_NAME}}` (`hamilton-<role-id>`,
+   `#`→`-`), `{{ROLE_TITLE}}` (the `title:` from the role's frontmatter), `{{ROLE_BODY}}` (the verbatim
+   text of `<skill>/references/roles/<role-id>.md`), and `{{MODEL_LINE}}` (`model: <model>` if
+   `.aphelocoma/settings.yaml` `models:` maps this role or a `default`, else omit the line).
+3. Write each generated file to `./.claude/agents/<AGENT_NAME>.md` in the current project.
+
+Regenerable — rerun after any role change; **never hand-edit** the generated files (they are derived).
+Each generated agent embeds the single-writer contract: it writes only `product/` + its own
+`.aphelocoma/ledger/agents/<role>.md` and returns a structured result; the orchestrator is the sole
+writer of `.aphelocoma/state/tasks.json` + `.aphelocoma/ledger/events.jsonl`.
+
+**Non-Claude platforms:** print "sync-agents is Claude-Code-only; running sequentially" and generate
+nothing — the run still works via sequential role-play (PROTOCOL §3 / `PARALLEL.md` Fallback).
 
 ## Notes
 - Optional per-project config: `./.aphelocoma/settings.yaml` (role→model map, `parallel_dispatch`
