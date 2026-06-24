@@ -44,6 +44,12 @@ Background: `<skill>/references/ABOUT.md`. Example run: `<skill>/examples/todo-s
    Build the product in the project. Keep `./.aphelocoma/state/tasks.json` current and append every
    action to `./.aphelocoma/ledger/` (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. Apply §7
    role coverage when the chosen size lacks a role a phase needs.
+   - **Parallel Implementation (optional, Claude Code):** if `.aphelocoma/settings.yaml` sets
+     `parallel_dispatch: true` and agents exist (`sync-agents`), dispatch disjoint `assigned` tasks as
+     parallel subagents and serialize their structured results per `<skill>/references/PARALLEL.md` —
+     you stay the single writer of `tasks.json` + `events.jsonl`. If a generated `hamilton-<role>`
+     agent isn't selectable as a subagent type yet, dispatch a generic subagent with that agent file's
+     content injected (parallelism must not depend on registration timing). Otherwise build sequentially.
 
 ### `resume`
 Read `./.aphelocoma/`. Compare `hamilton.json.definition_version` with `<skill>/references/VERSION`:

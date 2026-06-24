@@ -26,11 +26,13 @@ depends on **no platform-specific features** — only the ability to read and wr
 
 - **Baseline (always works): sequential single-agent role-play.** One agent becomes one
   role at a time. This is the guaranteed mode on any platform.
-- **Optional acceleration: parallel subagents.** If `.aphelocoma/settings.yaml` sets
-  `parallel_dispatch: true` AND your platform can spawn subagents (e.g. Claude Code,
-  Codex), a manager role MAY dispatch independent implementer tasks to subagents in
-  parallel. Each subagent still follows §3 and writes to the same files. (Hamilton can
-  generate native subagents via `/aph-hamilton sync-agents`; until then, run sequentially.)
+- **Optional acceleration: parallel subagents (Claude Code).** When enabled, a manager role
+  dispatches independent implementer tasks to subagents in parallel under **orchestrator-owned
+  state**: the manager is the *single writer* of `.aphelocoma/state/tasks.json` +
+  `.aphelocoma/ledger/events.jsonl`, while each subagent writes only `product/` + its own
+  `.aphelocoma/ledger/agents/<role>.md` and returns a structured result. The enabling conditions,
+  dispatch loop, and result schema are in `PARALLEL.md`. Generate the agents with
+  `/aph-hamilton sync-agents`.
 - The system MUST remain fully runnable sequentially. Never require parallelism.
 
 ## 2. Phases
@@ -55,7 +57,9 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    `owner`. Log `task_created` then `task_assigned`.
 4. **Implementation** — Each owner role picks up its `assigned` tasks, builds under
    `product/`, records artifacts, and moves the task to `in_review`. Log `work_started`,
-   `artifact_written`, then update status (see §3).
+   `artifact_written`, then update status (see §3). If parallel dispatch is enabled and ≥2
+   `assigned` tasks have disjoint file scopes, the manager dispatches them concurrently per
+   `PARALLEL.md`; otherwise it works them one at a time.
 5. **Review / QA** — qa-engineer (or covering role) checks each `in_review` task against
    its acceptance criteria. Pass → status `done`, log `review_passed`. Fail → status back
    to `assigned`/`in_progress` with notes, log `review_failed`. Repeat until done.

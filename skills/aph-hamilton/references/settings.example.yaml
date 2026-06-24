@@ -7,9 +7,9 @@
 # product_dir: ./product
 
 # --- Parallel execution. Default: false (sequential single-agent role-play).
-# Set true ONLY if your coding-agent platform can spawn subagents (e.g. Claude Code,
-# Codex). When true, manager roles MAY dispatch independent implementer tasks in
-# parallel; the system still works if left false. See PROTOCOL.md §1.
+# Set true to let the manager dispatch independent implementer tasks as parallel subagents
+# (Claude Code only; run `/aph-hamilton sync-agents` first to generate the role-agents). The
+# orchestrator stays the single writer of state — see references/PARALLEL.md. Works if left false.
 # parallel_dispatch: false
 
 # --- Role -> model mapping (opt-in). Heavy-reasoning roles can use a stronger model;
