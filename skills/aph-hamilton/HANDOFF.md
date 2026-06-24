@@ -71,25 +71,31 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
   vs. the self-location path Phase 1 already proved with the var unset; backed by adr/journal in prod.
   Final confirmation is one interactive `/aph-hamilton` in a real Claude session.
 
-## How to work
-- Treat the spec as approved. Use the `writing-plans` skill to turn Phase 1 into a concrete plan,
-  then implement. Don't deploy widely until the cold-start test passes.
-- **Verification (non-negotiable):** copy a throwaway project, deploy Hamilton, give a FRESH agent
-  only `/aph-hamilton start "a simple todo list app" solo`, and confirm it bootstraps `.aphelocoma/`,
-  reads the installed definition, runs the full loop with schema-valid + monotonically-`seq`'d ledger
-  events, applies §7 role coverage unprompted, and records the version pin. (This is how the prototype
-  was validated — authored artifacts don't count as proof; an executed cold-start does.)
+## How to work (Phase 2)
+- Phase 1 is **done + cold-start-verified** on branch `hamilton-phase-1`; Hamilton is deployed to
+  Claude + Codex at definition version `1.0.0`. The Phase 2 plan is written:
+  `docs/superpowers/plans/2026-06-24-hamilton-phase-2.md`. Execute it with the `executing-plans` skill
+  (or `subagent-driven-development`), task by task.
+- **Verification (non-negotiable):** the Phase-2 gate is an EXECUTED **parallel** cold-start — a fresh
+  agent runs a size with ≥2 disjoint implementer tasks, the manager dispatches them as parallel
+  subagents, and the shared `.aphelocoma/state/tasks.json` + `ledger/events.jsonl` come out
+  schema-valid with strictly monotonic, **gap-free** `seq` (proof no race corrupted the append-only
+  ledger) and no lost task updates. Authored artifacts don't count. Also confirm the sequential
+  fallback (with `parallel_dispatch` off) is unchanged.
 
 ---
 
-## Paste-this prompt to continue
+## Paste-this prompt to continue (Phase 2)
 
-> Read `docs/superpowers/specs/2026-06-23-hamilton-design.md` and `skills/aph-hamilton/HANDOFF.md` in
-> full. We are building **Hamilton** — an aphelocoma-bound, file-based crew of role-agents that builds
-> software, installed once and bootstrapped per-project into `.aphelocoma/`. The design is approved
-> and the verified prototype is already relocated into `skills/aph-hamilton/`. Proceed with **Phase 1**
-> from the spec: (1) rename company/OS → Hamilton across `references/`; (2) finalize `skill.md`
-> start/resume/status against `${CLAUDE_SKILL_DIR}` + thin `.aphelocoma/`; (3) version pin; (4) adapter
-> overrides if needed; (5) deploy to Claude + Codex and run the cold-start verification described in
-> the spec. Use `writing-plans` to plan Phase 1 before implementing, and do not claim it works until a
-> fresh-agent cold-start run passes. Then Phase 2 (native parallel agents).
+> Read `docs/superpowers/specs/2026-06-23-hamilton-design.md`, `skills/aph-hamilton/HANDOFF.md`, and
+> the Phase 2 plan `docs/superpowers/plans/2026-06-24-hamilton-phase-2.md` in full. **Phase 1 is done
+> and cold-start-verified** on branch `hamilton-phase-1` (verdict:
+> `docs/superpowers/notes/2026-06-23-hamilton-coldstart.md`); Hamilton is deployed to Claude + Codex at
+> definition version 1.0.0. Execute **Phase 2 (native parallel agents)** from the plan: `sync-agents`
+> generation from `references/roles/`, orchestrator-owned-state parallel dispatch (the orchestrator is
+> the single writer of `tasks.json` + `events.jsonl`; subagents return structured results + write only
+> `product/` and their own per-role ledger), version bump to 1.1.0, redeploy. Use `executing-plans`.
+> Do NOT claim it works until an executed parallel cold-start passes with a gap-free monotonic ledger
+> and no lost task updates, and the sequential path still works. Where cheap, fold in the three
+> Phase-1 deferred residuals listed above (resume drift-warning, spec §4 content, a real interactive
+> `/aph-hamilton` invocation).
