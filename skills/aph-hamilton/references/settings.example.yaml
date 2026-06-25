@@ -1,20 +1,12 @@
 # OPTIONAL configuration — an EXAMPLE. The live file (if you want one) is the per-project
-# .aphelocoma/settings.yaml. Hamilton MUST run correctly when it is absent or empty —
-# every value here has a built-in default described in PROTOCOL.md. Uncomment and edit.
+# .aphelocoma/settings.yaml. Hamilton runs fine without it. The only setting Hamilton reads is the
+# role→model map below (used by `/aph-hamilton sync-agents`). The product always builds at the project
+# root (beside .aphelocoma/), and the build style (subagents vs one session) is chosen by the advisor
+# at the Implementation checkpoint (PROTOCOL §1.5) — not set here.
 
-# --- Where the running agent writes the actual product. Default: the project root.
-# Use ./product to keep the product in a subdirectory instead.
-# product_dir: ./product
-
-# --- Parallel execution. Default: false (sequential single-agent role-play).
-# Set true to let the manager dispatch independent implementer tasks as parallel subagents
-# (Claude Code only; run `/aph-hamilton sync-agents` first to generate the role-agents). The
-# orchestrator stays the single writer of state — see references/PARALLEL.md. Works if left false.
-# parallel_dispatch: false
-
-# --- Role -> model mapping (opt-in). Heavy-reasoning roles can use a stronger model;
-# bulk implementation can use a cheaper/faster one. Interpreted by whatever platform
-# runs Hamilton; ignored if unsupported.
+# --- Role -> model mapping (opt-in). Heavy-reasoning roles can use a stronger model; bulk
+# implementation can use a cheaper/faster one. Interpreted by whatever platform runs Hamilton;
+# ignored if unsupported.
 # models:
 #   default: <your-default-model>
 #   cto: <strong-reasoning-model>

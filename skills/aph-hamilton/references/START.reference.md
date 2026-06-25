@@ -1,13 +1,13 @@
 # START — kickoff reference
 
-The canonical entrypoint is the **`/aph-hamilton`** skill:
+The canonical entrypoint is the bare **`/aph-hamilton`** skill (guided): it asks new-or-existing +
+what you want, then the **leadership core brainstorms it with you**. You are the **advisor** — you
+decide the direction, plan, build style, and review at four checkpoints (PROTOCOL §1.5); the crew
+builds it in the project (beside `.aphelocoma/`). Fast path if you already know the brief:
 
     /aph-hamilton start "<what to build>" <solo | startup | mid | big | custom:[role-id, ...]>
 
-`start` bootstraps `.aphelocoma/` in the current project, then runs the protocol
-(Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign → Implementation → Review/QA →
-Integration), adopting one role at a time, building the product in the project, keeping
-`.aphelocoma/state/tasks.json` current, and appending every action to `.aphelocoma/ledger/`.
+(The size on the fast path is a *proposal* — the crew confirms/adjusts it with you after Discovery.)
 
 To resume: `/aph-hamilton resume`.  To inspect: `/aph-hamilton status`.
 

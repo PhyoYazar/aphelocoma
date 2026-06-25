@@ -1,5 +1,8 @@
-# Crew-size presets. Chosen at kickoff (Phase 0). Only the listed roles activate;
-# every other role in roles/ stays dormant. A role may appear more than once (instances).
+# Crew-size presets. The leadership core (cto, software-architect, product-manager) is always active
+# FIRST for Discovery; these presets are the IMPLEMENTER/SPECIALIST team chosen AFTER Discovery
+# (PROTOCOL §1.5) — recommended by leadership, picked by the advisor. `solo` = the leadership core
+# wears all hats. Only the listed roles activate; every other role in roles/ stays dormant. A role
+# may appear more than once (instances).
 
 presets:
   solo:        # ~2 — minimal plan->build loop, one agent wears all hats

@@ -14,8 +14,8 @@ history is plain files. Nothing depends on a specific tool's features.
   `roles/`, `sizes.yaml`, `roles.index.md`, `PARALLEL.md`, `agent-template.md`. Shared by every project; never copied
   into them.
 - **Per-project state** — a `.aphelocoma/` folder in the project being built:
-  `hamilton.json`, `state/`, `ledger/`, `specs/`. Plus the **product** itself in the project
-  proper (repo root or `./product`).
+  `hamilton.json`, `state/`, `ledger/`, `specs/`. Plus the **product** itself in the project (at the
+  repo root, beside `.aphelocoma/`).
 
 ## How it works (30-second version)
 
@@ -25,15 +25,17 @@ ledger. Full rules: **`PROTOCOL.md`**.
 
 ## Start a project
 
-The canonical entrypoint is the `/aph-hamilton` skill:
+Just run the **`/aph-hamilton`** skill (no arguments). It asks what you want, then the leadership core
+brainstorms it **with you**. You're the **advisor**: you decide the direction, plan, build style, and
+review at four checkpoints (PROTOCOL §1.5); the crew builds it. Fast path if you know the brief:
 
     /aph-hamilton start "Build an ecommerce site for furniture" startup
 
-This bootstraps `.aphelocoma/` and runs the protocol. See `START.reference.md`.
+(The size is a *proposal* the crew confirms with you after Discovery.) See `START.reference.md`.
 
 ## Crew sizes
 
-Chosen at kickoff (see `sizes.yaml`):
+Chosen **after Discovery** (the leadership core recommends, you pick — see `sizes.yaml`):
 
 - **solo** (~2) — one generalist; fastest, smallest loop.
 - **startup** (~6) — CTO, architect, 2 full-stack devs, QA, DevOps. Proves the full loop.
@@ -73,13 +75,13 @@ projects don't need to finish in one session.
       state/                <- tasks.json (live board), roadmap.md, brief.md
       specs/                <- one spec per task (handoff contracts w/ acceptance criteria)
       ledger/               <- events.jsonl + agents/<role>.md (append-only history)
-    <project>/              <- the product itself (repo root or ./product)
+    <project>/              <- the product itself (at the repo root, beside .aphelocoma/)
 
 ## Optional settings
 
-`.aphelocoma/settings.yaml` is optional — Hamilton runs without it. It can set a product
-directory, a role→model mapping, and a `parallel_dispatch` toggle (for platforms that
-support subagents). See `settings.example.yaml`.
+`.aphelocoma/settings.yaml` is optional — Hamilton runs without it. It can set a role→model mapping
+(used when generating native agents). The product always builds at the project root, and the build
+style is chosen by the advisor at the Implementation checkpoint. See `settings.example.yaml`.
 
 ## Example run
 
