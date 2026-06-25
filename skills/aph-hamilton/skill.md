@@ -3,8 +3,9 @@ Spin up / resume / inspect a Hamilton crew that builds software for the current 
 ## What this is
 
 Hamilton is a portable, file-based **crew** of role-agents (CTO, software-architect, developers, QA,
-DevOps, …). Leadership roles brainstorm → plan → roadmap → assign; implementers build; every action
-is appended to a file ledger so you can review who did what. Full rules live in the definition's
+DevOps, …). **You are the advisor:** the leadership core brainstorms *with you*, you decide the
+direction/plan/build-style at four checkpoints, and the crew builds it autonomously. Every action is
+appended to a file ledger so you can review who did what. Full rules live in the definition's
 `PROTOCOL.md` (located below).
 
 ## Locating the Hamilton definition (read this first)
@@ -23,31 +24,50 @@ From `<skill>`, these are fixed:
   `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md` are siblings inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
-- **The product:** the project proper — repo root, or `./product`. Never inside `.aphelocoma/`.
+- **The product:** the project itself — at the repo root, beside `.aphelocoma/`, structured however the work needs (no forced `product/` folder). Never inside `.aphelocoma/`.
 
 Background: `<skill>/references/ABOUT.md`. Example run: `<skill>/examples/todo-solo/`.
 
 ## Modes (parse from `$ARGUMENTS`)
 
-### `start "<brief>" <size>`
-1. Read `<skill>/references/PROTOCOL.md` (the operating rules) and resolve `<size>` from
-   `<skill>/references/sizes.yaml` (`solo | startup | mid | big | custom:[role-id,…]`). The preset
-   (or explicit custom list) gives the **active role list**.
-2. Create per-project state: copy `<skill>/templates/aphelocoma/` → `./.aphelocoma/` in the current
-   project (leaves `.aphelocoma/ledger/events.jsonl` empty so `seq` starts at 1).
-3. Write `./.aphelocoma/hamilton.json`: `project` (slug from the brief / directory name), `size`, the
-   active `roles`, `created` (ISO-8601 now), `phase: "kickoff"`.
-4. Run the protocol (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign → Implementation →
-   Review/QA → Integration), adopting one role at a time by reading `<skill>/references/roles/<id>.md`.
-   Build the product in the project. Keep `./.aphelocoma/state/tasks.json` current and append every
-   action to `./.aphelocoma/ledger/` (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. Apply §7
-   role coverage when the chosen size lacks a role a phase needs.
-   - **Parallel Implementation (optional, Claude Code):** if `.aphelocoma/settings.yaml` sets
-     `parallel_dispatch: true` and agents exist (`sync-agents`), dispatch disjoint `assigned` tasks as
-     parallel subagents and serialize their structured results per `<skill>/references/PARALLEL.md` —
-     you stay the single writer of `tasks.json` + `events.jsonl`. If a generated `hamilton-<role>`
-     agent isn't selectable as a subagent type yet, dispatch a generic subagent with that agent file's
-     content injected (parallelism must not depend on registration timing). Otherwise build sequentially.
+### (no arguments) — guided start (the default)
+When `$ARGUMENTS` is empty, run a short guided start:
+1. **Detect context:** is there existing code in this directory? Does `./.aphelocoma/` already exist?
+   If `.aphelocoma/` exists, report the in-progress project (phase + open tasks) and offer **`resume`**
+   instead of starting over.
+2. **Ask:** "New project, or work on this existing one?" then "What do you want to build / add / fix?"
+   (plain words; vague is fine — the crew brainstorms it out with you).
+3. Bootstrap `./.aphelocoma/` and begin the **advisor flow** (`start` steps 3–4): the leadership core
+   activates and discussion begins. **Crew size is chosen after Discovery (Checkpoint 1) — not here.**
+
+### `start "<brief>" <size>`  (fast path — skips the wizard)
+For when the advisor already knows the brief; otherwise use the bare `/aph-hamilton` wizard above.
+1. Read `<skill>/references/PROTOCOL.md`. If `./.aphelocoma/` already exists, STOP and offer `resume`
+   (never overwrite). Otherwise copy `<skill>/templates/aphelocoma/` → `./.aphelocoma/` (leaves
+   `ledger/events.jsonl` empty so `seq` starts at 1).
+2. Write `./.aphelocoma/hamilton.json`: `project` (slug from the brief / directory name), `created`
+   (ISO-8601 now), `phase: "kickoff"`. (Roles + size are filled in after Discovery — step 4.)
+3. **Kickoff:** activate only the **leadership core** (`cto`, `software-architect`, `product-manager`;
+   `solo` → `cto` covers all per §7). Log `role_activated` each.
+4. Run the protocol as the **advisor flow** (PROTOCOL §1.5) — adopt one role at a time from
+   `<skill>/references/roles/<id>.md`, and **pause at the four checkpoints**, each presenting 2–3
+   options with trade-offs and waiting for the advisor (log a `decision`, `actor: advisor`):
+   - **Checkpoint 1 (after Discovery):** present directions + a recommended crew size; the advisor picks
+     both; then activate the chosen implementer/specialist roles and record the size in
+     `brief.md` + `tasks.json`. (If `<size>` was given on the command line, propose it as the
+     recommendation; the advisor still confirms.)
+   - **Checkpoint 2 (after Plan & Roadmap):** advisor approves / reorders / cuts / adds.
+   - **Checkpoint 3 (before Implementation):** if parallel is possible (Claude Code + ≥2 disjoint
+     `assigned` tasks) ask the advisor *subagents or one session?*; else build sequentially.
+   - **Checkpoint 4 (at Review):** advisor accepts, or says what to fix / add.
+   Build the product **in the project (at the repo root, beside `.aphelocoma/`)** — no `product/`. Keep
+   `./.aphelocoma/state/tasks.json` current and append every action to `./.aphelocoma/ledger/`
+   (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. Apply §7 coverage. Between checkpoints work
+   autonomously; the advisor may interject anytime.
+   - **Parallel build (Checkpoint 3 = "subagents"):** dispatch disjoint `assigned` tasks as parallel
+     subagents and serialize results per `<skill>/references/PARALLEL.md` — you stay the single writer
+     of `tasks.json` + `events.jsonl`. If a generated `hamilton-<role>` agent isn't selectable as a
+     subagent type yet, dispatch a generic subagent with that agent file's content injected.
 
 ### `resume`
 Read `./.aphelocoma/`. Report the current `phase` and open tasks (anything not `done`) from
@@ -69,7 +89,7 @@ Generate native role-agents so the orchestrator can dispatch implementers as **p
 3. Write each generated file to `./.claude/agents/<AGENT_NAME>.md` in the current project.
 
 Regenerable — rerun after any role change; **never hand-edit** the generated files (they are derived).
-Each generated agent embeds the single-writer contract: it writes only `product/` + its own
+Each generated agent embeds the single-writer contract: it writes only the project files + its own
 `.aphelocoma/ledger/agents/<role>.md` and returns a structured result; the orchestrator is the sole
 writer of `.aphelocoma/state/tasks.json` + `.aphelocoma/ledger/events.jsonl`.
 
