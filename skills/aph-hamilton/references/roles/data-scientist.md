@@ -20,7 +20,7 @@ Turn data into models, predictions, and insights the product can use.
 - Datasets from data-engineer, the product goal/spec, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Model prototype + analysis notes/metrics under product/
+- Model prototype + analysis notes/metrics in the project
 
 ## Hands off to
 - ml-engineer: a validated model to productionize

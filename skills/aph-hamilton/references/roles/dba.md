@@ -20,7 +20,7 @@ Own the data layer: schema design, performance, backup, and security.
 - Architecture and data requirements, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Schema/migration files and DB guidelines under product/
+- Schema/migration files and DB guidelines in the project
 
 ## Hands off to
 - backend-lead: schema and data-access contract

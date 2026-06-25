@@ -15,6 +15,7 @@ Design the system structure and turn it into buildable specs with acceptance cri
 - Define components, data model, interfaces, and technology choices.
 - Author .aphelocoma/specs/<task-id>.md for non-trivial tasks: goal, scope/non-scope, interfaces/files, acceptance criteria.
 - Set architectural standards the leads enforce.
+- In Discovery, **present architecture options with trade-offs to the advisor** rather than deciding alone, and help **recommend the crew size/shape** the chosen direction needs (PROTOCOL §1.5).
 
 ## Inputs (what this role reads before acting)
 - CTO tech strategy, .aphelocoma/state/roadmap.md, requirements (from product-manager/business-analyst if present)

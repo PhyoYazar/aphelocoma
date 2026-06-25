@@ -12,15 +12,15 @@ manages: []
 Make the product buildable, testable, and deployable — connect code to production.
 
 ## Responsibilities
-- Set up build, CI/CD, and environment configuration (as files under product/).
+- Set up build, CI/CD, and environment configuration (as files in the project).
 - Integrate the pieces the implementers produced and verify the build.
 - Own the Integration phase when present.
 
 ## Inputs (what this role reads before acting)
-- Completed tasks and artifacts in product/, .aphelocoma/state/tasks.json
+- Completed tasks and artifacts in the project, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- CI/CD and config files under product/; integration notes
+- CI/CD and config files in the project; integration notes
 
 ## Hands off to
 - sre: a deployable, integrated build

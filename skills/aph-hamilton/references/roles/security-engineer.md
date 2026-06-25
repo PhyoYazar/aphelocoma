@@ -20,7 +20,7 @@ Protect the system: authentication/authorization, encryption, and vulnerability 
 - Architecture, infra config, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Security requirements and review findings (notes under product/ or .aphelocoma/specs/)
+- Security requirements and review findings (notes in the project or .aphelocoma/specs/)
 
 ## Hands off to
 - engineering-manager / leads: required security fixes

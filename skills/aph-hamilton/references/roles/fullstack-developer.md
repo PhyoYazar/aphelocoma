@@ -18,10 +18,10 @@ Build end-to-end features (frontend + backend) — the generalist implementer fo
 
 ## Inputs (what this role reads before acting)
 - The assigned task in .aphelocoma/state/tasks.json and its .aphelocoma/specs/<task-id>.md
-- relevant prior artifacts in product/
+- relevant prior artifacts in the project
 
 ## Outputs (what this role produces)
-- Working code/files under product/ (recorded in the task's artifacts[])
+- Working code/files in the project (recorded in the task's artifacts[])
 
 ## Hands off to
 - qa-engineer: built artifacts for review (or covering leadership role in sizes without QA)

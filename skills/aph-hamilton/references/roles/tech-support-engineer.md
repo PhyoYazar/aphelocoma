@@ -17,10 +17,10 @@ Represent the user: triage issues and route real problems back to engineering.
 - Confirm fixes from the user's perspective.
 
 ## Inputs (what this role reads before acting)
-- The built product in product/, requirements, .aphelocoma/state/tasks.json
+- The built product in the project, requirements, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Triaged issue/bug reports (under product/ or as new tasks)
+- Triaged issue/bug reports (in the project or as new tasks)
 
 ## Hands off to
 - engineering-manager: prioritized bug reports

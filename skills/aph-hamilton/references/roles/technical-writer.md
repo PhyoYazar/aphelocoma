@@ -17,10 +17,10 @@ Document the product so others can use, deploy, and maintain it.
 - Flag gaps where behavior is undocumented or unclear.
 
 ## Inputs (what this role reads before acting)
-- Built artifacts in product/, specs, API contracts
+- Built artifacts in the project, specs, API contracts
 
 ## Outputs (what this role produces)
-- Documentation files under product/ (e.g. product/docs/)
+- Documentation files in the project (e.g. docs/ in the project)
 
 ## Hands off to
 - product-manager: docs for review

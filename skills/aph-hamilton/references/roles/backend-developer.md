@@ -20,7 +20,7 @@ Build the engine behind the product — APIs, business logic, and data access.
 - Assigned task + .aphelocoma/specs/<task-id>.md, API contracts, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Backend code/files under product/ (recorded in the task's artifacts[])
+- Backend code/files in the project (recorded in the task's artifacts[])
 
 ## Hands off to
 - backend-lead: built services for review

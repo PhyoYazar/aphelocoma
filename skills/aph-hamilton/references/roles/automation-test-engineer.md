@@ -17,10 +17,10 @@ Encode QA's checks as automated tests that run on every change.
 - Wire tests into the build with devops.
 
 ## Inputs (what this role reads before acting)
-- QA's identified cases, the task spec, artifacts in product/
+- QA's identified cases, the task spec, artifacts in the project
 
 ## Outputs (what this role produces)
-- Automated test files under product/ and a run result
+- Automated test files in the project and a run result
 
 ## Hands off to
 - qa-engineer: automated coverage + results

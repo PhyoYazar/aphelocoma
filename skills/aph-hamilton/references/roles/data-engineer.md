@@ -20,7 +20,7 @@ Build the data pipelines and warehouse that move and store the product's data.
 - Assigned task + spec, DB schema (from dba), .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Pipeline/warehouse code and configs under product/
+- Pipeline/warehouse code and configs in the project
 
 ## Hands off to
 - data-scientist: clean datasets to analyze

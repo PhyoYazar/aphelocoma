@@ -20,7 +20,7 @@ Put models into production as reliable services/APIs.
 - Validated model from data-scientist, API contracts, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Model service/API code and config under product/
+- Model service/API code and config in the project
 
 ## Hands off to
 - backend-lead: model service integration contract

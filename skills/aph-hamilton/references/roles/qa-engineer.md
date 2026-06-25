@@ -17,10 +17,10 @@ Verify that built work actually meets its acceptance criteria, and find bugs bef
 - Decide what deserves automated coverage.
 
 ## Inputs (what this role reads before acting)
-- The in-review task, its .aphelocoma/specs/<task-id>.md, and the artifacts in product/
+- The in-review task, its .aphelocoma/specs/<task-id>.md, and the artifacts in the project
 
 ## Outputs (what this role produces)
-- A review verdict + notes (review_passed / review_failed events; optional report under product/)
+- A review verdict + notes (review_passed / review_failed events; optional report in the project)
 
 ## Hands off to
 - engineering-manager: passed tasks marked done

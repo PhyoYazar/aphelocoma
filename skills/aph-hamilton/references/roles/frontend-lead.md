@@ -20,7 +20,7 @@ Own frontend architecture and standards; break frontend work into buildable task
 - Architecture/specs, UI/UX design specs (from uiux-designer), .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Frontend task specs; review notes; reviewed UI artifacts under product/
+- Frontend task specs; review notes; reviewed UI artifacts in the project
 
 ## Hands off to
 - frontend-developer: scoped frontend tasks

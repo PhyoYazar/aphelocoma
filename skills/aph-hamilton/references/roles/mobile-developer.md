@@ -20,7 +20,7 @@ Build the mobile app (iOS/Android or cross-platform) and integrate it with the b
 - Assigned task + .aphelocoma/specs/<task-id>.md, API contracts, UI/UX design specs, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Mobile code/files under product/ (recorded in the task's artifacts[])
+- Mobile code/files in the project (recorded in the task's artifacts[])
 
 ## Hands off to
 - qa-engineer: built mobile artifacts for review

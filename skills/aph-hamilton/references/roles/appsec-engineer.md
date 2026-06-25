@@ -17,10 +17,10 @@ Find and prevent software-level vulnerabilities (OWASP: injection, XSS, broken a
 - Flag insecure patterns to the relevant lead.
 
 ## Inputs (what this role reads before acting)
-- Built artifacts in product/, API contracts, security requirements
+- Built artifacts in the project, API contracts, security requirements
 
 ## Outputs (what this role produces)
-- Security review report with findings/fixes (under product/ or .aphelocoma/specs/)
+- Security review report with findings/fixes (in the project or .aphelocoma/specs/)
 
 ## Hands off to
 - backend-lead / frontend-lead: vulnerabilities to fix

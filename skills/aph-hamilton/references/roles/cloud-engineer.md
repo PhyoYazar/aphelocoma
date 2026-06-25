@@ -12,7 +12,7 @@ manages: []
 Provision and shape the cloud infrastructure the product runs on.
 
 ## Responsibilities
-- Define infrastructure (networks, compute, storage, security) as IaC/config under product/.
+- Define infrastructure (networks, compute, storage, security) as IaC/config in the project.
 - Right-size and secure the environment per the architecture.
 - Support devops/SRE with provisioned resources.
 
@@ -20,7 +20,7 @@ Provision and shape the cloud infrastructure the product runs on.
 - Architecture, scalability/security requirements, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Infrastructure-as-code / environment config under product/
+- Infrastructure-as-code / environment config in the project
 
 ## Hands off to
 - devops-engineer: provisioned environment to deploy into

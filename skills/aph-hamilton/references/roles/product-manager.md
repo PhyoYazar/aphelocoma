@@ -15,6 +15,7 @@ Decide what to build and why, and turn the vision into prioritized requirements.
 - Convert the brief/vision into user-facing requirements and priorities.
 - Define what "good" looks like for each feature (feeds acceptance criteria).
 - Arbitrate scope with leadership and engineering.
+- In Discovery, **interview the advisor** (ask the defining questions; never fabricate scope) and **present 2–3 product directions with trade-offs**; help recommend the crew size for the pick (PROTOCOL §1.5).
 
 ## Inputs (what this role reads before acting)
 - .aphelocoma/state/brief.md, CEO vision, recent ledger

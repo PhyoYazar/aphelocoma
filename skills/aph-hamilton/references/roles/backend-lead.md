@@ -20,7 +20,7 @@ Own API design and backend architecture; break backend work into buildable tasks
 - Architecture/specs, data model (from dba if present), .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Backend task specs; review notes; reviewed API/service artifacts under product/
+- Backend task specs; review notes; reviewed API/service artifacts in the project
 
 ## Hands off to
 - backend-developer: scoped backend tasks

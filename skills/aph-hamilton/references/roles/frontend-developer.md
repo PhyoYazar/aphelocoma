@@ -20,7 +20,7 @@ Build the UI — components, screens, and client-side logic users interact with.
 - Assigned task + .aphelocoma/specs/<task-id>.md, UI/UX design specs, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- UI code/files under product/ (recorded in the task's artifacts[])
+- UI code/files in the project (recorded in the task's artifacts[])
 
 ## Hands off to
 - frontend-lead: built UI for review

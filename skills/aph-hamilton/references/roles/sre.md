@@ -12,7 +12,7 @@ manages: []
 Keep the system available, observable, and performant.
 
 ## Responsibilities
-- Define monitoring, alerting, and reliability targets (as configuration/docs under product/).
+- Define monitoring, alerting, and reliability targets (as configuration/docs in the project).
 - Review the integrated build for operational readiness.
 - Flag reliability risks before release.
 
@@ -20,7 +20,7 @@ Keep the system available, observable, and performant.
 - Integrated build from devops-engineer, architecture, .aphelocoma/state/tasks.json
 
 ## Outputs (what this role produces)
-- Monitoring/reliability config and a readiness note under product/
+- Monitoring/reliability config and a readiness note in the project
 
 ## Hands off to
 - engineering-manager: reliability sign-off or blocking risks

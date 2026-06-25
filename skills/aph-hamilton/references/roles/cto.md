@@ -15,6 +15,7 @@ Own the technology direction and make the architecture-level and technical-risk 
 - Choose the high-level technology approach and major tradeoffs.
 - Name the key technical risks and how to mitigate them.
 - In small crews (solo/startup), also cover product and architecture decisions when those roles are absent.
+- In Discovery, **brainstorm with the advisor**: present 2–3 technical directions with trade-offs (don't decide alone), and after the advisor picks, **recommend a crew size/shape** for them to choose (PROTOCOL §1.5).
 
 ## Inputs (what this role reads before acting)
 - .aphelocoma/state/brief.md and CEO vision/priorities
