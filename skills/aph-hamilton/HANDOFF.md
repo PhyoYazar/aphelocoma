@@ -41,8 +41,16 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
 - **Post-build change (2026-06-25):** the version-pin was **dropped** (see Locked decisions) — no
   `definition_version`/`VERSION` anywhere; `resume` just reports phase + open tasks. The plans and
   verdict notes are dated records that still mention it; they are historical, not current.
-- **Remaining (user-owned):** deploy (`/deploy claude` + `/deploy codex`) and `git push`; then the two
-  low-risk residuals below (spec §4 content, a real interactive `/aph-hamilton`).
+- **Advisor collaboration: DONE & verified (2026-06-25).** Hamilton is now human-in-the-loop — you
+  advise at 4 checkpoints (each a `decision` event), leadership brainstorms first + the crew is sized
+  **after** Discovery, **no `product/`** (build at the project root, beside `.aphelocoma/`), interactive
+  `/aph-hamilton` entry, and existing-project **survey + build-in-place**. Spec/plan/verdict:
+  `docs/superpowers/specs/2026-06-25-hamilton-advisor-collaboration.md`,
+  `docs/superpowers/plans/2026-06-25-hamilton-advisor-collaboration.md`,
+  `docs/superpowers/notes/2026-06-25-hamilton-advisor-verification.md` (a–e PASS via scripted run).
+- **Remaining (user-owned):** deploy (`/deploy claude` + `/deploy codex`) and `git push`; then run the
+  **manual checklist** in the advisor verdict note (the interactive stop-and-ask pauses), plus the two
+  low-risk residuals (spec §4 content, a real interactive `/aph-hamilton`).
 
 > **Source of truth:** `ceo/company/` was the prototype origin; the canonical copy now lives here in
 > `skills/aph-hamilton/references/`. Make future edits here, not in `ceo/company/`.
