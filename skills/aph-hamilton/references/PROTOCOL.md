@@ -43,7 +43,8 @@ occupies the top seat — ledger `actor: advisor`. The crew **pauses at four che
 presenting 2–3 options with trade-offs (or targeted questions) and a recommendation, then waits:
 
 1. **After Discovery** — the advisor picks the product **direction** AND the **crew size** (leadership
-   recommends a size from what Discovery revealed; see §2).
+   recommends a size from what Discovery revealed; see §2). The directions are presented *with their
+   foundation implications* (from the §2 Foundations pass), and the TDD default is confirmed here.
 2. **After Plan & Roadmap** — the advisor approves / reorders / cuts / adds.
 3. **Before Implementation** — the advisor picks the build style (subagents vs one session; §1).
 4. **At Review** — the advisor accepts, or says what to fix / add.
@@ -65,14 +66,26 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    crew size yet. Write `.aphelocoma/state/brief.md` (brief, advisor, start time) and initialize
    `.aphelocoma/state/tasks.json` (`phase: discovery`, seed tasks empty). Log `role_activated` per
    leadership role.
+   Set the **TDD default**: write `TDD: on` in `.aphelocoma/state/brief.md` (the advisor may flip it off during Discovery for a throwaway/PoC — §1.5).
 1. **Discovery / Brainstorm** — The leadership core works WITH the advisor: for a vague brief,
    **interview** the advisor (ask the defining questions; never fabricate scope); for an existing
    project, **survey the codebase first** (structure, key files, conventions) and log it. Capture
-   goals, constraints, risks (`brainstorm_note`). End at **Checkpoint 1**: present 2–3 product
+   goals, constraints, risks (`brainstorm_note`).
+   **Foundations pass (always):** before Checkpoint 1, walk `FOUNDATIONS.md`'s six topics (deploy,
+   fault-tolerance, security, UX, observability, accessibility) WITH the advisor — for a new project
+   ask where each lands for v1; for an existing project assess each topic's current state after the
+   survey. Record decisions in `brief.md` `## Foundations` (log `brainstorm_note`s). These are
+   **advisory**: they shape the direction options and the crew-size recommendation (a foundation that
+   matters may add a specialist owner, e.g. security → `appsec`, UX/accessibility → `uiux-designer`).
+   Also confirm the **TDD** default (on unless the advisor opts out for a PoC); record it in `brief.md`
+   `## TDD` and log a `decision`.
+   End at **Checkpoint 1**: present 2–3 product
    **directions** with trade-offs AND a **recommended crew size/shape**; the advisor picks both (log a
    `decision`). THEN activate the chosen implementer/specialist roles (`role_activated`) and record the
    size in `brief.md` + `tasks.json`.
-2. **Plan & Roadmap** — Leadership produces `.aphelocoma/state/roadmap.md`: milestones and sequence.
+2. **Plan & Roadmap** — Leadership produces `.aphelocoma/state/roadmap.md`: milestones and sequence. The roadmap MUST show
+   each of the six foundations (§1 Foundations pass) as **addressed** (how/when) or **consciously
+   deferred** (why) — this is how they stay visible instead of forgotten.
    Log `plan_created` / `roadmap_updated`. End at **Checkpoint 2**: the advisor approves / reorders /
    cuts / adds (log a `decision`).
 3. **Breakdown & Assign** — Architect/leads turn the roadmap into tasks. For each task:
@@ -118,6 +131,9 @@ A task is only assignable once its spec exists. Every spec MUST contain:
 - **Interfaces / files touched** — the surfaces or files in the project involved.
 - **Acceptance criteria** — a concrete checklist the reviewer (QA) will verify. Each item
   must be objectively checkable.
+- **Tests-first (when TDD is on)** — if `brief.md` `## TDD` is `on`, the acceptance criteria MUST
+  include that tests for the task's behavior were written first and pass; QA verifies this at Review
+  (§2 Phase 5). When TDD is `off` (e.g. a PoC), this requirement is skipped.
 
 Vague handoffs are not allowed — "build the cart" without acceptance criteria is rejected
 back to the author.
