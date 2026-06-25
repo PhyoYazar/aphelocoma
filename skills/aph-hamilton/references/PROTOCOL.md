@@ -12,8 +12,9 @@ depends on **no platform-specific features** — only the ability to read and wr
   `references/`).
 - **Per-project state** lives in a `.aphelocoma/` folder in the project you are building.
   Paths below that begin `.aphelocoma/…` are there.
-- **The product** (the software being built) lives in the **project proper** — the repo
-  root, or a `product/` subdirectory. Below, `product/` names that location.
+- **The product** (the software being built) lives in the **project itself — at the repo root,
+  beside `.aphelocoma/`**, structured however the work needs. `.aphelocoma/` is the ONLY directory
+  Hamilton owns; there is no forced `product/` subfolder.
 - You, the running agent, **adopt one role at a time** (see `roles/`), do that role's
   work, record it, and hand off — exactly like an employee.
 - Two records are kept and must never be conflated:
@@ -29,11 +30,28 @@ depends on **no platform-specific features** — only the ability to read and wr
 - **Optional acceleration: parallel subagents (Claude Code).** When enabled, a manager role
   dispatches independent implementer tasks to subagents in parallel under **orchestrator-owned
   state**: the manager is the *single writer* of `.aphelocoma/state/tasks.json` +
-  `.aphelocoma/ledger/events.jsonl`, while each subagent writes only `product/` + its own
+  `.aphelocoma/ledger/events.jsonl`, while each subagent writes only the project files + its own
   `.aphelocoma/ledger/agents/<role>.md` and returns a structured result. The enabling conditions,
   dispatch loop, and result schema are in `PARALLEL.md`. Generate the agents with
   `/aph-hamilton sync-agents`.
 - The system MUST remain fully runnable sequentially. Never require parallelism.
+
+## 1.5 Advisor model (human-in-the-loop)
+
+A **human advisor** (the user) steers every decision; the crew does all the building. The advisor
+occupies the top seat — ledger `actor: advisor`. The crew **pauses at four checkpoints**, each time
+presenting 2–3 options with trade-offs (or targeted questions) and a recommendation, then waits:
+
+1. **After Discovery** — the advisor picks the product **direction** AND the **crew size** (leadership
+   recommends a size from what Discovery revealed; see §2).
+2. **After Plan & Roadmap** — the advisor approves / reorders / cuts / adds.
+3. **Before Implementation** — the advisor picks the build style (subagents vs one session; §1).
+4. **At Review** — the advisor accepts, or says what to fix / add.
+
+Record each as a `decision` event: `actor: advisor`, `note` = the options offered + the choice (or
+"delegated" if the advisor says "you decide" — then proceed with the recommendation). Between
+checkpoints the crew works autonomously; the advisor may interject at any time. **Never fabricate
+scope** — an unknown becomes a question to the advisor, not an assumption.
 
 ## 2. Phases
 
@@ -42,27 +60,35 @@ transition, set `.aphelocoma/state/tasks.json`'s `phase` and log a `phase_advanc
 Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`, `breakdown`,
 `implementation`, `review`, `integration`, `done`.
 
-0. **Kickoff** — Read the user's brief. Choose a **crew size** (`sizes.yaml`) or a
-   custom role list. Write `.aphelocoma/state/brief.md` (brief, size, activated roles, start time),
-   initialize `.aphelocoma/state/tasks.json` (project, size, `phase: discovery`, seed tasks empty).
-   Activate only the selected roles. Log `role_activated` per activated role.
-1. **Discovery / Brainstorm** — Leadership/product roles (ceo, cto, product-manager,
-   business-analyst, software-architect as available) capture goals, constraints, risks,
-   and requirements. Log `brainstorm_note` entries.
+0. **Kickoff** — Read the advisor's brief. Activate only the **leadership core** — `cto`,
+   `software-architect`, `product-manager` (in `solo`, the `cto` covers all three per §7) — NOT a full
+   crew size yet. Write `.aphelocoma/state/brief.md` (brief, advisor, start time) and initialize
+   `.aphelocoma/state/tasks.json` (`phase: discovery`, seed tasks empty). Log `role_activated` per
+   leadership role.
+1. **Discovery / Brainstorm** — The leadership core works WITH the advisor: for a vague brief,
+   **interview** the advisor (ask the defining questions; never fabricate scope); for an existing
+   project, **survey the codebase first** (structure, key files, conventions) and log it. Capture
+   goals, constraints, risks (`brainstorm_note`). End at **Checkpoint 1**: present 2–3 product
+   **directions** with trade-offs AND a **recommended crew size/shape**; the advisor picks both (log a
+   `decision`). THEN activate the chosen implementer/specialist roles (`role_activated`) and record the
+   size in `brief.md` + `tasks.json`.
 2. **Plan & Roadmap** — Leadership produces `.aphelocoma/state/roadmap.md`: milestones and sequence.
-   Log `plan_created` / `roadmap_updated`.
+   Log `plan_created` / `roadmap_updated`. End at **Checkpoint 2**: the advisor approves / reorders /
+   cuts / adds (log a `decision`).
 3. **Breakdown & Assign** — Architect/leads turn the roadmap into tasks. For each task:
    create an entry in `.aphelocoma/state/tasks.json` AND write `.aphelocoma/specs/<task-id>.md` with the handoff
    contract (§4). The engineering-manager (or top active manager) sets each task's
    `owner`. Log `task_created` then `task_assigned`.
-4. **Implementation** — Each owner role picks up its `assigned` tasks, builds under
-   `product/`, records artifacts, and moves the task to `in_review`. Log `work_started`,
-   `artifact_written`, then update status (see §3). If parallel dispatch is enabled and ≥2
-   `assigned` tasks have disjoint file scopes, the manager dispatches them concurrently per
-   `PARALLEL.md`; otherwise it works them one at a time.
-5. **Review / QA** — qa-engineer (or covering role) checks each `in_review` task against
-   its acceptance criteria. Pass → status `done`, log `review_passed`. Fail → status back
-   to `assigned`/`in_progress` with notes, log `review_failed`. Repeat until done.
+4. **Implementation** — Begin at **Checkpoint 3**: if parallel is possible (Claude Code + ≥2 `assigned`
+   tasks with disjoint file scopes), ask the advisor *subagents or one session?* and log a `decision`;
+   otherwise build sequentially. Each owner role picks up its `assigned` tasks, builds **in the project
+   (at the repo root, beside `.aphelocoma/`)**, records artifacts, and moves the task to `in_review`.
+   Log `work_started`, `artifact_written`, then update status (see §3). Parallel dispatch follows
+   `PARALLEL.md`.
+5. **Review / QA** — qa-engineer (or covering role) checks each `in_review` task against its acceptance
+   criteria. Pass → status `done`, log `review_passed`. Fail → status back to `assigned`/`in_progress`
+   with notes, log `review_failed`. End at **Checkpoint 4**: the advisor accepts, or says what to fix /
+   add (log a `decision`); fixes loop back as re-assigned tasks.
 6. **Integration** — devops/sre/cloud (if active) integrate, build, and judge readiness.
    When all roadmap tasks are `done` and integration passes, set `phase: done` and log `project_completed`.
 
@@ -75,8 +101,8 @@ b. **Read state** — read `.aphelocoma/state/tasks.json`, the relevant `.aphelo
    tail of `.aphelocoma/ledger/events.jsonl` for recent context.
 c. **Check idempotency** (§7) — if the task is already `done`, skip it.
 d. **Do the work** — produce the role's outputs.
-e. **Write outputs** — code/docs under `product/`; specs under `.aphelocoma/specs/`. Record file
-   paths in the task's `artifacts[]`.
+e. **Write outputs** — code/docs in the project (at the repo root, beside `.aphelocoma/`); specs under
+   `.aphelocoma/specs/`. Record file paths in the task's `artifacts[]`.
 f. **Update live state** — edit `.aphelocoma/state/tasks.json` (status, owner, artifacts, `updated`).
 g. **Append history** — append one JSON line per event to `.aphelocoma/ledger/events.jsonl` AND a
    human-readable entry to `.aphelocoma/ledger/agents/<role-id>.md`.
@@ -89,7 +115,7 @@ A task is only assignable once its spec exists. Every spec MUST contain:
 
 - **Goal** — what this task achieves, in one or two sentences.
 - **Scope / Non-scope** — what is and isn't included.
-- **Interfaces / files touched** — the surfaces or files under `product/` involved.
+- **Interfaces / files touched** — the surfaces or files in the project involved.
 - **Acceptance criteria** — a concrete checklist the reviewer (QA) will verify. Each item
   must be objectively checkable.
 
@@ -107,7 +133,9 @@ back to the author.
 - Event types: `role_activated`, `brainstorm_note`, `plan_created`, `roadmap_updated`,
   `task_created`, `task_assigned`, `work_started`, `artifact_written`, `task_completed`,
   `review_passed`, `review_failed`, `blocked`, `assumption_logged`, `handoff`,
-  `phase_advanced`, `project_completed`.
+  `phase_advanced`, `project_completed`, `decision`.
+- The **`advisor`** actor is the human (the user) in the top seat; it appears on `decision` events
+  (the options offered + the pick) and on any direction the human gives. Crew actors are role-ids.
 - A role file's **Ledger rule** is *indicative, not an exclusive whitelist* — a role may emit
   any documented event its work legitimately requires (especially when covering another role
   per §7; e.g. a CTO covering QA logs `review_passed`).
@@ -134,8 +162,8 @@ On start, read `.aphelocoma/state/brief.md`:
 - **Disclosure** — never fabricate completion. If something is uncertain or assumed, log
   an `assumption_logged` event and proceed transparently. A task is `done` ONLY when all
   its acceptance criteria are met.
-- **Stay in lane** — role work builds the *product* under `product/`. Do not modify
-  Hamilton's own definition files (`references/`) while running a project unless explicitly asked.
+- **Stay in lane** — role work builds the *product* in the project (beside `.aphelocoma/`). Do not
+  modify Hamilton's own definition files (`references/`) while running a project unless explicitly asked.
 
 ## 8. Quick reference — status lifecycle
 
