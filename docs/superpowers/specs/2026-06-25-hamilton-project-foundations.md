@@ -50,9 +50,10 @@ Scope notes captured with the user:
 
 - **On by default** on every project. The advisor can **turn it off per-project** at kickoff (e.g. a
   PoC) just by saying so.
-- **When ON, it is enforced** through Hamilton's *existing* closed loop: implementer **Done criteria**
-  + each task's **§4 acceptance criteria** require *tests written first*, and **QA verifies them at
-  Review** (Phase 5 / Checkpoint 4) before a task is `done`. This is the one place "enforce" is real.
+- **When ON, it is enforced** through Hamilton's *existing* closed loop: each task's **§4 acceptance
+  criteria** require *tests written first*, and **QA verifies them at Review** (Phase 5 / Checkpoint 4)
+  before a task is `done`. This is the one place "enforce" is real — and it comes free: QA already
+  verifies acceptance criteria at Phase 5, so no `qa-engineer.md` change is needed.
 - **When OFF**, that loop is skipped; the choice is recorded in `brief.md` so it's a deliberate
   decision, not silent drift.
 
@@ -169,7 +170,7 @@ The flow is interactive, so verify in parts (matching the advisor-collaboration 
    failure. ✓
 4. **Advisory, not gates** for the six — they shape direction + roadmap; the anti-theater mechanism is
    roadmap visibility, not QA gating. ✓
-5. **TDD on by default, per-project opt-out** at kickoff (PoC) — enforced via Done criteria + §4
-   acceptance criteria + QA when on. ✓
+5. **TDD on by default, per-project opt-out** at kickoff (PoC) — enforced via §4 acceptance criteria +
+   QA at Review when on (QA already checks acceptance criteria, so no QA-role change needed). ✓
 6. **Flow carries the guarantee** (Discovery Foundations pass + `references/FOUNDATIONS.md` +
    `brief.md`); roles get one-line pointers. ✓
