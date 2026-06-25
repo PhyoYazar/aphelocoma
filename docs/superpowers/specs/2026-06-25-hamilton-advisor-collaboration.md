@@ -22,8 +22,8 @@ the building.** Concretely:
 ## Decisions (locked with the user, 2026-06-25)
 
 1. **One flow, no modes.** You advise (decisions); the crew builds (implementation). Always.
-2. **Decision cadence = phase checkpoints** (5 of them — §"Decision points"). Between checkpoints the
-   crew works on its own; the user can interject at any time (it's one chat).
+2. **Decision cadence = phase checkpoints** (4 of them — §"Flow & decision points"). Between
+   checkpoints the crew works on its own; the user can interject at any time (it's one chat).
 3. **Vague brief ⇒ interview, not guess.** At Discovery the crew asks the user the defining questions
    and proposes 2–3 directions with trade-offs before anything is built.
 4. **"You decide" is always allowed.** At any checkpoint the user may defer to the crew's
@@ -31,35 +31,47 @@ the building.** Concretely:
 5. **No `product/` constraint.** `.aphelocoma/` is the **only** directory Hamilton owns. The product is
    built at the **project root, beside `.aphelocoma/`**, structured however fits (`src/`, `index.html`,
    a framework app, …).
-6. **Build-execution is the user's choice.** Right before Implementation, when parallel is possible
-   (Claude Code + ≥2 disjoint tasks), the crew asks: *subagents or one session?* This replaces the
-   hidden `parallel_dispatch` toggle.
+6. **Build-execution is the user's choice, asked each build.** Right before Implementation, when
+   parallel is possible (Claude Code + ≥2 disjoint tasks), the crew asks: *subagents or one session?*
+   Asked at each Implementation entry (no remembered default). Replaces the hidden `parallel_dispatch`
+   toggle.
 7. **Interactive entry.** Bare `/aph-hamilton` starts a guided session; the typed fast path
    (`/aph-hamilton start "…" <size>`) still works.
 8. **Existing projects: survey-first, build in place.** Discovery reads the existing codebase before
    proposing; the crew edits/extends in place following existing patterns. Detect an existing
    `.aphelocoma/` and offer `resume` instead of overwriting.
+9. **Leadership-first; crew size chosen after Discovery.** A `cto` / `software-architect` /
+   `product-manager` core activates immediately to brainstorm with the advisor. The crew **size/shape**
+   (implementers + specialists) is decided *after* Discovery — recommended by leadership from what the
+   discussion revealed, picked by the user — **not** guessed upfront. Size is an output of the
+   conversation, not an input.
 
 ## The model in one line
 
 > **You advise, the crew builds.** The crew proposes options + asks the right questions at the decision
 > points; you pick (or say "you decide"); the crew implements autonomously; you review.
 
-## Decision points (the five checkpoints)
+## Flow & decision points
+
+Hamilton starts with a **leadership core** — `cto`, `software-architect`, `product-manager` — that
+activates immediately and **discusses the brief with you** before any team is sized or any code is
+written. The full crew (implementers + specialists) is hired only *after* you've shaped the direction
+together, because the right size depends on what the work turns out to need.
 
 At each checkpoint the crew **pauses and presents a short menu** — 2–3 options with trade-offs and a
-recommendation (or targeted questions) — and waits for the user's pick / answer / "you decide".
+recommendation (or targeted questions) — and waits for your pick / answer / "you decide".
 
-| # | Checkpoint | Crew presents | User does |
+| # | Checkpoint | Crew presents | You… |
 |---|---|---|---|
-| 1 | **After Kickoff** | the scope it understood + the crew it proposes to activate | confirm / adjust scope + size |
-| 2 | **After Discovery** | for a vague brief: defining questions, then 2–3 product directions w/ trade-offs | answer + pick the direction (what to build) |
-| 3 | **After Plan & Roadmap** | milestones, the feature/task list, and the order | approve / reorder / cut / add |
-| 4 | **Before Implementation** | *how to build* — parallel subagents vs one session (only if parallel is possible) | pick the execution strategy |
-| 5 | **At Review** | what got built vs each task's acceptance criteria | accept, or say what to fix / add |
+| — | **Brief** (start) | — (leadership core activates + begins discussing) | state what you want (vague is fine) |
+| 1 | **After Discovery** | defining questions → 2–3 directions w/ trade-offs, **plus a recommended crew size/shape** for the chosen direction | pick the direction **and** the crew size |
+| 2 | **After Plan & Roadmap** | milestones, the feature/task list, and the order | approve / reorder / cut / add |
+| 3 | **Before Implementation** | *how to build* — parallel subagents vs one session (only if parallel is possible) | pick the execution strategy (asked each build) |
+| 4 | **At Review** | what got built vs each task's acceptance criteria | accept, or say what to fix / add |
 
-Between checkpoints (notably during Implementation) the crew works autonomously. The user can still
-type at any time ("also add dark mode") and the crew folds it in.
+So **crew size is chosen after Discovery, not guessed upfront** — it's an output of the discussion.
+Between checkpoints (notably during Implementation) the crew works autonomously; you can still type at
+any time ("also add dark mode") and it folds that in.
 
 ## Vague-brief brainstorm (Discovery, expanded)
 
@@ -90,11 +102,11 @@ The retired `product/` term is removed from PROTOCOL.md and the role files: "bui
 
 ## Interactive entry
 
-**Bare `/aph-hamilton`** runs a short guided Q&A:
+**Bare `/aph-hamilton`** runs a short guided start:
 1. New project, or work on this existing one? (auto-detect: existing code present? existing `.aphelocoma/`?)
 2. What do you want to build / add / fix? (plain words; may be vague)
-3. Crew size — it recommends one from the answer; user confirms or changes.
-4. (Then the normal flow begins at checkpoint 1.)
+3. The leadership core activates and the discussion (Discovery) begins. **Crew size is chosen after
+   Discovery** (checkpoint 1), once you've shaped the direction together — not asked here.
 
 If an `.aphelocoma/` already exists, it reports the in-progress project and offers `resume`. The typed
 fast path stays for power users.
@@ -140,10 +152,9 @@ cold-started by a fresh agent with no human. The plan will verify in parts: (a) 
 human picks are scripted/stubbed; (b) the checkpoint prompts + interactive entry via a guided manual
 run. State-integrity + parallel single-writer remain mechanically asserted as before.
 
-## Open questions
+## Resolved (2026-06-25)
 
-- **`decision` vs reuse:** add the `decision` event (chosen) vs. recording picks as `brainstorm_note`/
-  `plan_created` by `actor: advisor`. Current choice: a dedicated `decision` event for a clean audit.
-- **Build-choice memory:** ask every Implementation phase, or remember the user's pick for the project
-  (e.g. in `hamilton.json`)? Current lean: ask each Implementation entry; allow "use this for the rest."
-- **Auto-detect size:** how aggressively the wizard recommends a crew size from a vague brief.
+- **Recording picks:** add a dedicated **`decision`** event (the options offered + the user's pick),
+  `actor: advisor`. ✓
+- **Build-choice:** asked at **each** Implementation entry — no remembered default. ✓
+- **Crew size:** chosen **after Discovery**, recommended by the leadership core, picked by the user. ✓
