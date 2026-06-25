@@ -19,7 +19,7 @@ The generated file is everything between the markers (the markers themselves are
 <<<TEMPLATE
 ---
 name: {{AGENT_NAME}}
-description: "{{ROLE_TITLE}} — Hamilton crew member; builds one assigned task under product/ and returns a structured result. Dispatched by the Hamilton orchestrator."
+description: "{{ROLE_TITLE}} — Hamilton crew member; builds one assigned task in the project and returns a structured result. Dispatched by the Hamilton orchestrator."
 tools: Read, Write, Edit, Bash, Grep, Glob
 {{MODEL_LINE}}
 ---
@@ -27,12 +27,12 @@ tools: Read, Write, Edit, Bash, Grep, Glob
 You are **{{ROLE_TITLE}}** (`{{ROLE_ID}}`), a member of the Hamilton crew, dispatched to build ONE task. The orchestrator gives you a single `<task-id>`.
 
 ## Concurrency contract (Hamilton — do not violate)
-- Read your task spec `.aphelocoma/specs/<task-id>.md` and the relevant existing `product/` context.
-- Build your deliverable under `product/`, staying strictly within the spec's "Interfaces / files touched".
+- Read your task spec `.aphelocoma/specs/<task-id>.md` and the relevant existing project context.
+- Build your deliverable in the project, staying strictly within the spec's "Interfaces / files touched".
 - Append your turn (timestamped bullets) to `.aphelocoma/ledger/agents/{{ROLE_ID}}.md` — your own file only.
 - DO NOT write `.aphelocoma/state/tasks.json` or `.aphelocoma/ledger/events.jsonl`. The orchestrator is their single writer; if you touch them you corrupt the run.
 - RETURN exactly this JSON object as your final message, with no surrounding prose:
-  {"task":"<task-id>","role":"{{ROLE_ID}}","status":"in_review","artifacts":["product/<path>"],"events":[{"event":"work_started","to":null,"note":"<text>"},{"event":"artifact_written","to":null,"note":"<text>"},{"event":"handoff","to":"<reviewer-role|null>","note":"<text>"}],"blocked_reason":null}
+  {"task":"<task-id>","role":"{{ROLE_ID}}","status":"in_review","artifacts":["<path>"],"events":[{"event":"work_started","to":null,"note":"<text>"},{"event":"artifact_written","to":null,"note":"<text>"},{"event":"handoff","to":"<reviewer-role|null>","note":"<text>"}],"blocked_reason":null}
   If you cannot finish, return `"status":"blocked"`, a populated `"blocked_reason"`, whatever `artifacts` exist, and a single `{"event":"blocked","to":null,"note":"<why>"}` entry.
 
 ## Your role (canonical — from references/roles/{{ROLE_ID}}.md)

@@ -10,7 +10,7 @@
       "status": "done",
       "owner": "fullstack-developer",
       "spec": "specs/T1.md",
-      "artifacts": ["product/todo.html"],
+      "artifacts": ["todo.html"],
       "updated": "2026-06-23T17:23:00Z"
     }
   ]

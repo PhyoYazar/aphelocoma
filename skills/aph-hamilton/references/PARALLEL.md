@@ -5,7 +5,7 @@ remain fully runnable sequentially (PROTOCOL §1, §3). Parallelism is enabled o
 hold; otherwise run sequentially:
 
 1. the platform can spawn subagents (e.g. Claude Code), AND
-2. `.aphelocoma/settings.yaml` sets `parallel_dispatch: true`, AND
+2. the **advisor chose "subagents"** at the build-style checkpoint (PROTOCOL §1.5 checkpoint 3), AND
 3. native role-agents have been generated (`/aph-hamilton sync-agents`), AND
 4. there are ≥2 `assigned` tasks whose specs' **Interfaces / files touched** (PROTOCOL §4) are
    **disjoint** and whose inputs are already `done`.
@@ -23,7 +23,7 @@ manager role running the Implementation phase):
 
 **Dispatched subagents NEVER write those two files.** They write only:
 
-- their deliverables under `product/` (within their spec's `files touched`), and
+- their deliverables in the project (within their spec's `files touched`), and
 - their own human-readable log at `.aphelocoma/ledger/agents/<role-id>.md` — and for a role with
   multiple instances, `<role-id>#<N>.md` (e.g. `fullstack-developer#2.md`), so two instances never
   write the same file.
@@ -44,8 +44,8 @@ its task only.
 
 ### 3. Subagent contract (what each dispatched role does and returns)
 Each subagent:
-- reads its task spec `.aphelocoma/specs/<task-id>.md` and the relevant `product/` context;
-- produces its deliverable under `product/`, staying within the spec's `files touched`;
+- reads its task spec `.aphelocoma/specs/<task-id>.md` and the relevant project context;
+- produces its deliverable in the project, staying within the spec's `files touched`;
 - appends its turn to `.aphelocoma/ledger/agents/<role-id[#N]>.md` (its own file);
 - **does NOT touch `.aphelocoma/state/tasks.json` or `.aphelocoma/ledger/events.jsonl`**;
 - **returns exactly this JSON as its result** (no prose around it):
@@ -55,7 +55,7 @@ Each subagent:
   "task": "<task-id>",
   "role": "<role-id[#N]>",
   "status": "in_review",
-  "artifacts": ["product/<path>", "..."],
+  "artifacts": ["<path>", "..."],
   "events": [
     {"event": "work_started",     "to": null,              "note": "<text>"},
     {"event": "artifact_written", "to": null,              "note": "<text>"},

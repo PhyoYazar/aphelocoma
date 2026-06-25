@@ -23,7 +23,7 @@ protocol loop (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign �
   - `specs/T1.md` — the handoff contract (goal, scope, files, acceptance criteria).
   - `ledger/events.jsonl` — append-only history (24 events, `seq` 1..24, schema per PROTOCOL §5).
   - `ledger/agents/{cto,fullstack-developer}.md` — the same history per role, human-readable.
-- `product/todo.html` — the actual product, built **in the project** (not inside `.aphelocoma/`).
+- `todo.html` — the actual product, built **in the project** (not inside `.aphelocoma/`).
 
 ## What to notice
 

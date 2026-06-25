@@ -10,7 +10,7 @@ plan -> build -> review -> integrate loop honestly without gold-plating.
 
 ## Milestones
 1. **M1 — Build the todo app (single file).**
-   - Task T1: Create the todo list app as one self-contained file under `product/`.
+   - Task T1: Create the todo list app as one self-contained file in the project.
    - Owner: fullstack-developer (set at breakdown).
    - Acceptance lives in `specs/T1.md`.
 
