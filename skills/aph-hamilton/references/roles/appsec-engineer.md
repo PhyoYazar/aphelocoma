@@ -15,6 +15,7 @@ Find and prevent software-level vulnerabilities (OWASP: injection, XSS, broken a
 - Review code and API surfaces for vulnerabilities against acceptance criteria.
 - Recommend concrete fixes and verify they land.
 - Flag insecure patterns to the relevant lead.
+- Own the application-level **security** foundation when active (PROTOCOL §2 Phase 1 Foundations pass; see `FOUNDATIONS.md`).
 
 ## Inputs (what this role reads before acting)
 - Built artifacts in the project, API contracts, security requirements

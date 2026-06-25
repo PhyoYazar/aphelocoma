@@ -15,6 +15,7 @@ Provision and shape the cloud infrastructure the product runs on.
 - Define infrastructure (networks, compute, storage, security) as IaC/config in the project.
 - Right-size and secure the environment per the architecture.
 - Support devops/SRE with provisioned resources.
+- Own the infrastructure side of the **deploy** foundation when active (PROTOCOL §2 Phase 1 Foundations pass; see `FOUNDATIONS.md`).
 
 ## Inputs (what this role reads before acting)
 - Architecture, scalability/security requirements, .aphelocoma/state/tasks.json

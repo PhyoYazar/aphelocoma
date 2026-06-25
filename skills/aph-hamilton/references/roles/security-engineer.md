@@ -15,6 +15,7 @@ Protect the system: authentication/authorization, encryption, and vulnerability 
 - Define security requirements and threat considerations for the architecture.
 - Review designs and infra for security gaps; require fixes.
 - Coordinate application-level review with appsec.
+- Own the **security** foundation when active (PROTOCOL §2 Phase 1 Foundations pass; see `FOUNDATIONS.md`).
 
 ## Inputs (what this role reads before acting)
 - Architecture, infra config, .aphelocoma/state/tasks.json

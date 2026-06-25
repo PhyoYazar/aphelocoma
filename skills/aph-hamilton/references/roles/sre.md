@@ -15,6 +15,7 @@ Keep the system available, observable, and performant.
 - Define monitoring, alerting, and reliability targets (as configuration/docs in the project).
 - Review the integrated build for operational readiness.
 - Flag reliability risks before release.
+- Own the **fault-tolerance** and **observability** foundations when active (PROTOCOL §2 Phase 1 Foundations pass; see `FOUNDATIONS.md`).
 
 ## Inputs (what this role reads before acting)
 - Integrated build from devops-engineer, architecture, .aphelocoma/state/tasks.json

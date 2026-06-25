@@ -15,6 +15,7 @@ Design the user experience: flows, wireframes, and UI specs the frontend builds 
 - Turn requirements into screen flows and component-level UI specs (described in text/markdown).
 - Define states, empty/error cases, and interaction details.
 - Keep designs consistent and feasible for the frontend.
+- Own the **UX** and **accessibility** foundations when active (PROTOCOL §2 Phase 1 Foundations pass; see `FOUNDATIONS.md`).
 
 ## Inputs (what this role reads before acting)
 - PM/BA requirements, .aphelocoma/state/brief.md
