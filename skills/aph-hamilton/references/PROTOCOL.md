@@ -44,7 +44,7 @@ presenting 2–3 options with trade-offs (or targeted questions) and a recommend
 
 1. **After Discovery** — the advisor picks the product **direction** AND the **crew size** (leadership
    recommends a size from what Discovery revealed; see §2). The directions are presented *with their
-   foundation implications* (from the §2 Foundations pass), and the TDD default is confirmed here.
+   foundation implications* (from the §2 Phase 1 Foundations pass), and the TDD default is confirmed here.
 2. **After Plan & Roadmap** — the advisor approves / reorders / cuts / adds.
 3. **Before Implementation** — the advisor picks the build style (subagents vs one session; §1).
 4. **At Review** — the advisor accepts, or says what to fix / add.
@@ -84,7 +84,7 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    `decision`). THEN activate the chosen implementer/specialist roles (`role_activated`) and record the
    size in `brief.md` + `tasks.json`.
 2. **Plan & Roadmap** — Leadership produces `.aphelocoma/state/roadmap.md`: milestones and sequence. The roadmap MUST show
-   each of the six foundations (§1 Foundations pass) as **addressed** (how/when) or **consciously
+   each of the six foundations (§2 Phase 1 Foundations pass) as **addressed** (how/when) or **consciously
    deferred** (why) — this is how they stay visible instead of forgotten.
    Log `plan_created` / `roadmap_updated`. End at **Checkpoint 2**: the advisor approves / reorders /
    cuts / adds (log a `decision`).
