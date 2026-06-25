@@ -38,7 +38,10 @@ When `$ARGUMENTS` is empty, run a short guided start:
 2. **Ask:** "New project, or work on this existing one?" then "What do you want to build / add / fix?"
    (plain words; vague is fine — the crew brainstorms it out with you).
 3. Bootstrap `./.aphelocoma/` and begin the **advisor flow** (`start` steps 3–4): the leadership core
-   activates and discussion begins. **Crew size is chosen after Discovery (Checkpoint 1) — not here.**
+   activates and discussion begins, including the **Foundations pass** — the six cross-cutting topics
+   from `<skill>/references/FOUNDATIONS.md` (deploy, fault-tolerance, security, UX, observability,
+   accessibility) and the **TDD default** (on unless you opt out for a PoC). **Crew size is chosen
+   after Discovery (Checkpoint 1) — not here.**
 
 ### `start "<brief>" <size>`  (fast path — skips the wizard)
 For when the advisor already knows the brief; otherwise use the bare `/aph-hamilton` wizard above.
@@ -52,10 +55,11 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
 4. Run the protocol as the **advisor flow** (PROTOCOL §1.5) — adopt one role at a time from
    `<skill>/references/roles/<id>.md`, and **pause at the four checkpoints**, each presenting 2–3
    options with trade-offs and waiting for the advisor (log a `decision`, `actor: advisor`):
-   - **Checkpoint 1 (after Discovery):** present directions + a recommended crew size; the advisor picks
-     both; then activate the chosen implementer/specialist roles and record the size in
-     `brief.md` + `tasks.json`. (If `<size>` was given on the command line, propose it as the
-     recommendation; the advisor still confirms.)
+   - **Checkpoint 1 (after Discovery):** run the **Foundations pass** (the six topics in
+     `<skill>/references/FOUNDATIONS.md` + confirm the TDD default), then present directions + a
+     recommended crew size; the advisor picks both; then activate the chosen implementer/specialist
+     roles and record the size + foundations + TDD choice in `brief.md` + `tasks.json`. (If `<size>`
+     was given on the command line, propose it as the recommendation; the advisor still confirms.)
    - **Checkpoint 2 (after Plan & Roadmap):** advisor approves / reorders / cuts / adds.
    - **Checkpoint 3 (before Implementation):** if parallel is possible (Claude Code + ≥2 disjoint
      `assigned` tasks) ask the advisor *subagents or one session?*; else build sequentially.
