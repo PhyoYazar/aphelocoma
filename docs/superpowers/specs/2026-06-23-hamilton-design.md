@@ -2,6 +2,12 @@
 
 _Date: 2026-06-23_
 
+> **Amendment (2026-06-25):** the **version-pin** (decision #4) was **dropped** after the build — YAGNI
+> for a personal, single-user tool; git history + `hamilton.json.created` cover reproducibility. The
+> live system has no `definition_version` field and no `references/VERSION` file, and `resume` no longer
+> compares or warns. Passages below that describe the version-pin are **historical** (kept for the
+> record); the rest of the design stands.
+
 ## Context
 
 **Hamilton** is a portable, file-based system where many role-agents (CTO, software architect,
@@ -27,9 +33,9 @@ aphelocoma and distributed through aphelocoma's existing `deploy` adapters (Clau
 3. **Thin + global ref.** The definition (roles + protocol + sizes) installs **once**, bundled with
    the skill and read at runtime via `${CLAUDE_SKILL_DIR}`. Each project gets only **thin per-project
    state** in a `.aphelocoma/` folder. **No vendored copies** of the definition.
-4. **Version pin.** Each project records the `definition_version` it ran against (in
-   `.aphelocoma/hamilton.json`) — a reproducibility *record* + drift detection, without the cost of
-   vendoring. (Analogous to "built with engine vX.Y".)
+4. ~~**Version pin.**~~ **DROPPED 2026-06-25 (see Amendment at top).** Originally: each project would
+   record the `definition_version` it ran against in `.aphelocoma/hamilton.json` for drift detection.
+   Removed as YAGNI for personal use — git history + the `created` timestamp cover reproducibility.
 5. **Native parallel agents: wanted, but Phase-2, opt-in, derived.** Generated from the canonical
    roles on demand (`/aph-hamilton sync-agents`) — never a hand-maintained second copy. On Claude Code
    they enable real parallel subagents (the value is **context isolation**, not just speed); on

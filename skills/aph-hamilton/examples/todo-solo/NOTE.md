@@ -18,7 +18,7 @@ protocol loop (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign �
 ## Layout (the two layers)
 
 - `.aphelocoma/` — the per-project state Hamilton creates in the project:
-  - `hamilton.json` — project, size, active roles, `definition_version` (the version pin), phase.
+  - `hamilton.json` — project, size, active roles, phase.
   - `state/` — `tasks.json` (live board), `roadmap.md`, `brief.md`.
   - `specs/T1.md` — the handoff contract (goal, scope, files, acceptance criteria).
   - `ledger/events.jsonl` — append-only history (24 events, `seq` 1..24, schema per PROTOCOL §5).

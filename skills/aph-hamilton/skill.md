@@ -20,8 +20,7 @@ the skill's own install folder. Nothing is copied into projects. Resolve the ins
 
 From `<skill>`, these are fixed:
 - **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`, `roles/<id>.md`,
-  `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md`, `VERSION` are siblings
-  inside it.
+  `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md` are siblings inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
 - **The product:** the project proper — repo root, or `./product`. Never inside `.aphelocoma/`.
@@ -37,8 +36,7 @@ Background: `<skill>/references/ABOUT.md`. Example run: `<skill>/examples/todo-s
 2. Create per-project state: copy `<skill>/templates/aphelocoma/` → `./.aphelocoma/` in the current
    project (leaves `.aphelocoma/ledger/events.jsonl` empty so `seq` starts at 1).
 3. Write `./.aphelocoma/hamilton.json`: `project` (slug from the brief / directory name), `size`, the
-   active `roles`, `definition_version` (read verbatim from `<skill>/references/VERSION`), `created`
-   (ISO-8601 now), `phase: "kickoff"`.
+   active `roles`, `created` (ISO-8601 now), `phase: "kickoff"`.
 4. Run the protocol (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign → Implementation →
    Review/QA → Integration), adopting one role at a time by reading `<skill>/references/roles/<id>.md`.
    Build the product in the project. Keep `./.aphelocoma/state/tasks.json` current and append every
@@ -52,10 +50,8 @@ Background: `<skill>/references/ABOUT.md`. Example run: `<skill>/examples/todo-s
      content injected (parallelism must not depend on registration timing). Otherwise build sequentially.
 
 ### `resume`
-Read `./.aphelocoma/`. Compare `hamilton.json.definition_version` with `<skill>/references/VERSION`:
-if they differ, **warn** (definition drift) and let the user choose to continue — if they do, log an
-`assumption_logged` event noting the version gap. Then report the current `phase` and open tasks
-(anything not `done`) from `./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
+Read `./.aphelocoma/`. Report the current `phase` and open tasks (anything not `done`) from
+`./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
 
 ### `status`
 Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, plus the

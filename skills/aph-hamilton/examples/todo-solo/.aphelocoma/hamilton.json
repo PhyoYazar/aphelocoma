@@ -2,7 +2,6 @@
   "project": "simple-todo-list-app",
   "size": "solo",
   "roles": ["cto", "fullstack-developer"],
-  "definition_version": "1.0.0",
   "created": "2026-06-23T17:18:00Z",
   "phase": "done"
 }

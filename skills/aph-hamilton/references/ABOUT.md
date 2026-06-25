@@ -11,7 +11,7 @@ history is plain files. Nothing depends on a specific tool's features.
 ## Two layers
 
 - **Definition (read-only, installed once)** — this `references/` directory: `PROTOCOL.md`,
-  `roles/`, `sizes.yaml`, `roles.index.md`, `VERSION`. Shared by every project; never copied
+  `roles/`, `sizes.yaml`, `roles.index.md`, `PARALLEL.md`, `agent-template.md`. Shared by every project; never copied
   into them.
 - **Per-project state** — a `.aphelocoma/` folder in the project being built:
   `hamilton.json`, `state/`, `ledger/`, `specs/`. Plus the **product** itself in the project
@@ -67,10 +67,9 @@ projects don't need to finish in one session.
       sizes.yaml            <- crew-size presets
       settings.example.yaml <- optional config example
       roles/                <- one markdown file per role (the "job descriptions")
-      VERSION               <- the definition version
 
     <project>/.aphelocoma/  <- per-project state (created by `start`)
-      hamilton.json         <- project, size, roles, definition_version, phase
+      hamilton.json         <- project, size, roles, phase
       state/                <- tasks.json (live board), roadmap.md, brief.md
       specs/                <- one spec per task (handoff contracts w/ acceptance criteria)
       ledger/               <- events.jsonl + agents/<role>.md (append-only history)
