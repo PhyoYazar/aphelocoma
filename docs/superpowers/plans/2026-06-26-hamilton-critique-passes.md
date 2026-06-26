@@ -160,7 +160,7 @@ Expected: both files listed; then `3`; then `1`.
 
 - [ ] **Step 5: Verify the three gates and the floor-not-ceiling rule are present**
 
-Run: `for t in "CP1" "CP2" "CP4" "floor, not a ceiling" "advisory + one bounce-back" "tier"; do grep -q "$t" skills/aph-hamilton/references/CRITIQUE.md && echo "ok: $t" || echo "MISSING: $t"; done`
+Run: `for t in "CP1" "CP2" "CP4" "Floor, not ceiling" "advisory + one bounce-back" "tier"; do grep -q "$t" skills/aph-hamilton/references/CRITIQUE.md && echo "ok: $t" || echo "MISSING: $t"; done`
 Expected: six `ok` lines, no `MISSING`.
 
 - [ ] **Step 6: Commit**
