@@ -48,9 +48,21 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
   `docs/superpowers/specs/2026-06-25-hamilton-advisor-collaboration.md`,
   `docs/superpowers/plans/2026-06-25-hamilton-advisor-collaboration.md`,
   `docs/superpowers/notes/2026-06-25-hamilton-advisor-verification.md` (a–e PASS via scripted run).
+- **Project foundations: DONE & cold-start-verified (2026-06-26).** At Discovery the leadership core
+  raises six **advisory** foresight topics — deploy, fault-tolerance, security, UX, observability,
+  accessibility — that shape direction (CP1) + roadmap (CP2) but never gate `done`; plus **TDD as a
+  default-on, per-project-opt-out toggle** enforced (when on) via §4 acceptance criteria + QA at Review.
+  Flow-anchored: `references/FOUNDATIONS.md` + a Discovery "Foundations pass" (PROTOCOL §2 Phase 1) +
+  `## Foundations` / `## TDD` in `brief.md` surfaced in `roadmap.md`; one-line role pointers (`cto` runs
+  the pass + covers absent owners §7; specialists own their topic when active). Spec/plan/verdict:
+  `docs/superpowers/specs/2026-06-25-hamilton-project-foundations.md`,
+  `docs/superpowers/plans/2026-06-25-hamilton-project-foundations.md`,
+  `docs/superpowers/notes/2026-06-25-hamilton-foundations-verification.md` (A1–A4 PASS via scripted run).
+  ADR-0018.
 - **Remaining (user-owned):** deploy (`/deploy claude` + `/deploy codex`) and `git push`; then run the
-  **manual checklist** in the advisor verdict note (the interactive stop-and-ask pauses), plus the two
-  low-risk residuals (spec §4 content, a real interactive `/aph-hamilton`).
+  **manual checklists** in the verdict notes (the interactive stop-and-ask pauses) — for advisor-collab
+  the a–e checklist, and for foundations one interactive `/aph-hamilton` confirming the six topics are
+  *spoken* before CP1 (the run stubbed the human turn); plus the low-risk residuals (spec §4 content).
 
 > **Source of truth:** `ceo/company/` was the prototype origin; the canonical copy now lives here in
 > `skills/aph-hamilton/references/`. Make future edits here, not in `ceo/company/`.
