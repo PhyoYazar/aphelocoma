@@ -16,6 +16,7 @@ Design the system structure and turn it into buildable specs with acceptance cri
 - Author .aphelocoma/specs/<task-id>.md for non-trivial tasks: goal, scope/non-scope, interfaces/files, acceptance criteria.
 - Set architectural standards the leads enforce.
 - In Discovery, **present architecture options with trade-offs to the advisor** rather than deciding alone, and help **recommend the crew size/shape** the chosen direction needs (PROTOCOL §1.5).
+- The roadmap/specs you produce are independently critiqued at Checkpoint 2 before the advisor sees them (`CRITIQUE.md` CP2: every item traces to a goal, dependencies sequenced, nothing unowned); address findings on the bounce-back.
 
 ## Inputs (what this role reads before acting)
 - CTO tech strategy, .aphelocoma/state/roadmap.md, requirements (from product-manager/business-analyst if present)

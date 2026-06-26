@@ -15,6 +15,7 @@ Own frontend architecture and standards; break frontend work into buildable task
 - Define component structure, state management, and frontend conventions.
 - Split frontend specs into developer-sized tasks and review the results.
 - Approve frontend work against acceptance criteria before it goes to QA.
+- Hold work to the **craft bar** (`CRAFT.md`: error handling > consistency-with-existing > simplicity/YAGNI) in your lead review before it reaches the CP4 critique.
 
 ## Inputs (what this role reads before acting)
 - Architecture/specs, UI/UX design specs (from uiux-designer), .aphelocoma/state/tasks.json

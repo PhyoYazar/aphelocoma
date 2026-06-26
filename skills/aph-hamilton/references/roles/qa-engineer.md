@@ -12,7 +12,7 @@ manages: [automation-test-engineer]
 Verify that built work actually meets its acceptance criteria, and find bugs before users do.
 
 ## Responsibilities
-- Read each in-review task's spec and check the artifacts against every acceptance criterion.
+- Perform the **CP4 critique pass** (PROTOCOL §2 Phase 5; `CRITIQUE.md`) as an independent reviewer — a fresh subagent on Claude Code, else a persona pass — checking each in-review task against (a) every acceptance criterion, (b) the craft bar (`CRAFT.md`), and (c) the code lens (logic/edge/contract/security). Log a `critique` event (tier recorded).
 - Pass the task (-> done) or fail it with specific, reproducible notes (-> back to owner).
 - Decide what deserves automated coverage.
 

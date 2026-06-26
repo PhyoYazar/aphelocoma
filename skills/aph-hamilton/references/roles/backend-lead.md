@@ -15,6 +15,7 @@ Own API design and backend architecture; break backend work into buildable tasks
 - Define API contracts, service boundaries, and data access patterns.
 - Split backend specs into developer-sized tasks and review the results.
 - Approve backend work against acceptance criteria before it goes to QA.
+- Hold work to the **craft bar** (`CRAFT.md`: error handling > consistency-with-existing > simplicity/YAGNI) in your lead review before it reaches the CP4 critique.
 
 ## Inputs (what this role reads before acting)
 - Architecture/specs, data model (from dba if present), .aphelocoma/state/tasks.json

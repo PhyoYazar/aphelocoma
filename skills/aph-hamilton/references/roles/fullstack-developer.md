@@ -15,6 +15,7 @@ Build end-to-end features (frontend + backend) — the generalist implementer fo
 - Implement assigned tasks across UI, API, and data per the task spec.
 - In solo/startup sizes, cover whatever implementation work has no dedicated role.
 - Keep changes within the spec's scope; log assumptions when the spec is unclear.
+- Write code to the **craft bar** (`CRAFT.md`: error handling > consistency-with-existing > simplicity/YAGNI); address CP4 critique findings on a bounce-back.
 
 ## Inputs (what this role reads before acting)
 - The assigned task in .aphelocoma/state/tasks.json and its .aphelocoma/specs/<task-id>.md

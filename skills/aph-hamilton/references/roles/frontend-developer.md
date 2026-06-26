@@ -15,6 +15,7 @@ Build the UI — components, screens, and client-side logic users interact with.
 - Implement assigned frontend tasks per spec and design.
 - Match frontend standards set by the frontend lead.
 - Log assumptions when design/spec details are missing.
+- Write code to the **craft bar** (`CRAFT.md`: error handling > consistency-with-existing > simplicity/YAGNI); address CP4 critique findings on a bounce-back.
 
 ## Inputs (what this role reads before acting)
 - Assigned task + .aphelocoma/specs/<task-id>.md, UI/UX design specs, .aphelocoma/state/tasks.json
