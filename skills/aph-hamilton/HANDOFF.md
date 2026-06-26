@@ -59,10 +59,27 @@ and runs in **any** project by bootstrapping a thin `.aphelocoma/` state folder 
   `docs/superpowers/plans/2026-06-25-hamilton-project-foundations.md`,
   `docs/superpowers/notes/2026-06-25-hamilton-foundations-verification.md` (A1–A4 PASS via scripted run).
   ADR-0018.
+- **Checkpoint critique passes & craft bar: DONE & catch-test-verified (2026-06-26).** Before the three
+  work-output checkpoints an **independent reviewer** (fresh subagent on Claude Code; persona-pass
+  fallback, tier logged) double-checks the crew's work: CP1 brainstorm (blind spots beyond the six
+  foundations, unstated assumptions), CP2 plan (the net-new gap — every roadmap item traces to a goal,
+  nothing unowned, deps sequenced), CP4 implementation (the Review/QA step done **independently** + a
+  craft/code lens). Authority = **advisory + one bounce-back**; one new `critique` event + reserved
+  `reviewer` actor. Plus an always-on **craft bar** (`references/CRAFT.md`: precedence
+  `correctness/error-handling > consistency-with-existing > simplicity/YAGNI`, floor-not-ceiling) that
+  guides implementers and is enforced by the CP4 critique. Flow-anchored: `references/CRITIQUE.md` +
+  `references/CRAFT.md` + PROTOCOL §1.5 / §2 Phases 1/2/4/5 / §5 / §7 + 9 role pointers + `skill.md`.
+  Fault-tolerance stays at CP1 (not duplicated); `reviewer.md` reused as the CP4 code lens, unmodified.
+  Spec/plan/verdict: `docs/superpowers/specs/2026-06-26-hamilton-critique-passes.md`,
+  `docs/superpowers/plans/2026-06-26-hamilton-critique-passes.md`,
+  `docs/superpowers/notes/2026-06-26-hamilton-critique-verification.md` (CP1/CP2/CP4 seeded-defect
+  catch-test PASS; opus whole-branch review = MERGE, 0 Critical / 0 Important).
 - **Remaining (user-owned):** deploy (`/deploy claude` + `/deploy codex`) and `git push`; then run the
   **manual checklists** in the verdict notes (the interactive stop-and-ask pauses) — for advisor-collab
-  the a–e checklist, and for foundations one interactive `/aph-hamilton` confirming the six topics are
-  *spoken* before CP1 (the run stubbed the human turn); plus the low-risk residuals (spec §4 content).
+  the a–e checklist, for foundations one interactive `/aph-hamilton` confirming the six topics are
+  *spoken* before CP1, and for critique-passes one interactive `/aph-hamilton` confirming an independent
+  reviewer runs before CP1/CP2/CP4 (the catch-test drove the critic subagents directly); plus the
+  low-risk residuals (spec §4 content).
 
 > **Source of truth:** `ceo/company/` was the prototype origin; the canonical copy now lives here in
 > `skills/aph-hamilton/references/`. Make future edits here, not in `ceo/company/`.
