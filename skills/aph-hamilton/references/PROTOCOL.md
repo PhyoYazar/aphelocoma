@@ -97,10 +97,10 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    each of the six foundations (§2 Phase 1 Foundations pass) as **addressed** (how/when) or **consciously
    deferred** (why) — this is how they stay visible instead of forgotten.
    Log `plan_created` / `roadmap_updated`. **Plan critique (before CP2):** an independent reviewer checks
-the roadmap against `CRITIQUE.md`'s CP2 lens — every item traces to a goal, every goal has ≥1 item, each
-of the six foundations is addressed or consciously deferred, dependencies are sequenced, nothing is
-unowned. Serious findings bounce back **once** to leadership; then plan + findings are presented. Log a
-`critique` event (§5). End at **Checkpoint 2**: the advisor approves / reorders /
+   the roadmap against `CRITIQUE.md`'s CP2 lens — every item traces to a goal, every goal has ≥1 item, each
+   of the six foundations is addressed or consciously deferred, dependencies are sequenced, nothing is
+   unowned. Serious findings bounce back **once** to leadership; then plan + findings are presented. Log a
+   `critique` event (§5). End at **Checkpoint 2**: the advisor approves / reorders /
    cuts / adds (log a `decision`).
 3. **Breakdown & Assign** — Architect/leads turn the roadmap into tasks. For each task:
    create an entry in `.aphelocoma/state/tasks.json` AND write `.aphelocoma/specs/<task-id>.md` with the handoff
