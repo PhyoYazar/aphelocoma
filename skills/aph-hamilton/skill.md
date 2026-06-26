@@ -4,9 +4,11 @@ Spin up / resume / inspect a Hamilton crew that builds software for the current 
 
 Hamilton is a portable, file-based **crew** of role-agents (CTO, software-architect, developers, QA,
 DevOps, …). **You are the advisor:** the leadership core brainstorms *with you*, you decide the
-direction/plan/build-style at four checkpoints, and the crew builds it autonomously. Every action is
-appended to a file ledger so you can review who did what. Full rules live in the definition's
-`PROTOCOL.md` (located below).
+direction/plan/build-style at four checkpoints, and the crew builds it autonomously. Before you see the
+work at Checkpoints 1, 2, and 4, an **independent reviewer** double-checks it (`references/CRITIQUE.md`) —
+catching blind spots, plan holes, and code defects — and implementers write to a standing **craft bar**
+(`references/CRAFT.md`: simplicity, consistency, error handling). Every action is appended to a file
+ledger so you can review who did what. Full rules live in the definition's `PROTOCOL.md` (located below).
 
 ## Locating the Hamilton definition (read this first)
 
@@ -21,7 +23,8 @@ the skill's own install folder. Nothing is copied into projects. Resolve the ins
 
 From `<skill>`, these are fixed:
 - **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`, `roles/<id>.md`,
-  `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md` are siblings inside it.
+  `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md`, `FOUNDATIONS.md`,
+  `CRITIQUE.md`, `CRAFT.md` are siblings inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
 - **The product:** the project itself — at the repo root, beside `.aphelocoma/`, structured however the work needs (no forced `product/` folder). Never inside `.aphelocoma/`.
