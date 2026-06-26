@@ -49,6 +49,11 @@ presenting 2–3 options with trade-offs (or targeted questions) and a recommend
 3. **Before Implementation** — the advisor picks the build style (subagents vs one session; §1).
 4. **At Review** — the advisor accepts, or says what to fix / add.
 
+Before CP1, CP2, and CP4 an **independent reviewer** double-checks the crew's work against `CRITIQUE.md`
+(blind spots at brainstorm, holes at plan, defects at implementation). The work is presented to the
+advisor *with* the reviewer's findings and any fixes (see §2 Phases 1/2/5). CP3 has no artifact, so no
+critique. The reviewer's authority is **advisory + one bounce-back**; the advisor still decides.
+
 Record each as a `decision` event: `actor: advisor`, `note` = the options offered + the choice (or
 "delegated" if the advisor says "you decide" — then proceed with the recommendation). Between
 checkpoints the crew works autonomously; the advisor may interject at any time. **Never fabricate
@@ -79,6 +84,11 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    matters may add a specialist owner, e.g. security → `appsec`, UX/accessibility → `uiux-designer`).
    Also confirm the **TDD** default (on unless the advisor opts out for a PoC); record it in `brief.md`
    `## TDD` and log a `decision`.
+   **Brainstorm critique (before CP1):** an independent reviewer checks the captured direction, goals,
+   and risks against `CRITIQUE.md`'s CP1 lens (blind spots beyond the six foundations, unstated
+   assumptions, fabricated scope, whether the directions are distinct, unasked defining questions,
+   contradictions). Serious findings bounce back **once** to leadership to address; then the work +
+   findings are presented to the advisor. Log a `critique` event (§5).
    End at **Checkpoint 1**: present 2–3 product
    **directions** with trade-offs AND a **recommended crew size/shape**; the advisor picks both (log a
    `decision`). THEN activate the chosen implementer/specialist roles (`role_activated`) and record the
@@ -86,7 +96,11 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
 2. **Plan & Roadmap** — Leadership produces `.aphelocoma/state/roadmap.md`: milestones and sequence. The roadmap MUST show
    each of the six foundations (§2 Phase 1 Foundations pass) as **addressed** (how/when) or **consciously
    deferred** (why) — this is how they stay visible instead of forgotten.
-   Log `plan_created` / `roadmap_updated`. End at **Checkpoint 2**: the advisor approves / reorders /
+   Log `plan_created` / `roadmap_updated`. **Plan critique (before CP2):** an independent reviewer checks
+the roadmap against `CRITIQUE.md`'s CP2 lens — every item traces to a goal, every goal has ≥1 item, each
+of the six foundations is addressed or consciously deferred, dependencies are sequenced, nothing is
+unowned. Serious findings bounce back **once** to leadership; then plan + findings are presented. Log a
+`critique` event (§5). End at **Checkpoint 2**: the advisor approves / reorders /
    cuts / adds (log a `decision`).
 3. **Breakdown & Assign** — Architect/leads turn the roadmap into tasks. For each task:
    create an entry in `.aphelocoma/state/tasks.json` AND write `.aphelocoma/specs/<task-id>.md` with the handoff
@@ -96,12 +110,19 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    tasks with disjoint file scopes), ask the advisor *subagents or one session?* and log a `decision`;
    otherwise build sequentially. Each owner role picks up its `assigned` tasks, builds **in the project
    (at the repo root, beside `.aphelocoma/`)**, records artifacts, and moves the task to `in_review`.
+   Implementers write code to the **craft bar** (`CRAFT.md`: error handling, consistency, simplicity —
+   in that precedence) as a standing definition-of-done alongside the §4 acceptance criteria.
    Log `work_started`, `artifact_written`, then update status (see §3). Parallel dispatch follows
    `PARALLEL.md`.
-5. **Review / QA** — qa-engineer (or covering role) checks each `in_review` task against its acceptance
-   criteria. Pass → status `done`, log `review_passed`. Fail → status back to `assigned`/`in_progress`
-   with notes, log `review_failed`. End at **Checkpoint 4**: the advisor accepts, or says what to fix /
-   add (log a `decision`); fixes loop back as re-assigned tasks.
+5. **Review / QA (independent critique)** — the Review **is** an independent critique pass, not a layer
+   after QA. qa-engineer (or covering role per §7) reviews each `in_review` task as a fresh-context
+   reviewer — a subagent on Claude Code, else a persona pass — against `CRITIQUE.md`'s CP4 lens: **(a)**
+   its acceptance criteria (incl. tests-first when TDD is on), **(b)** the craft bar (`CRAFT.md`), and
+   **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
+   (§5; tier recorded). Pass → status `done`, log `review_passed`. Serious findings → status back to
+   `assigned`/`in_progress` with notes, log `review_failed`, **one** bounce-back to the owner. End at
+   **Checkpoint 4**: the advisor accepts, or says what to fix / add (log a `decision`); fixes loop back as
+   re-assigned tasks.
 6. **Integration** — devops/sre/cloud (if active) integrate, build, and judge readiness.
    When all roadmap tasks are `done` and integration passes, set `phase: done` and log `project_completed`.
 
@@ -149,9 +170,14 @@ back to the author.
 - Event types: `role_activated`, `brainstorm_note`, `plan_created`, `roadmap_updated`,
   `task_created`, `task_assigned`, `work_started`, `artifact_written`, `task_completed`,
   `review_passed`, `review_failed`, `blocked`, `assumption_logged`, `handoff`,
-  `phase_advanced`, `project_completed`, `decision`.
+  `phase_advanced`, `project_completed`, `decision`, `critique`.
 - The **`advisor`** actor is the human (the user) in the top seat; it appears on `decision` events
   (the options offered + the pick) and on any direction the human gives. Crew actors are role-ids.
+- The **`reviewer`** actor marks an independent critique pass (§1.5); `critique` events use it. The
+  `note` records the gate (CP1/CP2/CP4), the verdict (`clear` / `findings`), severity, and the
+  independence **tier** (`subagent` on Claude Code, else `persona`) — so a real second-pair-of-eyes
+  review is distinguishable from a self-review. `task` is null at CP1/CP2 (phase-level) and set at CP4
+  (per-task). At CP4 the `critique` event rides alongside the unchanged `review_passed` / `review_failed`.
 - A role file's **Ledger rule** is *indicative, not an exclusive whitelist* — a role may emit
   any documented event its work legitimately requires (especially when covering another role
   per §7; e.g. a CTO covering QA logs `review_passed`).
@@ -178,6 +204,12 @@ On start, read `.aphelocoma/state/brief.md`:
 - **Disclosure** — never fabricate completion. If something is uncertain or assumed, log
   an `assumption_logged` event and proceed transparently. A task is `done` ONLY when all
   its acceptance criteria are met.
+- **Independent review** — the CP1/CP2 critique is dispatched by leadership (the always-active `cto`
+  runs it; covers per role-coverage above), the CP4 critique by `qa-engineer` (or nearest senior under
+  coverage). On Claude Code the reviewer is a fresh subagent that is **read-only on state and returns
+  findings** — the orchestrator logs the `critique` event and updates `tasks.json`/`events.jsonl`
+  (single-writer contract, `PARALLEL.md`). On platforms without subagents it is a persona pass. The
+  reviewer never writes state itself.
 - **Stay in lane** — role work builds the *product* in the project (beside `.aphelocoma/`). Do not
   modify Hamilton's own definition files (`references/`) while running a project unless explicitly asked.
 
