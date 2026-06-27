@@ -4,6 +4,7 @@ title: QA Engineer
 level: ic
 reports_to: [engineering-manager]
 manages: [automation-test-engineer]
+tools: Read, Grep, Glob, Bash
 ---
 
 # QA Engineer
@@ -13,6 +14,7 @@ Verify that built work actually meets its acceptance criteria, and find bugs bef
 
 ## Responsibilities
 - Perform the **CP4 critique pass** (PROTOCOL §2 Phase 5; `CRITIQUE.md`) as an independent reviewer — a fresh subagent on Claude Code, else a persona pass — checking each in-review task against (a) every acceptance criterion, (b) the craft bar (`CRAFT.md`), and (c) the code lens (logic/edge/contract/security). Log a `critique` event (tier recorded).
+  - When dispatched as that subagent, this role is **look-only** (frontmatter `tools:` = `Read, Grep, Glob, Bash`, no `Write`/`Edit`): it returns findings and the orchestrator records them (single-writer contract; see `CRITIQUE.md`).
 - Pass the task (-> done) or fail it with specific, reproducible notes (-> back to owner).
 - Decide what deserves automated coverage.
 

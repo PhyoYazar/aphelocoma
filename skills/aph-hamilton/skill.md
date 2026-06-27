@@ -91,8 +91,12 @@ Generate native role-agents so the orchestrator can dispatch implementers as **p
 2. For each active role (one per instance — `<role-id>`, or `<role-id>#N` for repeats), fill
    `<skill>/references/agent-template.md`: `{{ROLE_ID}}`, `{{AGENT_NAME}}` (`hamilton-<role-id>`,
    `#`→`-`), `{{ROLE_TITLE}}` (the `title:` from the role's frontmatter), `{{ROLE_BODY}}` (the verbatim
-   text of `<skill>/references/roles/<role-id>.md`), and `{{MODEL_LINE}}` (`model: <model>` if
-   `.aphelocoma/settings.yaml` `models:` maps this role or a `default`, else omit the line).
+   text of `<skill>/references/roles/<role-id>.md`), `{{TOOLS_LINE}}` (`tools: <list>` from the role's
+   frontmatter `tools:` if present — read-only reviewer roles like `qa-engineer` drop `Write`/`Edit` —
+   else the default `tools: Read, Write, Edit, Bash, Grep, Glob`), `{{MODEL_LINE}}` (`model: <model>` if
+   `.aphelocoma/settings.yaml` `models:` maps this role or a `default`, else omit the line), and
+   `{{EFFORT_LINE}}` (`effort: <low|medium|high|xhigh|max>` if `.aphelocoma/settings.yaml` `effort:` maps
+   this role or a `default`, else omit — the agent inherits the session's effort).
 3. Write each generated file to `./.claude/agents/<AGENT_NAME>.md` in the current project.
 
 Regenerable — rerun after any role change; **never hand-edit** the generated files (they are derived).

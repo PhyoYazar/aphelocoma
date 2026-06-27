@@ -15,3 +15,24 @@
 #   frontend-developer: <fast-cheap-model>
 #   backend-developer: <fast-cheap-model>
 #   fullstack-developer: <fast-cheap-model>
+#
+# Recommended (quality-first): list only the EXCEPTIONS. Any role you don't list uses your current
+# session's model — your best (opus today, fable later) automatically, nothing to edit when the best
+# model changes. The model dial is independent of a role's tool scope (e.g. qa-engineer runs on your
+# best model but stays look-only per its role file):
+# models:
+#   technical-writer: sonnet   # one step down — medium is plenty for mechanical docs
+#
+# Prefer to FORCE one model on every role instead of following your session? Add an explicit default
+# (this also applies to anyone you share Hamilton with — prefer it for personal use):
+#   default: opus              # or sonnet / haiku / fable — pins the whole crew to one model
+
+# --- Role -> effort mapping (opt-in; same shape as models). Effort is the reasoning/thinking level,
+# SEPARATE from the model: low | medium | high | xhigh | max. Any role you don't list inherits your
+# session's effort (the `/effort` command), so by default `/effort high` flows to the whole crew. Pin a
+# role only to override it — e.g. give the reviewer/architect more thinking, or docs less:
+# effort:
+#   default: high              # optional — a floor for every role
+#   qa-engineer: xhigh         # reviewer thinks harder than the session
+#   software-architect: xhigh
+#   technical-writer: medium   # docs don't need deep reasoning

@@ -19,8 +19,11 @@ it chooses a build style, with no artifact to review.
 - **Authority = advisory + one bounce-back.** Serious (blocking) findings go back to the owning role
   **once** to fix; then the work + findings + fixes surface to the advisor at the checkpoint regardless.
   One cycle only — it cannot loop. The advisor always makes the final call.
-- **Read-only on state.** The reviewer returns findings; the orchestrator logs the `critique` event and
-  updates state (single-writer contract, `PARALLEL.md`).
+- **Read-only on state.** The reviewer writes nothing — not even its own ledger file. It returns
+  findings; the orchestrator logs the `critique` event, records the reviewer's ledger note, and updates
+  state (single-writer contract, `PARALLEL.md`). On Claude Code the generated reviewer agent is
+  tool-scoped to look-only (`Read, Grep, Glob, Bash` — no `Write`/`Edit`), so this is enforced at the
+  tool level, not by prose alone.
 
 ## CP1 · Brainstorm  (read brief.md + Discovery notes)
 

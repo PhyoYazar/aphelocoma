@@ -1,0 +1,21 @@
+# Optional model settings for this project's Hamilton crew. Hamilton runs fine without this file;
+# only `/aph-hamilton sync-agents` reads it (to set each generated agent's model). Safe to edit/delete.
+#
+# Any role NOT listed below uses your current session's model — i.e. your best model (opus today,
+# fable later) automatically, with nothing to change when the best model changes. List a role only to
+# pin it to a specific model. The model dial is separate from a role's tool scope (e.g. the qa-engineer
+# reviewer can run on a strong model yet stay look-only per its role file).
+models:
+  technical-writer: sonnet   # one step down — medium is plenty for mechanical docs
+
+# Want to force ONE model on the whole crew instead of following your session? Add a default (note this
+# also applies to anyone you share Hamilton with, so prefer it for personal use):
+#   default: opus            # or sonnet / haiku / fable
+
+# Reasoning effort (a separate dial from model): low | medium | high | xhigh | max. Any role NOT listed
+# inherits your session's effort (set via `/effort`), so `/effort high` already flows to the whole crew.
+# Uncomment to pin specific roles — e.g. let the reviewer/architect think harder, or docs think less:
+# effort:
+#   qa-engineer: xhigh
+#   software-architect: xhigh
+#   technical-writer: medium

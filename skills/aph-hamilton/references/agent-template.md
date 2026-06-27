@@ -10,8 +10,15 @@ Substitutions:
 - `{{AGENT_NAME}}` — `hamilton-<role-id>` with `#` → `-` (e.g. `hamilton-frontend-developer-2`).
   Must be a valid agent name: lowercase, digits, hyphens.
 - `{{ROLE_TITLE}}` — the `title:` from the role file's frontmatter.
+- `{{TOOLS_LINE}}` — `tools: <list>` from the role file's frontmatter `tools:` if it declares one
+  (e.g. a read-only reviewer like `qa-engineer` → `tools: Read, Grep, Glob, Bash`); otherwise the
+  default `tools: Read, Write, Edit, Bash, Grep, Glob`. Read-only roles drop `Write`/`Edit` so the
+  generated agent cannot edit files — enforcing "read-only on state" at the tool level, not by prose.
 - `{{MODEL_LINE}}` — `model: <model>` if `.aphelocoma/settings.yaml` `models:` maps this role (or a
   `default`); otherwise OMIT this line entirely (do not emit an empty/blank frontmatter line).
+- `{{EFFORT_LINE}}` — `effort: <low|medium|high|xhigh|max>` if `.aphelocoma/settings.yaml` `effort:`
+  maps this role (or a `default`); otherwise OMIT the line (the agent then inherits the session's
+  effort). Effort is independent of `model:` — a role can be e.g. `opus` + `high`.
 - `{{ROLE_BODY}}` — the full canonical text of `references/roles/<role-id>.md`, verbatim.
 
 The generated file is everything between the markers (the markers themselves are not emitted):
@@ -20,8 +27,9 @@ The generated file is everything between the markers (the markers themselves are
 ---
 name: {{AGENT_NAME}}
 description: "{{ROLE_TITLE}} — Hamilton crew member; builds one assigned task in the project and returns a structured result. Dispatched by the Hamilton orchestrator."
-tools: Read, Write, Edit, Bash, Grep, Glob
+{{TOOLS_LINE}}
 {{MODEL_LINE}}
+{{EFFORT_LINE}}
 ---
 
 You are **{{ROLE_TITLE}}** (`{{ROLE_ID}}`), a member of the Hamilton crew, dispatched to build ONE task. The orchestrator gives you a single `<task-id>`.
