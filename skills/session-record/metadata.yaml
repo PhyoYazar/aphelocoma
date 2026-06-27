@@ -1,0 +1,3 @@
+name: session-record
+description: Capture a structured session record with reasoning chains, findings, and outcomes
+type: manual

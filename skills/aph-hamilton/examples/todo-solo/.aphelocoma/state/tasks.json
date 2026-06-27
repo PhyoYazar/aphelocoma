@@ -1,0 +1,17 @@
+{
+  "project": "simple-todo-list-app",
+  "size": "solo",
+  "phase": "done",
+  "updated": "2026-06-23T17:24:00Z",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Todo list app (single file)",
+      "status": "done",
+      "owner": "fullstack-developer",
+      "spec": "specs/T1.md",
+      "artifacts": ["todo.html"],
+      "updated": "2026-06-23T17:23:00Z"
+    }
+  ]
+}

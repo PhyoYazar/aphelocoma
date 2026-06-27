@@ -1,0 +1,4 @@
+name: aph-hamilton
+description: Spin up a coordinated crew of role-agents (CTO, software architect, developers, QA, DevOps, …) that brainstorm, plan, assign, and build software for the current project, recording who did what to a file ledger. Bootstraps a thin .aphelocoma/ state folder in the project and reads the role/protocol definitions from the installed skill. Use to start, resume, or check the status of a Hamilton build.
+type: manual
+arguments: "[start \"<brief>\" <solo|startup|mid|big|custom:[roles]> | resume | status | sync-agents]"

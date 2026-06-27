@@ -1,4 +1,5 @@
 core/
 views/
 .cursor/
+.omc/
 .DS_Store

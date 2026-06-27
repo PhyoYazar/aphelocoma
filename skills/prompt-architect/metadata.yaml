@@ -1,0 +1,3 @@
+name: prompt-architect
+description: Transform vague, broken, incomplete, or complex user requests into clear prompts, system prompts, or reusable prompt packages for other AI agents. Use when the user asks to rewrite a prompt, improve a prompt, create a system prompt, clarify intent, or architect instructions for another AI.
+type: manual

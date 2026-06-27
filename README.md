@@ -21,7 +21,7 @@ Aphelocoma is your **single source of truth** — who you are, what you're worki
 ### 1. Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.0.2-alpha/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.0.3-alpha/install.sh | bash
 ```
 
 This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
@@ -140,7 +140,7 @@ These skills are available inside AI tools after deploying:
 | Skill | What it does |
 |-------|-------------|
 | `/sync` | Sync current project with aphelocoma |
-| `/status` | Dashboard of projects, knowledge, journal |
+| `/aph-status` | Dashboard of projects, knowledge, journal |
 | `/journal` | Capture end-of-session work entry |
 | `/reflect` | Propose knowledge captures from recent work |
 | `/capture [topic]` | Distill insights into knowledge files |

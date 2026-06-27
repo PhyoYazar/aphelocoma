@@ -1,0 +1,28 @@
+# Crew-size presets. The leadership core (cto, software-architect, product-manager) is always active
+# FIRST for Discovery; these presets are the IMPLEMENTER/SPECIALIST team chosen AFTER Discovery
+# (PROTOCOL §1.5) — recommended by leadership, picked by the advisor. `solo` = the leadership core
+# wears all hats. Only the listed roles activate; every other role in roles/ stays dormant. A role
+# may appear more than once (instances).
+
+presets:
+  solo:        # ~2 — minimal plan->build loop, one agent wears all hats
+    roles: [cto, fullstack-developer]
+  startup:     # ~6 — proves the full loop fast
+    roles: [cto, software-architect, fullstack-developer, fullstack-developer, qa-engineer, devops-engineer]
+  mid:         # ~12
+    roles: [engineering-manager, software-architect, product-manager, uiux-designer,
+            frontend-lead, frontend-developer, backend-lead, backend-developer,
+            qa-engineer, automation-test-engineer, devops-engineer, data-engineer]
+  big:         # ~25 — full org chart
+    roles: [ceo, cto, vp-engineering, engineering-manager, software-architect,
+            frontend-lead, frontend-developer, backend-lead, backend-developer, mobile-developer,
+            devops-engineer, sre, cloud-engineer, dba, data-engineer, data-scientist, ml-engineer,
+            security-engineer, appsec-engineer, qa-engineer, automation-test-engineer,
+            product-manager, business-analyst, uiux-designer, tech-support-engineer, technical-writer]
+
+custom:
+  description: "User may pass an explicit role list (e.g. custom:[cto, backend-developer, qa-engineer]); if so, it overrides the preset."
+
+notes:
+  - "A role may be instantiated more than once (e.g. fullstack-developer#1, #2). Owners in tasks.json use 'role-id' or 'role-id#N'."
+  - "If an active size lacks a role a phase needs (e.g. no qa-engineer in solo), the nearest senior/leadership role covers it (PROTOCOL.md §7)."

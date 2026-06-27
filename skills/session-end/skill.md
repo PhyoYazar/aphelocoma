@@ -12,34 +12,43 @@ Trigger when you notice signals that the session is wrapping up:
 
 ## What to do
 
-1. Offer to create a journal entry for this session
-2. If the user agrees, review the session:
-   - Recent git history (`git log --oneline` for today)
-   - What was discussed and implemented
-   - Key decisions and their reasoning
-   - Unfinished work or open threads
-3. Write to `$APHELOCOMA_HOME/core/journal/YYYY-MM/YYYY-MM-DD.md`
-   - Create the month directory if it doesn't exist
-   - If the file already exists, append (don't overwrite)
-   - Use this format:
+1. **Check for existing session record today:**
+   - Scan `$APHELOCOMA_HOME/core/sessions/YYYY-MM/` for files starting with today's date that match the current project
+   - If a session record already exists: skip to step 3 (only offer journal update)
 
-```
-## HH:MM — [Project Name]
+2. **Offer to create a session record (primary path):**
+   - Offer: "Would you like to capture a session record? It preserves the reasoning behind your decisions for future reference."
+   - If the user agrees: follow the session-record skill — review the session, generate metadata, write the full structured record to `core/sessions/YYYY-MM/`, update the session index, then proceed to step 3
+   - If the user declines: proceed to step 3 with the lightweight journal offer
 
-### What was done
-- Bullet points of accomplishments
+3. **Offer to update today's journal:**
+   - If a session record was just created: offer to append a short summary line referencing it to `$APHELOCOMA_HOME/core/journal/YYYY-MM/YYYY-MM-DD.md`
+   - If no session record was created: offer to create a full journal entry (current behavior)
+   - Journal format with session reference:
+     ```
+     ## HH:MM — [Project Name]
+     <1–2 sentence summary>. See: session-YYYY-MM-DD-HHMMSS
+     ```
+   - Journal format without session record (full entry):
+     ```
+     ## HH:MM — [Project Name]
 
-### Key decisions
-- Any notable decisions and their reasoning
+     ### What was done
+     - Bullet points of accomplishments
 
-### Open threads
-- Unfinished work or things to follow up on
-```
+     ### Key decisions
+     - Any notable decisions and their reasoning
 
-4. Also check if `tasks.md` needs updating based on completed work
+     ### Open threads
+     - Unfinished work or things to follow up on
+     ```
+
+4. **Check tasks.md:**
+   - Also check if `$APHELOCOMA_HOME/core/projects/<project>/tasks.md` needs updating based on completed work
 
 ## Rules
 
 - Don't be pushy — offer once, respect if the user declines
-- Keep the journal entry concise — capture what matters, not every detail
-- If no project record exists, still offer to journal (use the working directory name)
+- The session record is the richer option; the journal entry is the lightweight fallback — always offer session record first
+- If no project record exists, still offer to capture context (use the working directory name as project)
+- Keep journal entries concise — they are summaries, not replacements for the session record

@@ -14,9 +14,9 @@ Steps:
      - From metadata.yaml: `name`, `description`
      - Type mapping: `type: manual` → add `disable-model-invocation: true`; `type: background` → add `user-invocable: false`
      - Merge any fields from the override file
-     - If metadata.yaml has `arguments`, add as `argument-hint`
+     - If metadata.yaml has `arguments`, add as `argument-hint` — **single-quote the value** so hints that start with `[` or contain `:` (e.g. `custom:[roles]`) stay valid YAML; an unquoted `[`-leading value parses as a flow sequence and breaks skill loading
    - Write the generated `SKILL.md` to `~/.claude/skills/<skill-name>/SKILL.md`
-   - Copy any templates/, examples/, scripts/ directories alongside the SKILL.md
+   - Copy any templates/, examples/, scripts/, references/ directories alongside the SKILL.md
 2. Generate `~/.claude/CLAUDE.md` from `$APHELOCOMA_HOME/adapters/claude-code/claude-md-template.md`
 3. Copy agents from `$APHELOCOMA_HOME/adapters/claude-code/agents/` to `~/.claude/agents/`
 4. Report what was deployed
@@ -57,7 +57,7 @@ Steps:
      - Type mapping: `type: manual` → add `disable-model-invocation: true`; `type: background` → add `user-invocable: false`
      - Merge any fields from the override file
    - Write the generated `SKILL.md` to `~/.codex/skills/<skill-name>/SKILL.md`
-   - Copy any templates/, examples/, scripts/ directories alongside the SKILL.md
+   - Copy any templates/, examples/, scripts/, references/ directories alongside the SKILL.md
 2. Generate `~/.codex/AGENTS.md` from `$APHELOCOMA_HOME/adapters/codex/agents-md-template.md`
 3. Copy `hooks.json` from `$APHELOCOMA_HOME/adapters/codex/hooks.json` to `~/.codex/hooks.json`
 4. Report what was deployed
