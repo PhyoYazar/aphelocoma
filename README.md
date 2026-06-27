@@ -21,7 +21,7 @@ Aphelocoma is your **single source of truth** — who you are, what you're worki
 ### 1. Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.0.3-alpha/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.1.0/install.sh | bash
 ```
 
 This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
@@ -81,7 +81,7 @@ In Claude Code or Codex, use `/sync` to keep aphelocoma updated as you work. Con
 ~/.aphelocoma/
 ├── tool/              ← this repo (public, installable)
 │   ├── bin/aph        # CLI
-│   ├── skills/        # 13 built-in skills
+│   ├── skills/        # 18 built-in skills
 │   └── adapters/      # Claude Code, Codex, Cursor generators
 │
 └── data/              ← your private data (never shared)
@@ -100,6 +100,44 @@ Work on a project
   → /capture distills insights into knowledge
   → Next session: AI knows your full context
 ```
+
+---
+
+## Hamilton — an AI crew that builds your project
+
+*New in v0.1.0.* Hamilton turns any coding agent into a small software org — CTO, architect, developers, QA, DevOps — that **brainstorms → plans → builds** software for a project, logging who-did-what to a file ledger. It's portable (just markdown + a written protocol, no dependencies), and **you stay in control** as the advisor.
+
+It ships as a skill, so `aph deploy claude` / `aph deploy codex` installs it with the rest.
+
+### Use it
+
+Run it inside the project you want to build in (new or existing code):
+
+```bash
+/aph-hamilton                                          # guided start — it asks what to build
+/aph-hamilton start "build a furniture store" startup  # fast path if you know the brief
+/aph-hamilton resume                                   # continue where you left off
+/aph-hamilton status                                   # phase + open tasks (read-only)
+```
+
+You're the **advisor**: the crew pauses at **4 checkpoints** for your call — direction + crew size, the plan, the build style, and review — and works on its own in between. Before checkpoints 1, 2, and 4, an independent reviewer double-checks the work first.
+
+**Crew sizes** (chosen with you after Discovery): `solo` · `startup` · `mid` · `big` · `custom:[role,…]`.
+
+Everything Hamilton tracks lives in your project under `.aphelocoma/` — the task board, the append-only history ledger, and one spec per task. The software itself is built at the project root.
+
+### Parallel builds + per-role tuning (optional, Claude Code)
+
+```bash
+/aph-hamilton sync-agents     # generate native role-agents so the crew can build in parallel
+```
+
+Then choose "subagents" at checkpoint 3 to build independent tasks at once — the manager stays the **single writer** of the board + ledger, so concurrent work never corrupts history.
+
+Tune each role in `.aphelocoma/settings.yaml`:
+- **model** — map a role to a model (cheap ↔ smart); roles you don't list use your session's model.
+- **effort** — map a role to a reasoning level (`low`…`max`); roles you don't list use your `/effort`.
+- the reviewer runs **look-only** (no edit tools) by design.
 
 ---
 
@@ -139,6 +177,7 @@ These skills are available inside AI tools after deploying:
 
 | Skill | What it does |
 |-------|-------------|
+| `/aph-hamilton` | Spin up an AI crew (CTO, devs, QA…) that builds software for a project — see **Hamilton** above |
 | `/sync` | Sync current project with aphelocoma |
 | `/aph-status` | Dashboard of projects, knowledge, journal |
 | `/journal` | Capture end-of-session work entry |
