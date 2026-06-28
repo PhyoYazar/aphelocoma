@@ -25,16 +25,18 @@ depends on **no platform-specific features** — only the ability to read and wr
 
 ## 1. Execution model
 
-- **Baseline (always works): sequential single-agent role-play.** One agent becomes one
-  role at a time. This is the guaranteed mode on any platform.
-- **Optional acceleration: parallel subagents (Claude Code).** When enabled, a manager role
-  dispatches independent implementer tasks to subagents in parallel under **orchestrator-owned
-  state**: the manager is the *single writer* of `.aphelocoma/state/tasks.json` +
-  `.aphelocoma/ledger/events.jsonl`, while each subagent writes only the project files + its own
-  `.aphelocoma/ledger/agents/<role>.md` and returns a structured result. The enabling conditions,
-  dispatch loop, and result schema are in `PARALLEL.md`. Generate the agents with
-  `/aph-hamilton sync-agents`.
-- The system MUST remain fully runnable sequentially. Never require parallelism.
+- **Default on Claude Code: parallel subagents.** When the platform can spawn subagents and the native
+  crew agents exist (generated at `/deploy`, or per-project via `/aph-hamilton sync-agents`),
+  Implementation runs in parallel by default: a manager role dispatches independent implementer tasks to
+  native `hamilton-<role>` subagents under **orchestrator-owned state** — the manager is the *single
+  writer* of `.aphelocoma/state/tasks.json` + `.aphelocoma/ledger/events.jsonl`, while each subagent
+  writes only the project files + its own `.aphelocoma/ledger/agents/<role>.md` and returns a structured
+  result. Conditions, dispatch loop, and result schema are in `PARALLEL.md`.
+- **Baseline / fallback (always works): sequential single-agent role-play.** One agent becomes one role
+  at a time — the guaranteed mode on any platform, the automatic fallback when subagents or the crew
+  agents are unavailable, and selectable whenever the advisor prefers it (CP3).
+- The system MUST remain fully runnable sequentially. **Parallelism is the default where available, but
+  never required** — non-Claude platforms and missing-agent cases run sequentially with identical output.
 
 ## 1.5 Advisor model (human-in-the-loop)
 
@@ -46,7 +48,8 @@ presenting 2–3 options with trade-offs (or targeted questions) and a recommend
    recommends a size from what Discovery revealed; see §2). The directions are presented *with their
    foundation implications* (from the §2 Phase 1 Foundations pass), and the TDD default is confirmed here.
 2. **After Plan & Roadmap** — the advisor approves / reorders / cuts / adds.
-3. **Before Implementation** — the advisor picks the build style (subagents vs one session; §1).
+3. **Before Implementation** — the build style. **Parallel subagents is the default** where available
+   (§1); the advisor may opt for one sequential session instead.
 4. **At Review** — the advisor accepts, or says what to fix / add.
 
 Before CP1, CP2, and CP4 an **independent reviewer** — a fresh subagent or the host's own review tool
@@ -108,9 +111,10 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    create an entry in `.aphelocoma/state/tasks.json` AND write `.aphelocoma/specs/<task-id>.md` with the handoff
    contract (§4). The engineering-manager (or top active manager) sets each task's
    `owner`. Log `task_created` then `task_assigned`.
-4. **Implementation** — Begin at **Checkpoint 3**: if parallel is possible (Claude Code + ≥2 `assigned`
-   tasks with disjoint file scopes), ask the advisor *subagents or one session?* and log a `decision`;
-   otherwise build sequentially. Each owner role picks up its `assigned` tasks, builds **in the project
+4. **Implementation** — Begin at **Checkpoint 3**: if parallel is possible (Claude Code + native crew
+   agents + ≥2 `assigned` tasks with disjoint file scopes), **default to parallel subagents** — tell the
+   advisor it's the default and let them opt for one sequential session instead; log the `decision`.
+   Otherwise build sequentially. Each owner role picks up its `assigned` tasks, builds **in the project
    (at the repo root, beside `.aphelocoma/`)**, records artifacts, and moves the task to `in_review`.
    Implementers write code to the **craft bar** (`CRAFT.md`: error handling, consistency, simplicity —
    in that precedence) as a standing definition-of-done alongside the §4 acceptance criteria.

@@ -1,0 +1,15 @@
+# Hamilton — GLOBAL default model/effort for the deploy-time crew.
+#
+# `/deploy` reads this to generate the shared crew agents at ~/.claude/agents/hamilton-<role>.md.
+# Same shape as a per-project .aphelocoma/settings.yaml — and a project's settings.yaml OVERRIDES this
+# for that project (re-run `/aph-hamilton sync-agents`, then restart the session so the agents reload;
+# Claude Code loads agent files only at session start).
+#
+# Policy: any role NOT listed omits its `model:`/`effort:` line, so it INHERITS your session — i.e. your
+# best model (opus today, fable later) with nothing to re-deploy when the best model changes. List only
+# the deliberate exceptions.
+models:
+  technical-writer: sonnet   # one step down — medium is plenty for mechanical docs
+
+# effort: (none listed) — every role inherits the session effort (set via /effort).
+#   e.g. qa-engineer: xhigh   # uncomment to make the reviewer think harder than the session
