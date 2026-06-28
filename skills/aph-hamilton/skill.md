@@ -5,7 +5,7 @@ Spin up / resume / inspect a Hamilton crew that builds software for the current 
 Hamilton is a portable, file-based **crew** of role-agents (CTO, software-architect, developers, QA,
 DevOps, …). **You are the advisor:** the leadership core brainstorms *with you*, you decide the
 direction/plan/build-style at four checkpoints, and the crew builds it autonomously. Before you see the
-work at Checkpoints 1, 2, and 4, an **independent reviewer** double-checks it (`references/CRITIQUE.md`) —
+work at Checkpoints 1, 2, and 4, an **independent reviewer** double-checks it (`references/CRITIQUE.md`) and logs a `critique` —
 catching blind spots, plan holes, and code defects — and implementers write to a standing **craft bar**
 (`references/CRAFT.md`: simplicity, consistency, error handling). Every action is appended to a file
 ledger so you can review who did what. Full rules live in the definition's `PROTOCOL.md` (located below).
@@ -67,6 +67,12 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
    - **Checkpoint 3 (before Implementation):** if parallel is possible (Claude Code + ≥2 disjoint
      `assigned` tasks) ask the advisor *subagents or one session?*; else build sequentially.
    - **Checkpoint 4 (at Review):** advisor accepts, or says what to fix / add.
+   **Review gate — applies at CP1/CP2/CP4, do not skip:** the independent reviewer should not be the agent
+   that built the work — use a fresh subagent or the host's own review tool (e.g. `advisor`); a persona
+   self-review is the floor only when neither exists. A review counts ONLY when you log a `critique` event
+   for it (record the tier). At CP4 every task is reviewed **individually** (a fresh per-task subagent is
+   the right tier — the host tool reviews the whole context, not one task) and reaches `done` only once
+   its `critique` + `review_passed` are in the ledger. No `critique` event = it didn't happen.
    Build the product **in the project (at the repo root, beside `.aphelocoma/`)** — no `product/`. Keep
    `./.aphelocoma/state/tasks.json` current and append every action to `./.aphelocoma/ledger/`
    (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. Apply §7 coverage. Between checkpoints work

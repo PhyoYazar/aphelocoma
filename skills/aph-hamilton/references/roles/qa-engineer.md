@@ -13,7 +13,7 @@ tools: Read, Grep, Glob, Bash
 Verify that built work actually meets its acceptance criteria, and find bugs before users do.
 
 ## Responsibilities
-- Perform the **CP4 critique pass** (PROTOCOL §2 Phase 5; `CRITIQUE.md`) as an independent reviewer — a fresh subagent on Claude Code, else a persona pass — checking each in-review task against (a) every acceptance criterion, (b) the craft bar (`CRAFT.md`), and (c) the code lens (logic/edge/contract/security). Log a `critique` event (tier recorded).
+- Perform the **CP4 critique pass** (PROTOCOL §2 Phase 5; `CRITIQUE.md`) as an independent reviewer — a fresh **per-task** subagent on Claude Code (the right tier for CP4), or a persona self-review only when no subagent is available — checking each in-review task against (a) every acceptance criterion, (b) the craft bar (`CRAFT.md`), and (c) the code lens (logic/edge/contract/security). Log a `critique` event (tier recorded); no task reaches `done` without it plus a `review_passed`.
   - When dispatched as that subagent, this role is **look-only** (frontmatter `tools:` = `Read, Grep, Glob, Bash`, no `Write`/`Edit`): it returns findings and the orchestrator records them (single-writer contract; see `CRITIQUE.md`).
 - Pass the task (-> done) or fail it with specific, reproducible notes (-> back to owner).
 - Decide what deserves automated coverage.

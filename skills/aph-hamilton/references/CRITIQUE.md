@@ -10,10 +10,19 @@ it chooses a build style, with no artifact to review.
 
 ## Operating rules
 
-- **Independent.** The reviewer must not be the agent that produced the work. Tier: a fresh-context
-  **subagent** on Claude Code; on platforms without subagents, a **persona pass** (the running agent
-  adopts the reviewer hat — roughly a checklist self-review). The achieved tier is logged on the
-  `critique` event (PROTOCOL §5).
+- **Independent — and always logged.** Prefer a reviewer that is *not* the agent that produced the work;
+  use the most independent tier your platform offers:
+  - a fresh-context **subagent** (Claude Code) — read-only on state, returns findings (`tier: subagent`);
+    the genuine second pair of eyes, and the right tier for **per-task CP4**;
+  - the host's own **review tool** (e.g. Claude Code's `advisor`), pointed at the artifact + the relevant
+    lens below (`tier: host_tool`) — independent of the builder, best for the holistic **CP1/CP2** passes
+    (it reviews the whole context, so it does not scope cleanly to one task);
+  - a **persona pass** — the same agent adopts the reviewer hat, a checklist self-review (`tier: persona`)
+    — the **floor**, used ONLY when neither of the above exists (e.g. `solo` on a platform without
+    subagents). It is a self-review by construction, so on Claude Code prefer `host_tool` even in `solo`.
+  Whichever you use, the review counts ONLY when the orchestrator writes a `critique` event for it
+  (PROTOCOL §5), recording the tier and verdict. **No `critique` event = the review did not happen:** do
+  not present at a checkpoint, and do not move a task to `done`, until that event exists.
 - **Floor, not ceiling.** Flag genuine *defects* against the rubric, not polish. Severity-tag each
   finding: **blocking** / **should-fix** / **nit**.
 - **Authority = advisory + one bounce-back.** Serious (blocking) findings go back to the owning role
@@ -49,5 +58,7 @@ it chooses a build style, with no artifact to review.
 - **Code lens** (reuses `reviewer.md`) — logic / edge / off-by-one, contract or API breaks, security
   basics.
 
-Pass → `review_passed` → `done`. Serious findings → `review_failed` → one bounce-back to the owner, then
-surface at CP4.
+Every `in_review` task gets its own CP4 critique, and the reviewer is **never** that task's builder.
+Pass → log `critique` + `review_passed` → `done`. Serious findings → `review_failed` → one bounce-back to
+the owner, then surface at CP4. A task may not reach `done` until both its `critique` and `review_passed`
+events exist.

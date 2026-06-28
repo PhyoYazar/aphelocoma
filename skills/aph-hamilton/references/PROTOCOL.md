@@ -49,10 +49,12 @@ presenting 2–3 options with trade-offs (or targeted questions) and a recommend
 3. **Before Implementation** — the advisor picks the build style (subagents vs one session; §1).
 4. **At Review** — the advisor accepts, or says what to fix / add.
 
-Before CP1, CP2, and CP4 an **independent reviewer** double-checks the crew's work against `CRITIQUE.md`
-(blind spots at brainstorm, holes at plan, defects at implementation). The work is presented to the
-advisor *with* the reviewer's findings and any fixes (see §2 Phases 1/2/5). CP3 has no artifact, so no
-critique. The reviewer's authority is **advisory + one bounce-back**; the advisor still decides.
+Before CP1, CP2, and CP4 an **independent reviewer** — a fresh subagent or the host's own review tool
+(e.g. Claude Code's `advisor`), or a persona self-review only when neither exists — double-checks the
+crew's work against `CRITIQUE.md` (blind spots at brainstorm, holes at plan, defects at implementation),
+**always recorded as a `critique` event** (§5). The work is presented to the advisor
+*with* the reviewer's findings and any fixes (see §2 Phases 1/2/5). CP3 has no artifact, so no critique.
+The reviewer's authority is **advisory + one bounce-back**; the advisor still decides.
 
 Record each as a `decision` event: `actor: advisor`, `note` = the options offered + the choice (or
 "delegated" if the advisor says "you decide" — then proceed with the recommendation). Between
@@ -115,14 +117,19 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    Log `work_started`, `artifact_written`, then update status (see §3). Parallel dispatch follows
    `PARALLEL.md`.
 5. **Review / QA (independent critique)** — the Review **is** an independent critique pass, not a layer
-   after QA. qa-engineer (or covering role per §7) reviews each `in_review` task as a fresh-context
-   reviewer — a subagent on Claude Code, else a persona pass — against `CRITIQUE.md`'s CP4 lens: **(a)**
-   its acceptance criteria (incl. tests-first when TDD is on), **(b)** the craft bar (`CRAFT.md`), and
-   **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
+   after QA. qa-engineer (or covering role per §7) reviews **each** `in_review` task as a fresh-context
+   reviewer — a fresh subagent on Claude Code (the right tier for per-task CP4), the host's own review
+   tool (`tier: host_tool`), or, only when neither exists, a persona self-review (`tier: persona`, the
+   floor) — independent of the builder wherever a subagent or host tool is available — against
+   `CRITIQUE.md`'s CP4 lens:
+   **(a)** its acceptance criteria (incl. tests-first when TDD is on), **(b)** the craft bar (`CRAFT.md`),
+   and **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
    (§5; tier recorded). Pass → status `done`, log `review_passed`. Serious findings → status back to
-   `assigned`/`in_progress` with notes, log `review_failed`, **one** bounce-back to the owner. End at
-   **Checkpoint 4**: the advisor accepts, or says what to fix / add (log a `decision`); fixes loop back as
-   re-assigned tasks.
+   `assigned`/`in_progress` with notes, log `review_failed`, **one** bounce-back to the owner. **No task
+   moves to `done` until both its `critique` and `review_passed` events are in the ledger** (in `solo`
+   without subagents, the persona self-review is the acknowledged floor; on Claude Code prefer
+   `host_tool`). End at **Checkpoint 4**: the advisor accepts, or says
+   what to fix / add (log a `decision`); fixes loop back as re-assigned tasks.
 6. **Integration** — devops/sre/cloud (if active) integrate, build, and judge readiness.
    When all roadmap tasks are `done` and integration passes, set `phase: done` and log `project_completed`.
 
@@ -175,9 +182,12 @@ back to the author.
   (the options offered + the pick) and on any direction the human gives. Crew actors are role-ids.
 - The **`reviewer`** actor marks an independent critique pass (§1.5); `critique` events use it. The
   `note` records the gate (CP1/CP2/CP4), the verdict (`clear` / `findings`), severity, and the
-  independence **tier** (`subagent` on Claude Code, else `persona`) — so a real second-pair-of-eyes
-  review is distinguishable from a self-review. `task` is null at CP1/CP2 (phase-level) and set at CP4
-  (per-task). At CP4 the `critique` event rides alongside the unchanged `review_passed` / `review_failed`.
+  independence **tier** — one of `subagent` (a fresh-context reviewer on Claude Code), `host_tool` (the
+  host's own review feature, e.g. Claude Code's `advisor`, pointed at the artifact + lens), or `persona`
+  (a self-review where neither is available) — so a real second-pair-of-eyes review is distinguishable
+  from a self-review. `task` is null at CP1/CP2 (phase-level) and set at CP4 (per-task). At CP4 the
+  `critique` event rides alongside the `review_passed` / `review_failed`, and a task reaches `done` ONLY
+  once both exist.
 - A role file's **Ledger rule** is *indicative, not an exclusive whitelist* — a role may emit
   any documented event its work legitimately requires (especially when covering another role
   per §7; e.g. a CTO covering QA logs `review_passed`).
@@ -204,12 +214,16 @@ On start, read `.aphelocoma/state/brief.md`:
 - **Disclosure** — never fabricate completion. If something is uncertain or assumed, log
   an `assumption_logged` event and proceed transparently. A task is `done` ONLY when all
   its acceptance criteria are met.
-- **Independent review** — the CP1/CP2 critique is dispatched by leadership (the always-active `cto`
-  runs it; covers per role-coverage above), the CP4 critique by `qa-engineer` (or nearest senior under
-  coverage). On Claude Code the reviewer is a fresh subagent that is **read-only on state and returns
-  findings** — the orchestrator logs the `critique` event and updates `tasks.json`/`events.jsonl`
-  (single-writer contract, `PARALLEL.md`). On platforms without subagents it is a persona pass. The
-  reviewer never writes state itself.
+- **Independent review (always logged)** — the CP1/CP2 critique is dispatched by leadership (the
+  always-active `cto` runs it; covers per role-coverage above), the CP4 critique by `qa-engineer` (or
+  nearest senior under coverage), and the reviewer should be **independent of** the agent that built the
+  work. Use the strongest reviewer the platform offers — a fresh read-only **subagent** (Claude Code), the
+  host's own **review tool** (e.g. `advisor`; `tier: host_tool`), or, only when neither exists, a
+  **persona pass** (a self-review — the floor) — but it counts only when
+  the orchestrator logs a `critique` event for it; the reviewer never writes state itself (single-writer
+  contract, `PARALLEL.md`). **No `critique` event means no review happened:** do not present at CP1/CP2,
+  and do not move any task to `done` at CP4, until the matching `critique` (and, at CP4, `review_passed`)
+  is in the ledger.
 - **Stay in lane** — role work builds the *product* in the project (beside `.aphelocoma/`). Do not
   modify Hamilton's own definition files (`references/`) while running a project unless explicitly asked.
 
@@ -217,3 +231,6 @@ On start, read `.aphelocoma/state/brief.md`:
 
 `pending → assigned → in_progress → in_review → done`
 (`blocked` reachable from any state; return to `assigned`/`in_progress` on `review_failed`.)
+The **`in_review → done`** step is gated: it requires a logged `critique` **and** `review_passed`
+(§2 Phase 5, §7) — from an independent reviewer (subagent or host tool) where one exists, or the persona
+self-review floor in `solo` with neither. No shortcut to `done`.
