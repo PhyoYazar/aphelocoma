@@ -4,8 +4,9 @@ Spin up / resume / inspect a Hamilton crew that builds software for the current 
 
 Hamilton is a portable, file-based **crew** of role-agents (CTO, software-architect, developers, QA,
 DevOps, …). **You are the advisor:** the leadership core brainstorms *with you*, you decide the
-direction/plan/build-style at four checkpoints, and the crew builds it autonomously. Before you see the
-work at Checkpoints 1, 2, and 4, an **independent reviewer** double-checks it (`references/CRITIQUE.md`) —
+direction/plan/build-style at four checkpoints, and the crew builds it autonomously — **in parallel by
+default on Claude Code** (native role-agents), sequentially everywhere else. Before you see the
+work at Checkpoints 1, 2, and 4, an **independent reviewer** double-checks it (`references/CRITIQUE.md`) and logs a `critique` —
 catching blind spots, plan holes, and code defects — and implementers write to a standing **craft bar**
 (`references/CRAFT.md`: simplicity, consistency, error handling). Every action is appended to a file
 ledger so you can review who did what. Full rules live in the definition's `PROTOCOL.md` (located below).
@@ -64,44 +65,62 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
      roles and record the size + foundations + TDD choice in `brief.md` + `tasks.json`. (If `<size>`
      was given on the command line, propose it as the recommendation; the advisor still confirms.)
    - **Checkpoint 2 (after Plan & Roadmap):** advisor approves / reorders / cuts / adds.
-   - **Checkpoint 3 (before Implementation):** if parallel is possible (Claude Code + ≥2 disjoint
-     `assigned` tasks) ask the advisor *subagents or one session?*; else build sequentially.
+   - **Checkpoint 3 (before Implementation):** parallel subagents is the **default** where possible
+     (Claude Code + crew agents + ≥2 disjoint `assigned` tasks) — note it and let the advisor opt for one
+     sequential session; else sequential.
    - **Checkpoint 4 (at Review):** advisor accepts, or says what to fix / add.
+   **Review gate — applies at CP1/CP2/CP4, do not skip:** the independent reviewer should not be the agent
+   that built the work — use a fresh subagent or the host's own review tool (e.g. `advisor`); a persona
+   self-review is the floor only when neither exists. A review counts ONLY when you log a `critique` event
+   for it (record the tier). At CP4 every task is reviewed **individually** (a fresh per-task subagent is
+   the right tier — the host tool reviews the whole context, not one task) and reaches `done` only once
+   its `critique` + `review_passed` are in the ledger. No `critique` event = it didn't happen.
    Build the product **in the project (at the repo root, beside `.aphelocoma/`)** — no `product/`. Keep
    `./.aphelocoma/state/tasks.json` current and append every action to `./.aphelocoma/ledger/`
    (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. Apply §7 coverage. Between checkpoints work
    autonomously; the advisor may interject anytime.
-   - **Parallel build (Checkpoint 3 = "subagents"):** dispatch disjoint `assigned` tasks as parallel
-     subagents and serialize results per `<skill>/references/PARALLEL.md` — you stay the single writer
-     of `tasks.json` + `events.jsonl`. If a generated `hamilton-<role>` agent isn't selectable as a
-     subagent type yet, dispatch a generic subagent with that agent file's content injected.
+   - **Parallel build (the default at Checkpoint 3):** dispatch disjoint `assigned` tasks to their
+     native `hamilton-<role>` subagents (generated at `/deploy` — real role names + per-role
+     model/effort/tools) and serialize results per `<skill>/references/PARALLEL.md` — you stay the single
+     writer of `tasks.json` + `events.jsonl`. Only if the crew agents are missing, fall back to generic
+     subagents with the role content injected (they show as `general-purpose` and lose per-role effort +
+     tool-scoping). On non-Claude platforms, build sequentially.
 
 ### `resume`
 Read `./.aphelocoma/`. Report the current `phase` and open tasks (anything not `done`) from
 `./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
 
 ### `status`
-Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, plus the
-last few `./.aphelocoma/ledger/events.jsonl` entries. Read-only — no state changes.
+Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, the last few
+`./.aphelocoma/ledger/events.jsonl` entries, and the active crew's `role → model → effort → tools` table
+(from the generated agents / the applicable settings). Read-only — no state changes.
 
-### `sync-agents`  (Claude Code only)
-Generate native role-agents so the orchestrator can dispatch implementers as **parallel** subagents
-(see `<skill>/references/PARALLEL.md`). Steps:
+### `sync-agents`  (Claude Code only — per-project override)
+The standard crew is generated **globally at `/deploy`** (`~/.claude/agents/hamilton-<role>.md`), so most
+runs already have native agents and need this command only to **override models/effort for one project**
+(via that project's `./.aphelocoma/settings.yaml`). It regenerates that project's crew so the
+orchestrator can dispatch implementers as native **parallel** subagents (see
+`<skill>/references/PARALLEL.md`). Steps:
 1. Read the active roles from `./.aphelocoma/hamilton.json`.
 2. For each active role (one per instance — `<role-id>`, or `<role-id>#N` for repeats), fill
    `<skill>/references/agent-template.md`: `{{ROLE_ID}}`, `{{AGENT_NAME}}` (`hamilton-<role-id>`,
    `#`→`-`), `{{ROLE_TITLE}}` (the `title:` from the role's frontmatter), `{{ROLE_BODY}}` (the verbatim
    text of `<skill>/references/roles/<role-id>.md`), `{{TOOLS_LINE}}` (`tools: <list>` from the role's
    frontmatter `tools:` if present — read-only reviewer roles like `qa-engineer` drop `Write`/`Edit` —
-   else the default `tools: Read, Write, Edit, Bash, Grep, Glob`), `{{MODEL_LINE}}` (`model: <model>` if
-   `.aphelocoma/settings.yaml` `models:` maps this role or a `default`, else omit the line), and
-   `{{EFFORT_LINE}}` (`effort: <low|medium|high|xhigh|max>` if `.aphelocoma/settings.yaml` `effort:` maps
-   this role or a `default`, else omit — the agent inherits the session's effort).
+   else the default `tools: Read, Write, Edit, Bash, Grep, Glob`), `{{MODEL_LINE}}`/`{{EFFORT_LINE}}` from
+   `./.aphelocoma/settings.yaml` (omit each when unlisted → the agent inherits the session). Use the
+   **reviewer** body for look-only roles (no `Write`/`Edit`), the **implementer** body otherwise
+   (`agent-template.md` defines both).
 3. Write each generated file to `./.claude/agents/<AGENT_NAME>.md` in the current project.
+4. Print a **crew table** — `role → agent name → model → effort → tools` — so the models/effort are
+   visible at a glance.
+5. **Tell the advisor to restart the session** (then `/aph-hamilton resume`): Claude Code loads agent
+   files only at session start, so a freshly regenerated project crew is dispatchable only after a
+   restart. (The global `/deploy` crew needs no restart — it is already loaded.)
 
-Regenerable — rerun after any role change; **never hand-edit** the generated files (they are derived).
-Each generated agent embeds the single-writer contract: it writes only the project files + its own
-`.aphelocoma/ledger/agents/<role>.md` and returns a structured result; the orchestrator is the sole
+Regenerable — rerun after any role or settings change; **never hand-edit** the generated files (they are
+derived). Each generated agent embeds the single-writer contract: it writes only the project files + its
+own `.aphelocoma/ledger/agents/<role>.md` and returns a structured result; the orchestrator is the sole
 writer of `.aphelocoma/state/tasks.json` + `.aphelocoma/ledger/events.jsonl`.
 
 **Non-Claude platforms:** print "sync-agents is Claude-Code-only; running sequentially" and generate

@@ -3,6 +3,11 @@
 # role→model map below (used by `/aph-hamilton sync-agents`). The product always builds at the project
 # root (beside .aphelocoma/), and the build style (subagents vs one session) is chosen by the advisor
 # at the Implementation checkpoint (PROTOCOL §1.5) — not set here.
+#
+# The GLOBAL default (the crew inherits your best model; technical-writer = sonnet) ships in
+# references/settings.default.yaml and is baked into the deploy-time crew (~/.claude/agents/). A
+# per-project file like this OVERRIDES it for one project — re-run `/aph-hamilton sync-agents`, then
+# restart the session so Claude Code reloads the agents.
 
 # --- Role -> model mapping (opt-in). Heavy-reasoning roles can use a stronger model; bulk
 # implementation can use a cheaper/faster one. Interpreted by whatever platform runs Hamilton;

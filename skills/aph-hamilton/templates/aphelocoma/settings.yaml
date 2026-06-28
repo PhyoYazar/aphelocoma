@@ -1,5 +1,7 @@
-# Optional model settings for this project's Hamilton crew. Hamilton runs fine without this file;
-# only `/aph-hamilton sync-agents` reads it (to set each generated agent's model). Safe to edit/delete.
+# Optional model settings for this project's Hamilton crew. Hamilton runs fine without this file; it
+# OVERRIDES the global default crew (crew = your best model; technical-writer = sonnet) for THIS project
+# only. After editing, run `/aph-hamilton sync-agents` then restart the session (Claude Code loads agent
+# files only at session start). Safe to edit/delete.
 #
 # Any role NOT listed below uses your current session's model — i.e. your best model (opus today,
 # fable later) automatically, with nothing to change when the best model changes. List a role only to

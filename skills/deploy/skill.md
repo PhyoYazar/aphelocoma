@@ -19,7 +19,25 @@ Steps:
    - Copy any templates/, examples/, scripts/, references/ directories alongside the SKILL.md
 2. Generate `~/.claude/CLAUDE.md` from `$APHELOCOMA_HOME/adapters/claude-code/claude-md-template.md`
 3. Copy agents from `$APHELOCOMA_HOME/adapters/claude-code/agents/` to `~/.claude/agents/`
-4. Report what was deployed
+4. Generate the **Hamilton crew agents** (the native parallel subagents — see
+   `$APHELOCOMA_HOME/skills/aph-hamilton/references/PARALLEL.md`). Read the global default
+   `$APHELOCOMA_HOME/skills/aph-hamilton/references/settings.default.yaml`. For **each** role file in
+   `$APHELOCOMA_HOME/skills/aph-hamilton/references/roles/<role-id>.md`, fill
+   `$APHELOCOMA_HOME/skills/aph-hamilton/references/agent-template.md`:
+   - `{{AGENT_NAME}}` = `hamilton-<role-id>`; `{{ROLE_ID}}`; `{{ROLE_TITLE}}` = the role frontmatter
+     `title:`; `{{ROLE_BODY}}` = the verbatim role file
+   - `{{TOOLS_LINE}}` = the role's `tools:` if it declares one (e.g. `qa-engineer` → look-only
+     `Read, Grep, Glob, Bash`), else the default `Read, Write, Edit, Bash, Grep, Glob`
+   - `{{MODEL_LINE}}` / `{{EFFORT_LINE}}` from `settings.default.yaml` (omit each when the role is
+     unlisted → the agent inherits the session, so the crew follows your best model automatically)
+   Use the **reviewer** body for look-only roles (no `Write`/`Edit`, e.g. `qa-engineer`) and the
+   **implementer** body for the rest (`agent-template.md` defines both). Write each to
+   `~/.claude/agents/hamilton-<role-id>.md`, then **print a table**
+   (`role → agent name → model → effort → tools`) so the crew's models/effort are visible. These global
+   agents load at every session start, so Hamilton dispatches native role agents with no per-run restart
+   (a project that overrides models/effort re-runs `/aph-hamilton sync-agents` + restarts).
+5. Report what was deployed (include the crew agent count — it must equal the number of role files; if
+   fewer, a role was skipped → regenerate)
 
 ## Cursor
 
