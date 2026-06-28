@@ -21,7 +21,7 @@ Aphelocoma is your **single source of truth** — who you are, what you're worki
 ### 1. Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.1.1/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.1.2/install.sh | bash
 ```
 
 This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
