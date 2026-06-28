@@ -21,7 +21,7 @@ Aphelocoma is your **single source of truth** — who you are, what you're worki
 ### 1. Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.1.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.1.1/install.sh | bash
 ```
 
 This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
@@ -120,24 +120,22 @@ Run it inside the project you want to build in (new or existing code):
 /aph-hamilton status                                   # phase + open tasks (read-only)
 ```
 
-You're the **advisor**: the crew pauses at **4 checkpoints** for your call — direction + crew size, the plan, the build style, and review — and works on its own in between. Before checkpoints 1, 2, and 4, an independent reviewer double-checks the work first.
+You're the **advisor**: the crew pauses at **4 checkpoints** for your call — direction + crew size, the plan, the build style, and review — and works on its own in between. Before checkpoints 1, 2, and 4 — and on **every task before it's marked done** — an independent reviewer (never the builder) double-checks the work and records its verdict to the ledger.
 
 **Crew sizes** (chosen with you after Discovery): `solo` · `startup` · `mid` · `big` · `custom:[role,…]`.
 
 Everything Hamilton tracks lives in your project under `.aphelocoma/` — the task board, the append-only history ledger, and one spec per task. The software itself is built at the project root.
 
-### Parallel builds + per-role tuning (optional, Claude Code)
+### Parallel builds + per-role tuning (Claude Code)
 
-```bash
-/aph-hamilton sync-agents     # generate native role-agents so the crew can build in parallel
-```
+`aph deploy claude` generates the **crew agents** (`~/.claude/agents/hamilton-<role>`), so on Claude Code the crew builds **in parallel by default** — independent tasks run at once, with the manager as the **single writer** of the board + ledger so concurrent work never corrupts history. The fleet view shows real role names (`hamilton-fullstack-developer`, …), and each role carries its own model, effort, and tool scope. Sequential is the automatic fallback and the only mode on other tools — parallel is the default where available, never required.
 
-Then choose "subagents" at checkpoint 3 to build independent tasks at once — the manager stays the **single writer** of the board + ledger, so concurrent work never corrupts history.
-
-Tune each role in `.aphelocoma/settings.yaml`:
-- **model** — map a role to a model (cheap ↔ smart); roles you don't list use your session's model.
-- **effort** — map a role to a reasoning level (`low`…`max`); roles you don't list use your `/effort`.
+Defaults: the crew follows your **session model** (so it always uses your best, and upgrades itself when a better model ships); the technical-writer uses `sonnet`. Override per project in `.aphelocoma/settings.yaml`:
+- **model** — map a role to a model (cheap ↔ smart); unlisted roles follow your session.
+- **effort** — map a role to a reasoning level (`low`…`max`); unlisted roles follow your `/effort`.
 - the reviewer runs **look-only** (no edit tools) by design.
+
+Changed a project's models/effort? Re-run `/aph-hamilton sync-agents`, then **restart the session** so the new crew loads (Claude Code loads agents at startup). `/aph-hamilton status` prints the role → model → effort → tools table.
 
 ---
 
