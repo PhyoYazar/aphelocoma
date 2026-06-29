@@ -181,9 +181,10 @@ back to the author.
 - Event types: `role_activated`, `brainstorm_note`, `plan_created`, `roadmap_updated`,
   `task_created`, `task_assigned`, `work_started`, `artifact_written`, `task_completed`,
   `review_passed`, `review_failed`, `blocked`, `assumption_logged`, `handoff`,
-  `phase_advanced`, `project_completed`, `decision`, `critique`.
+  `phase_advanced`, `project_completed`, `decision`, `critique`, `bug_reported`.
 - The **`advisor`** actor is the human (the user) in the top seat; it appears on `decision` events
-  (the options offered + the pick) and on any direction the human gives. Crew actors are role-ids.
+  (the options offered + the pick), on `bug_reported` (a defect you raise; §6.5), and on any direction
+  the human gives. Crew actors are role-ids.
 - The **`reviewer`** actor marks an independent critique pass (§1.5); `critique` events use it. The
   `note` records the gate (CP1/CP2/CP4), the verdict (`clear` / `findings`), severity, and the
   independence **tier** — one of `subagent` (a fresh-context reviewer on Claude Code), `host_tool` (the
@@ -206,6 +207,28 @@ On start, read `.aphelocoma/state/brief.md`:
 - If it is populated → a project is in progress. Report the current `phase` and the open
   tasks (anything not `done`) from `.aphelocoma/state/tasks.json`, then **continue** from there. Do not
   restart or rebuild completed work.
+
+## 6.5 Bug & fix intake (advisor-reported defects)
+
+A bug or error found after a task is `done` — by the advisor testing, in production, or on `resume` —
+re-enters Hamilton as ordinary tracked work, never a side channel:
+
+1. **Report.** The advisor describes what's broken (the error, the wrong behavior, repro if known) —
+   mid-run or via `/aph-hamilton resume`. The orchestrator logs a `bug_reported` event (`actor: advisor`;
+   `note` = the symptom + any repro).
+2. **Triage.** Leadership (or the active manager; nearest senior per §7) names the likely area, the
+   **owner** — the role that built it — and the severity.
+3. **Fix task.** Create a task + `.aphelocoma/specs/<id>.md` (§4) whose acceptance criteria are "the bug no
+   longer reproduces" + the expected behavior; log `task_created` then `task_assigned` to the owner. When
+   TDD is on, the first criterion is a **failing test that reproduces the bug**, which the fix then makes
+   pass.
+4. **Fix + review.** The owner fixes it as a normal role-turn (§3) → `in_review` → the **CP4 critique**
+   reviews it like any task (§2 Phase 5: no task reaches `done` without a logged `critique` +
+   `review_passed`) → `done`.
+
+The builder fixes their own defects (they hold the context) — there is **no separate "bug-fixer" role**.
+Operational/incident issues are owned by `sre` / `tech-support-engineer` where active; a fix the owner
+cannot crack goes `blocked` and escalates to the lead/architect (§7).
 
 ## 7. Rules that keep runs honest
 

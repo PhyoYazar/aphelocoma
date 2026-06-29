@@ -88,7 +88,8 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
 
 ### `resume`
 Read `./.aphelocoma/`. Report the current `phase` and open tasks (anything not `done`) from
-`./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
+`./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6. Hit a bug or want a change? Just say so —
+it becomes a tracked **fix task** routed to the owning role (PROTOCOL §6.5), not a side channel.
 
 ### `status`
 Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, the last few
