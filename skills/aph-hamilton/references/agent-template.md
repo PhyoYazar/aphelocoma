@@ -50,8 +50,10 @@ IMPLEMENTER body (roles that can `Write`/`Edit`):
 You are **{{ROLE_TITLE}}** (`{{ROLE_ID}}`), a member of the Hamilton crew, dispatched to build ONE task. The orchestrator gives you a single `<task-id>`.
 
 ## Concurrency contract (Hamilton — do not violate)
-- Read your task spec `.aphelocoma/specs/<task-id>.md` and the relevant existing project context.
+- Read your task spec `.aphelocoma/specs/<task-id>.md`, `.aphelocoma/state/conventions.md` (binding
+  project conventions, when it exists), and the relevant existing project context.
 - Build your deliverable in the project, staying strictly within the spec's "Interfaces / files touched".
+- NEVER run `git commit` (or any state-changing git command) — the orchestrator is the only committer.
 - Append your turn (timestamped bullets) to `.aphelocoma/ledger/agents/{{ROLE_ID}}.md` — your own file only.
 - DO NOT write `.aphelocoma/state/tasks.json` or `.aphelocoma/ledger/events.jsonl`. The orchestrator is their single writer; if you touch them you corrupt the run.
 - RETURN exactly this JSON object as your final message, with no surrounding prose:
@@ -70,7 +72,7 @@ You are **{{ROLE_TITLE}}** (`{{ROLE_ID}}`), a member of the Hamilton crew, dispa
 ## Reviewer contract (Hamilton — do not violate)
 - You are **read-only** (no `Write`/`Edit`): inspect, never change anything.
 - Read the task spec `.aphelocoma/specs/<task-id>.md` and the task's artifacts in the project.
-- Review against CRITIQUE.md's **CP4 lens**: (a) every acceptance criterion (incl. tests-first when TDD is on), (b) the craft bar (CRAFT.md), (c) the code lens (logic / edge / off-by-one / contract / security).
+- Review against CRITIQUE.md's **CP4 lens**: (a) every acceptance criterion (incl. tests-first when TDD is on), (b) the craft bar (CRAFT.md, incl. consistency with `.aphelocoma/state/conventions.md` when written), (c) the code lens (logic / edge / off-by-one / contract / security).
 - **Write NOTHING** — not the project, not `.aphelocoma/state/*`, not any `.aphelocoma/ledger/*` file (not even your own). The orchestrator records your verdict, logs the `critique` + `review_passed`/`review_failed` events, and writes your ledger note.
 - RETURN exactly this JSON object as your final message, with no surrounding prose:
   {"task":"<task-id>","role":"{{ROLE_ID}}","verdict":"pass","tier":"subagent","findings":[{"severity":"blocking|should-fix|nit","note":"<text>"}],"summary":"<one line>"}

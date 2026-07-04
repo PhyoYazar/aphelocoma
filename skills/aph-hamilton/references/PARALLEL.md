@@ -50,7 +50,9 @@ single-role turn (PROTOCOL §3 d–e) for its task only.
 
 ### 3. Subagent contract (what each dispatched role does and returns)
 Each subagent:
-- reads its task spec `.aphelocoma/specs/<task-id>.md` and the relevant project context;
+- reads its task spec `.aphelocoma/specs/<task-id>.md`, `.aphelocoma/state/conventions.md` (when
+  written), and the relevant project context;
+- never runs git — commits belong to the orchestrator alone (PROTOCOL §5.5);
 - produces its deliverable in the project, staying within the spec's `files touched`;
 - appends its turn to `.aphelocoma/ledger/agents/<role-id[#N]>.md` (its own file);
 - **does NOT touch `.aphelocoma/state/tasks.json` or `.aphelocoma/ledger/events.jsonl`**;
@@ -77,6 +79,10 @@ If the subagent cannot complete the task, it returns `"status": "blocked"`, a po
 ### 4. Collect + serialize (single writer)
 After all subagents in the batch return, the orchestrator processes the results **serially, in
 ascending `task` order** (deterministic). For each result:
+- **(replay safety)** first check the ledger tail: if this task's `work_started`/`artifact_written`
+  events from this dispatch are already there (an interruption hit between appending and finishing the
+  batch), the result was already serialized — **skip it**, don't re-append. This is PROTOCOL §7
+  idempotency applied to events; it makes crash-resume safe;
 - append every entry in `events[]` to `.aphelocoma/ledger/events.jsonl`, assigning the next `seq`
   (read the current last line; increment by 1 per append) and stamping `ts`, `actor` = the result's
   `role`, and `task` = the result's `task`;
@@ -84,6 +90,14 @@ ascending `task` order** (deterministic). For each result:
   the ledger is an audit of which model ran which task;
 - update that task in `.aphelocoma/state/tasks.json`: set `status` (→ `in_review`, or back to
   `assigned` on `blocked`), record `artifacts`, refresh `updated`.
+
+**Scope check (after the batch, when the project is a git repo).** Disjointness is *declared* in specs;
+verify it actually held: compare the files that changed during the batch (a `git diff --name-only`
+against the last Hamilton commit — PROTOCOL §5.5 — or `git status --porcelain` when there is none) with
+the union of the batch specs' **Interfaces / files touched**. Any
+changed file outside that union → log a `scope_violation` event (actor = the responsible role, note =
+the stray file + owning spec) and make sure the CP4 review of the affected tasks sees it. A violation is
+a review flag, not an automatic revert — the reviewer and advisor decide.
 
 Because only the orchestrator appends to the ledger and edits the board, `seq` stays strictly
 monotonic and no task update is lost — even though the work happened concurrently.

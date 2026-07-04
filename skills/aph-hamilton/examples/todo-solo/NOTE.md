@@ -37,3 +37,8 @@ protocol loop (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign �
 > One cosmetic edit was made to the shipped copy: the agent-written `brief.md` heading "Company size"
 > was corrected to "Crew size" to match Hamilton's current vocabulary. Everything else is exactly as
 > the run produced it.
+
+> **Historical:** this run predates the critique gate (2026-06-26), the conventions layer, and the
+> integrity checker, so `references/validate.py` flags T1 as `done` without a `critique` event and
+> warns about the missing `conventions.md`. That is the validator working as intended on a pre-gate
+> ledger — the run is kept verbatim as a dated record, not updated.

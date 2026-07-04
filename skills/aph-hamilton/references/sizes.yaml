@@ -13,7 +13,9 @@ presets:
     roles: [engineering-manager, software-architect, product-manager, uiux-designer,
             frontend-lead, frontend-developer, backend-lead, backend-developer,
             qa-engineer, automation-test-engineer, devops-engineer, data-engineer]
-  big:         # ~25 — full org chart
+  big:         # ~25 — full org chart. DEMONSTRATIVE: the exec/management layer (ceo, vps, managers)
+               # adds ceremony + token cost with little differentiated output; for real work prefer
+               # solo/startup/mid and add specialists via custom:[...] as foundations demand them.
     roles: [ceo, cto, vp-engineering, engineering-manager, software-architect,
             frontend-lead, frontend-developer, backend-lead, backend-developer, mobile-developer,
             devops-engineer, sre, cloud-engineer, dba, data-engineer, data-scientist, ml-engineer,

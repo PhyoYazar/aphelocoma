@@ -23,6 +23,7 @@ Design the system structure and turn it into buildable specs with acceptance cri
 
 ## Outputs (what this role produces)
 - Architecture overview (section in .aphelocoma/state/roadmap.md or .aphelocoma/specs/architecture.md)
+- .aphelocoma/state/conventions.md — the binding stack conventions, written right after Checkpoint 1 (PROTOCOL §2 Phase 1)
 - .aphelocoma/specs/<task-id>.md handoff contracts with explicit acceptance criteria
 
 ## Hands off to
