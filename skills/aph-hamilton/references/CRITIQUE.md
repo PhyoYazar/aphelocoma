@@ -1,5 +1,10 @@
 # CRITIQUE — the double-check rubric (read-only)
 
+> **Canonical home.** This file owns the review-gate rule — what counts as an independent review (the
+> tiers), and the "no `critique` event = no review = no `done`" gate. `skill.md` and PROTOCOL §1.5/§2/
+> §5/§7/§8 restate it for in-context compliance; when the rule changes, **edit here first**, then sweep
+> the restatements to match.
+
 Before each of the three work-output checkpoints, an **independent reviewer** double-checks the crew's
 work, so blind spots, plan holes, and quality defects are caught before they reach the advisor. This is
 distinct from `adapters/claude-code/agents/reviewer.md` (a code-diff reviewer reused only as the CP4 code
@@ -53,8 +58,8 @@ it chooses a build style, with no artifact to review.
 
 - **Acceptance criteria** — every criterion in the task spec actually met? When **TDD is on**: tests
   written first, they pass, and they actually exercise the behavior.
-- **Craft bar** (`CRAFT.md`) — error handling on plausible paths; consistency with existing patterns;
-  simplicity/YAGNI — applying the precedence.
+- **Craft bar** (`CRAFT.md`) — error handling on plausible paths; consistency with existing patterns
+  AND with `.aphelocoma/state/conventions.md` where written; simplicity/YAGNI — applying the precedence.
 - **Code lens** (reuses `reviewer.md`) — logic / edge / off-by-one, contract or API breaks, security
   basics.
 

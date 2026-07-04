@@ -98,6 +98,14 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    **directions** with trade-offs AND a **recommended crew size/shape**; the advisor picks both (log a
    `decision`). THEN activate the chosen implementer/specialist roles (`role_activated`) and record the
    size in `brief.md` + `tasks.json`.
+   **Conventions (right after CP1):** with the direction — and therefore the stack — picked, the
+   `software-architect` (or nearest role per §7) writes `.aphelocoma/state/conventions.md` and logs
+   `artifact_written`: the chosen stack plus the ~10 binding project choices implementers must match
+   (structure, naming, state management, error style, key libraries, test layout). **One page max — a
+   floor like `CRAFT.md`, not a style guide.** For an existing codebase, derive it from the Discovery
+   survey (record what already exists; don't invent). Implementers read it before building (§3 b) and
+   the CP4 critique checks consistency against it — on a greenfield project this file IS the "existing
+   pattern" that `CRAFT.md` principle 2 matches.
 2. **Plan & Roadmap** — Leadership produces `.aphelocoma/state/roadmap.md`: milestones and sequence. The roadmap MUST show
    each of the six foundations (§2 Phase 1 Foundations pass) as **addressed** (how/when) or **consciously
    deferred** (why) — this is how they stay visible instead of forgotten.
@@ -128,7 +136,7 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    `CRITIQUE.md`'s CP4 lens:
    **(a)** its acceptance criteria (incl. tests-first when TDD is on), **(b)** the craft bar (`CRAFT.md`),
    and **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
-   (§5; tier recorded). Pass → status `done`, log `review_passed`. Serious findings → status back to
+   (§5; tier recorded). Pass → status `done`, log `review_passed`, commit the task (§5.5). Serious findings → status back to
    `assigned`/`in_progress` with notes, log `review_failed`, **one** bounce-back to the owner. **No task
    moves to `done` until both its `critique` and `review_passed` events are in the ledger** (in `solo`
    without subagents, the persona self-review is the acknowledged floor; on Claude Code prefer
@@ -142,7 +150,8 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
 Every unit of work is one role-turn. Do these steps in order:
 
 a. **Adopt the role** — read `roles/<role-id>.md`. Act only within that role's mission.
-b. **Read state** — read `.aphelocoma/state/tasks.json`, the relevant `.aphelocoma/specs/<task-id>.md`, and the
+b. **Read state** — read `.aphelocoma/state/tasks.json`, `.aphelocoma/state/conventions.md` (when
+   written — binding for all code), the relevant `.aphelocoma/specs/<task-id>.md`, and the
    tail of `.aphelocoma/ledger/events.jsonl` for recent context.
 c. **Check idempotency** (§7) — if the task is already `done`, skip it.
 d. **Do the work** — produce the role's outputs.
@@ -181,7 +190,9 @@ back to the author.
 - Event types: `role_activated`, `brainstorm_note`, `plan_created`, `roadmap_updated`,
   `task_created`, `task_assigned`, `work_started`, `artifact_written`, `task_completed`,
   `review_passed`, `review_failed`, `blocked`, `assumption_logged`, `handoff`,
-  `phase_advanced`, `project_completed`, `decision`, `critique`, `bug_reported`.
+  `phase_advanced`, `project_completed`, `decision`, `critique`, `bug_reported`,
+  `scope_violation` (a parallel batch changed files outside its specs' declared scope —
+  `PARALLEL.md` §4).
 - The **`advisor`** actor is the human (the user) in the top seat; it appears on `decision` events
   (the options offered + the pick), on `bug_reported` (a defect you raise; §6.5), and on any direction
   the human gives. Crew actors are role-ids.
@@ -200,6 +211,25 @@ back to the author.
   append timestamped bullet entries; never rewrite past entries.
 - **Never reconstruct state from the log or vice versa.** They are written together (§3 f, g).
 
+## 5.5 Git — commits (when the project is a git repo)
+
+The **advisor owns branches and pushing; the crew owns commits.** Rules:
+
+- **Only the orchestrator runs git.** Dispatched subagents never commit — the git index is shared
+  mutable state, under the same single-writer contract as the board and ledger (`PARALLEL.md`).
+- **Commit on whatever branch is checked out.** Never create, switch, or delete a branch, and never
+  push — branch strategy and publishing are the advisor's job, outside Hamilton's lane.
+- **Commit points:**
+  - after bootstrap — the `.aphelocoma/` skeleton + brief (`hamilton: kickoff <project>`);
+  - after each checkpoint's state artifacts — brief at CP1, roadmap at CP2 (`hamilton: <artifact> (CP<n>)`);
+  - **one commit per task reaching `done`** — i.e. after its `critique` + `review_passed` are in the
+    ledger: `hamilton(<task-id>): <task title> — <owner-role>`. Record the commit SHA in the
+    `review_passed` note so the ledger and git history cross-reference.
+- **Dirty start:** if at start/resume the repo has uncommitted changes that are not Hamilton's, STOP
+  and ask the advisor before the first crew commit — never fold the advisor's work-in-progress into a
+  crew commit.
+- **Not a git repo:** skip all of this and log one `assumption_logged` noting version control is off.
+
 ## 6. Resumability
 
 On start, read `.aphelocoma/state/brief.md`:
@@ -207,6 +237,11 @@ On start, read `.aphelocoma/state/brief.md`:
 - If it is populated → a project is in progress. Report the current `phase` and the open
   tasks (anything not `done`) from `.aphelocoma/state/tasks.json`, then **continue** from there. Do not
   restart or rebuild completed work.
+- **Integrity check (when `python3` exists):** run `validate.py` (a sibling of this file) against the
+  project before continuing. It mechanically verifies the invariants this protocol otherwise trusts to
+  discipline — gap-free `seq`, the §8 `done` gate (`critique` + `review_passed` present), specs behind
+  every assigned task. Surface findings to the advisor; repair drift with **new corrective events**,
+  never by editing history (§5). Unavailable `python3` skips the check — it is a net, not a gate.
 
 ## 6.5 Bug & fix intake (advisor-reported defects)
 
@@ -233,7 +268,10 @@ cannot crack goes `blocked` and escalates to the lead/architect (§7).
 ## 7. Rules that keep runs honest
 
 - **Idempotency** — before working a task, check its `status`; skip if `done`. Re-running
-  Hamilton must not duplicate completed work or double-append the same event.
+  Hamilton must not duplicate completed work or double-append the same event. This covers **events,
+  not just tasks**: when serializing parallel results after an interruption, check the ledger tail for
+  that task's events before appending (`PARALLEL.md` §4 replay safety) — a result already serialized is
+  skipped, not re-appended.
 - **Role coverage** — if a phase needs a function with no active role (e.g. no QA in
   `solo`), the nearest active senior/leadership role covers it and notes that it did so.
   While covering, it emits the covered role's events (e.g. CTO covering QA → `review_passed`),

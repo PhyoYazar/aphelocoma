@@ -24,7 +24,10 @@ already justify the code.
    bar is per-function and always-on.)
 2. **Consistency** — match the patterns and conventions that **already exist** in the codebase (naming,
    structure, error style, libraries); reuse what exists instead of duplicating. It is **never** a
-   mandate to invent a new abstraction for hypothetical future reuse. _Escape hatch:_ when the prevailing
+   mandate to invent a new abstraction for hypothetical future reuse. The written floor for this is
+   `.aphelocoma/state/conventions.md` (authored right after CP1 — PROTOCOL §2 Phase 1): on a greenfield
+   codebase, where no prior patterns exist yet, **that file is the "existing pattern" to match**.
+   _Escape hatch:_ when the prevailing
    pattern is clearly poor, or two existing patterns conflict, correctness/simplicity win and the
    divergence is noted — don't cement an anti-pattern.
 3. **Simplicity (YAGNI)** — the simplest thing that works within the above: no premature abstraction, no

@@ -25,7 +25,7 @@ the skill's own install folder. Nothing is copied into projects. Resolve the ins
 From `<skill>`, these are fixed:
 - **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`, `roles/<id>.md`,
   `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md`, `FOUNDATIONS.md`,
-  `CRITIQUE.md`, `CRAFT.md` are siblings inside it.
+  `CRITIQUE.md`, `CRAFT.md`, `validate.py` are siblings inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
 - **The product:** the project itself — at the repo root, beside `.aphelocoma/`, structured however the work needs (no forced `product/` folder). Never inside `.aphelocoma/`.
@@ -62,7 +62,9 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
    - **Checkpoint 1 (after Discovery):** run the **Foundations pass** (the six topics in
      `<skill>/references/FOUNDATIONS.md` + confirm the TDD default), then present directions + a
      recommended crew size; the advisor picks both; then activate the chosen implementer/specialist
-     roles and record the size + foundations + TDD choice in `brief.md` + `tasks.json`. (If `<size>`
+     roles and record the size + foundations + TDD choice in `brief.md` + `tasks.json`, and — with the
+     stack now picked — have the architect write `state/conventions.md` (the binding project
+     conventions; PROTOCOL §2 Phase 1). (If `<size>`
      was given on the command line, propose it as the recommendation; the advisor still confirms.)
    - **Checkpoint 2 (after Plan & Roadmap):** advisor approves / reorders / cuts / adds.
    - **Checkpoint 3 (before Implementation):** parallel subagents is the **default** where possible
@@ -77,7 +79,9 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
    its `critique` + `review_passed` are in the ledger. No `critique` event = it didn't happen.
    Build the product **in the project (at the repo root, beside `.aphelocoma/`)** — no `product/`. Keep
    `./.aphelocoma/state/tasks.json` current and append every action to `./.aphelocoma/ledger/`
-   (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. Apply §7 coverage. Between checkpoints work
+   (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. **Git (PROTOCOL §5.5):** the orchestrator is
+   the only committer — commit on the checked-out branch at kickoff, checkpoints, and once per `done`
+   task; never branch or push (the advisor owns those). Apply §7 coverage. Between checkpoints work
    autonomously; the advisor may interject anytime.
    - **Parallel build (the default at Checkpoint 3):** dispatch disjoint `assigned` tasks to their
      native `hamilton-<role>` subagents (generated at `/deploy` — real role names + per-role
@@ -87,14 +91,21 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
      tool-scoping). On non-Claude platforms, build sequentially.
 
 ### `resume`
-Read `./.aphelocoma/`. Report the current `phase` and open tasks (anything not `done`) from
-`./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6. Hit a bug or want a change? Just say so —
-it becomes a tracked **fix task** routed to the owning role (PROTOCOL §6.5), not a side channel.
+Read `./.aphelocoma/`. **Integrity check first:** run `python3 <skill>/references/validate.py .` (skip
+silently if `python3` is unavailable — the check is optional, never a blocker). It verifies the PROTOCOL
+invariants mechanically — gap-free `seq`, no `done` task without its `critique` + `review_passed`, no
+assigned task without a spec. Report any findings to the advisor before continuing; fix ledger/state
+drift as new corrective events (never rewrite history — PROTOCOL §5). Then report the current `phase`
+and open tasks (anything not `done`) from `./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
+Hit a bug or want a change? Just say so — it becomes a tracked **fix task** routed to the owning role
+(PROTOCOL §6.5), not a side channel.
 
 ### `status`
 Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, the last few
 `./.aphelocoma/ledger/events.jsonl` entries, and the active crew's `role → model → effort → tools` table
-(from the generated agents / the applicable settings). Read-only — no state changes.
+(from the generated agents / the applicable settings). Also run the integrity check
+(`python3 <skill>/references/validate.py .`, skip if no `python3`) and include its verdict.
+Read-only — no state changes.
 
 ### `sync-agents`  (Claude Code only — per-project override)
 The standard crew is generated **globally at `/deploy`** (`~/.claude/agents/hamilton-<role>.md`), so most

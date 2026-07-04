@@ -122,6 +122,8 @@ Run it inside the project you want to build in (new or existing code):
 
 You're the **advisor**: the crew pauses at **4 checkpoints** for your call — direction + crew size, the plan, the build style, and review — and works on its own in between. Before checkpoints 1, 2, and 4 — and on **every task before it's marked done** — an independent reviewer (never the builder) double-checks the work and records its verdict to the ledger.
 
+Runs are auditable end-to-end: the orchestrator **commits each finished task to git** (on your current branch — it never branches or pushes; that stays yours), the crew writes a per-project **`conventions.md`** all code must match, and a bundled **integrity checker** (`validate.py`) mechanically verifies the ledger and review gates on every `resume` / `status`.
+
 **Crew sizes** (chosen with you after Discovery): `solo` · `startup` · `mid` · `big` · `custom:[role,…]`.
 
 Everything Hamilton tracks lives in your project under `.aphelocoma/` — the task board, the append-only history ledger, and one spec per task. The software itself is built at the project root.
