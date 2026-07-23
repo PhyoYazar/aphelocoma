@@ -1,0 +1,62 @@
+{
+  "project": "aphelocoma-hamilton-reset",
+  "size": "custom",
+  "phase": "implementation",
+  "updated": "2026-07-23T08:18:00Z",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Build the tested Python CLI and base doctor",
+      "owner": "fullstack-developer#1",
+      "status": "assigned",
+      "dependencies": [],
+      "artifacts": [],
+      "updated": "2026-07-23T08:18:00Z"
+    },
+    {
+      "id": "T2",
+      "title": "Version and harden Hamilton project state",
+      "owner": "fullstack-developer#2",
+      "status": "assigned",
+      "dependencies": [],
+      "artifacts": [],
+      "updated": "2026-07-23T08:18:00Z"
+    },
+    {
+      "id": "T3",
+      "title": "Implement transactional lifecycle and deployment",
+      "owner": "fullstack-developer#1",
+      "status": "assigned",
+      "dependencies": ["T1", "T2"],
+      "artifacts": [],
+      "updated": "2026-07-23T08:18:00Z"
+    },
+    {
+      "id": "T4",
+      "title": "Remove the legacy context product",
+      "owner": "fullstack-developer#2",
+      "status": "assigned",
+      "dependencies": ["T3"],
+      "artifacts": [],
+      "updated": "2026-07-23T08:18:00Z"
+    },
+    {
+      "id": "T5",
+      "title": "Reposition and document Aphelocoma",
+      "owner": "technical-writer",
+      "status": "assigned",
+      "dependencies": ["T3", "T4"],
+      "artifacts": [],
+      "updated": "2026-07-23T08:18:00Z"
+    },
+    {
+      "id": "T6",
+      "title": "Add cross-platform CI and verify v0.3 readiness",
+      "owner": "devops-engineer",
+      "status": "assigned",
+      "dependencies": ["T1", "T2", "T3", "T4", "T5"],
+      "artifacts": [],
+      "updated": "2026-07-23T08:18:00Z"
+    }
+  ]
+}

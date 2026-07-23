@@ -1,0 +1,7 @@
+# This repository keeps compact Hamilton planning and audit state in git.
+visibility: tracked
+redact_sensitive: true
+
+# Use the stable Codex exec backend when implementation reaches Checkpoint 3.
+dispatch: auto
+max_parallel: 4

@@ -1,0 +1,18 @@
+{
+  "project": "aphelocoma-hamilton-reset",
+  "schema_version": 1,
+  "protocol_version": "1.0.0",
+  "size": "custom",
+  "roles": [
+    "cto",
+    "software-architect",
+    "product-manager",
+    "fullstack-developer#1",
+    "fullstack-developer#2",
+    "qa-engineer",
+    "devops-engineer",
+    "technical-writer"
+  ],
+  "created": "2026-07-23T07:46:24Z",
+  "phase": "implementation"
+}
