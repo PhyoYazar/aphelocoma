@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Hamilton implementer result",
+  "description": "The exact JSON an implementer worker returns as its final message (PARALLEL.md §3). Passed to `codex exec --output-schema` so the CLI enforces the contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task", "role", "status", "artifacts", "events", "blocked_reason"],
+  "properties": {
+    "task": { "type": "string", "description": "The <task-id> this worker was dispatched for." },
+    "role": { "type": "string", "description": "The role id, e.g. backend-developer or fullstack-developer#2." },
+    "status": { "type": "string", "enum": ["in_review", "blocked"] },
+    "artifacts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Project-relative paths of deliverables written (may be non-empty even when blocked)."
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["event", "to", "note"],
+        "properties": {
+          "event": {
+            "type": "string",
+            "enum": ["work_started", "artifact_written", "handoff", "blocked", "assumption_logged"]
+          },
+          "to": { "type": ["string", "null"], "description": "Receiving role for handoff; null otherwise." },
+          "note": { "type": "string" }
+        }
+      },
+      "description": "Ledger entries for the orchestrator (the single writer) to serialize — the worker never writes events.jsonl itself."
+    },
+    "blocked_reason": { "type": ["string", "null"], "description": "Populated only when status is blocked." }
+  }
+}

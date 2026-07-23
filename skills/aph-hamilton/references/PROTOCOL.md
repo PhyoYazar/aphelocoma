@@ -25,10 +25,11 @@ depends on **no platform-specific features** — only the ability to read and wr
 
 ## 1. Execution model
 
-- **Default on Claude Code: parallel subagents.** When the platform can spawn subagents and the native
-  crew agents exist (generated at `/deploy`, or per-project via `/aph-hamilton sync-agents`),
-  Implementation runs in parallel by default: a manager role dispatches independent implementer tasks to
-  native `hamilton-<role>` subagents under **orchestrator-owned state** — the manager is the *single
+- **Default where a dispatch backend exists (Claude Code, Codex): parallel subagents.** When the
+  platform can spawn subagents (Claude Code — native crew agents generated at `/deploy`, or per-project
+  via `/aph-hamilton sync-agents`) or headless CLI workers (Codex — `codex exec` fan-out,
+  `DISPATCH-CODEX.md`), Implementation runs in parallel by default: a manager role dispatches
+  independent implementer tasks to their role workers under **orchestrator-owned state** — the manager is the *single
   writer* of `.aphelocoma/state/tasks.json` + `.aphelocoma/ledger/events.jsonl`, while each subagent
   writes only the project files + its own `.aphelocoma/ledger/agents/<role>.md` and returns a structured
   result. Conditions, dispatch loop, and result schema are in `PARALLEL.md`.
@@ -36,7 +37,8 @@ depends on **no platform-specific features** — only the ability to read and wr
   at a time — the guaranteed mode on any platform, the automatic fallback when subagents or the crew
   agents are unavailable, and selectable whenever the advisor prefers it (CP3).
 - The system MUST remain fully runnable sequentially. **Parallelism is the default where available, but
-  never required** — non-Claude platforms and missing-agent cases run sequentially with identical output.
+  never required** — platforms without a backend and missing-agent cases run sequentially with
+  identical output.
 
 ## 1.5 Advisor model (human-in-the-loop)
 
@@ -119,8 +121,8 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    create an entry in `.aphelocoma/state/tasks.json` AND write `.aphelocoma/specs/<task-id>.md` with the handoff
    contract (§4). The engineering-manager (or top active manager) sets each task's
    `owner`. Log `task_created` then `task_assigned`.
-4. **Implementation** — Begin at **Checkpoint 3**: if parallel is possible (Claude Code + native crew
-   agents + ≥2 `assigned` tasks with disjoint file scopes), **default to parallel subagents** — tell the
+4. **Implementation** — Begin at **Checkpoint 3**: if parallel is possible (a dispatch backend per
+   `PARALLEL.md` + ≥2 `assigned` tasks with disjoint file scopes), **default to parallel subagents** — tell the
    advisor it's the default and let them opt for one sequential session instead; log the `decision`.
    Otherwise build sequentially. Each owner role picks up its `assigned` tasks, builds **in the project
    (at the repo root, beside `.aphelocoma/`)**, records artifacts, and moves the task to `in_review`.
@@ -130,7 +132,8 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    `PARALLEL.md`.
 5. **Review / QA (independent critique)** — the Review **is** an independent critique pass, not a layer
    after QA. qa-engineer (or covering role per §7) reviews **each** `in_review` task as a fresh-context
-   reviewer — a fresh subagent on Claude Code (the right tier for per-task CP4), the host's own review
+   reviewer — a fresh subagent on Claude Code or a read-only headless worker on Codex
+   (`DISPATCH-CODEX.md`; both the right tier for per-task CP4), the host's own review
    tool (`tier: host_tool`), or, only when neither exists, a persona self-review (`tier: persona`, the
    floor) — independent of the builder wherever a subagent or host tool is available — against
    `CRITIQUE.md`'s CP4 lens:
@@ -198,7 +201,8 @@ back to the author.
   the human gives. Crew actors are role-ids.
 - The **`reviewer`** actor marks an independent critique pass (§1.5); `critique` events use it. The
   `note` records the gate (CP1/CP2/CP4), the verdict (`clear` / `findings`), severity, and the
-  independence **tier** — one of `subagent` (a fresh-context reviewer on Claude Code), `host_tool` (the
+  independence **tier** — one of `subagent` (a fresh-context dispatched reviewer — a Claude Code
+  subagent or a Codex read-only worker), `host_tool` (the
   host's own review feature, e.g. Claude Code's `advisor`, pointed at the artifact + lens), or `persona`
   (a self-review where neither is available) — so a real second-pair-of-eyes review is distinguishable
   from a self-review. `task` is null at CP1/CP2 (phase-level) and set at CP4 (per-task). At CP4 the

@@ -128,9 +128,11 @@ Runs are auditable end-to-end: the orchestrator **commits each finished task to 
 
 Everything Hamilton tracks lives in your project under `.aphelocoma/` — the task board, the append-only history ledger, and one spec per task. The software itself is built at the project root.
 
-### Parallel builds + per-role tuning (Claude Code)
+### Parallel builds + per-role tuning (Claude Code + Codex)
 
-`aph deploy claude` generates the **crew agents** (`~/.claude/agents/hamilton-<role>`), so on Claude Code the crew builds **in parallel by default** — independent tasks run at once, with the manager as the **single writer** of the board + ledger so concurrent work never corrupts history. The fleet view shows real role names (`hamilton-fullstack-developer`, …), and each role carries its own model, effort, and tool scope. Sequential is the automatic fallback and the only mode on other tools — parallel is the default where available, never required.
+`aph deploy claude` generates the **crew agents** (`~/.claude/agents/hamilton-<role>`), so on Claude Code the crew builds **in parallel by default** — independent tasks run at once, with the manager as the **single writer** of the board + ledger so concurrent work never corrupts history. The fleet view shows real role names (`hamilton-fullstack-developer`, …), and each role carries its own model, effort, and tool scope.
+
+On **Codex**, parallel is also the default — the orchestrator fans out headless **`codex exec` workers** (one per task, role injected into the prompt), with the result contract **enforced by `--output-schema`** and reviewers locked read-only via `--sandbox read-only`. Same single-writer rule, same ledger, no crew generation or restart needed. Sequential is the automatic fallback everywhere and the only mode on other tools — parallel is the default where available, never required.
 
 Defaults: the crew follows your **session model** (so it always uses your best, and upgrades itself when a better model ships); the technical-writer uses `sonnet`. Override per project in `.aphelocoma/settings.yaml`:
 - **model** — map a role to a model (cheap ↔ smart); unlisted roles follow your session.

@@ -21,3 +21,13 @@ models:
 #   qa-engineer: xhigh
 #   software-architect: xhigh
 #   technical-writer: medium
+
+# On Codex, `models:` values are Codex model names (they feed `codex exec -m`) and effort maps to
+# `-c model_reasoning_effort=...` — see the definition's DISPATCH-CODEX.md. No sync-agents/restart
+# needed there; these are read at dispatch time.
+
+# Parallel dispatch overrides (optional — PARALLEL.md defaults are right for most projects).
+# On Codex, `auto` = codex-exec fan-out (the stable default); `collab` opts in to the experimental
+# spawn_agent tools (also used automatically if exec preflight fails — DISPATCH-CODEX.md):
+# dispatch: auto        # auto (default) | exec | collab | sequential
+# max_parallel: 4       # Codex codex-exec backend: max concurrent workers per batch

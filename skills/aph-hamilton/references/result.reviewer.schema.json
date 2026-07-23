@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Hamilton reviewer result",
+  "description": "The exact JSON a read-only reviewer worker returns as its final message (agent-template.md REVIEWER body; CRITIQUE.md CP4). Passed to `codex exec --output-schema` so the CLI enforces the contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task", "role", "verdict", "tier", "findings", "summary"],
+  "properties": {
+    "task": { "type": "string", "description": "The <task-id> under review." },
+    "role": { "type": "string", "description": "The reviewing role id, e.g. qa-engineer." },
+    "verdict": { "type": "string", "enum": ["pass", "fail"], "description": "fail when any blocking finding exists." },
+    "tier": { "type": "string", "enum": ["subagent"], "description": "A dispatched fresh-context worker is always the subagent tier (PROTOCOL §5)." },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "note"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocking", "should-fix", "nit"] },
+          "note": { "type": "string" }
+        }
+      },
+      "description": "Empty when clear."
+    },
+    "summary": { "type": "string", "description": "One line." }
+  }
+}

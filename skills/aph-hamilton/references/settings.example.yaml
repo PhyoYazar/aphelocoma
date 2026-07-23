@@ -11,7 +11,8 @@
 
 # --- Role -> model mapping (opt-in). Heavy-reasoning roles can use a stronger model; bulk
 # implementation can use a cheaper/faster one. Interpreted by whatever platform runs Hamilton;
-# ignored if unsupported.
+# ignored if unsupported. On Claude Code the values are agent `model:` names; on Codex they feed
+# `codex exec -m <model>`, so use Codex model names there (DISPATCH-CODEX.md).
 # models:
 #   default: <your-default-model>
 #   cto: <strong-reasoning-model>
@@ -41,3 +42,14 @@
 #   qa-engineer: xhigh         # reviewer thinks harder than the session
 #   software-architect: xhigh
 #   technical-writer: medium   # docs don't need deep reasoning
+# (On Codex, effort maps to `-c model_reasoning_effort=...`, capped at high — DISPATCH-CODEX.md.)
+
+# --- Parallel dispatch (opt-in). PARALLEL.md picks the right backend without this; set these only to
+# override. On Codex the default (`auto`) is `codex exec` fan-out — stable CLI, schema-enforced
+# results; the experimental collab tools (spawn_agent) run only if you opt in with `dispatch: collab`
+# or as the automatic fallback when exec's preflight fails (DISPATCH-CODEX.md selection order).
+# `sequential` pins one-session builds (same as always answering "sequential" at Checkpoint 3).
+# `max_parallel` caps concurrent workers per batch on the codex-exec backend (each worker is a full
+# Codex session against your quota).
+# dispatch: auto               # auto (default) | exec | collab | sequential
+# max_parallel: 4              # Codex codex-exec backend only; default 4

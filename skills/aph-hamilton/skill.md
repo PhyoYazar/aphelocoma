@@ -5,7 +5,8 @@ Spin up / resume / inspect a Hamilton crew that builds software for the current 
 Hamilton is a portable, file-based **crew** of role-agents (CTO, software-architect, developers, QA,
 DevOps, …). **You are the advisor:** the leadership core brainstorms *with you*, you decide the
 direction/plan/build-style at four checkpoints, and the crew builds it autonomously — **in parallel by
-default on Claude Code** (native role-agents), sequentially everywhere else. Before you see the
+default on Claude Code** (native role-agents) **and Codex** (headless `codex exec` workers —
+`references/DISPATCH-CODEX.md`), sequentially everywhere else. Before you see the
 work at Checkpoints 1, 2, and 4, an **independent reviewer** double-checks it (`references/CRITIQUE.md`) and logs a `critique` —
 catching blind spots, plan holes, and code defects — and implementers write to a standing **craft bar**
 (`references/CRAFT.md`: simplicity, consistency, error handling). Every action is appended to a file
@@ -23,9 +24,10 @@ the skill's own install folder. Nothing is copied into projects. Resolve the ins
   definition is the `references/` folder beside this file, e.g. `~/.codex/skills/aph-hamilton/references/`.
 
 From `<skill>`, these are fixed:
-- **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`, `roles/<id>.md`,
-  `sizes.yaml`, `roles.index.md`, `settings.example.yaml`, `agent-template.md`, `FOUNDATIONS.md`,
-  `CRITIQUE.md`, `CRAFT.md`, `validate.py` are siblings inside it.
+- **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`,
+  `DISPATCH-CODEX.md`, `roles/<id>.md`, `sizes.yaml`, `roles.index.md`, `settings.example.yaml`,
+  `agent-template.md`, `result.implementer.schema.json`, `result.reviewer.schema.json`,
+  `FOUNDATIONS.md`, `CRITIQUE.md`, `CRAFT.md`, `validate.py` are siblings inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
 - **The product:** the project itself — at the repo root, beside `.aphelocoma/`, structured however the work needs (no forced `product/` folder). Never inside `.aphelocoma/`.
@@ -68,7 +70,8 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
      was given on the command line, propose it as the recommendation; the advisor still confirms.)
    - **Checkpoint 2 (after Plan & Roadmap):** advisor approves / reorders / cuts / adds.
    - **Checkpoint 3 (before Implementation):** parallel subagents is the **default** where possible
-     (Claude Code + crew agents + ≥2 disjoint `assigned` tasks) — note it and let the advisor opt for one
+     (a dispatch backend per `PARALLEL.md` — Claude Code crew agents, or Codex `codex exec` with its
+     preflight passing — plus ≥2 disjoint `assigned` tasks) — note it and let the advisor opt for one
      sequential session; else sequential.
    - **Checkpoint 4 (at Review):** advisor accepts, or says what to fix / add.
    **Review gate — applies at CP1/CP2/CP4, do not skip:** the independent reviewer should not be the agent
@@ -88,7 +91,11 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
      model/effort/tools) and serialize results per `<skill>/references/PARALLEL.md` — you stay the single
      writer of `tasks.json` + `events.jsonl`. Only if the crew agents are missing, fall back to generic
      subagents with the role content injected (they show as `general-purpose` and lose per-role effort +
-     tool-scoping). On non-Claude platforms, build sequentially.
+     tool-scoping). **On Codex**, dispatch per `<skill>/references/DISPATCH-CODEX.md`'s selection
+     order: headless `codex exec` workers by default (role body injected, result contract enforced via
+     `--output-schema`, reviewers sandboxed read-only); the experimental collab tools only via
+     `dispatch: collab` or as the fallback when exec preflight fails (then label every spawn with its
+     role and narrate by role, not thread id). On platforms with no backend, build sequentially.
 
 ### `resume`
 Read `./.aphelocoma/`. **Integrity check first:** run `python3 <skill>/references/validate.py .` (skip
@@ -135,8 +142,12 @@ derived). Each generated agent embeds the single-writer contract: it writes only
 own `.aphelocoma/ledger/agents/<role>.md` and returns a structured result; the orchestrator is the sole
 writer of `.aphelocoma/state/tasks.json` + `.aphelocoma/ledger/events.jsonl`.
 
-**Non-Claude platforms:** print "sync-agents is Claude-Code-only; running sequentially" and generate
-nothing — the run still works via sequential role-play (PROTOCOL §3 / `PARALLEL.md` Fallback).
+**Non-Claude platforms:** generate nothing here. On **Codex**, print "sync-agents is Claude-Code-only;
+the Codex crew is generated globally by `aph deploy codex` (named `[agents.hamilton-*]` roles), and
+per-project model/effort overrides in `.aphelocoma/settings.yaml` apply at dispatch time
+(DISPATCH-CODEX.md) — no per-project regeneration or restart needed". On other platforms, print
+"running sequentially" — the run still works via sequential role-play (PROTOCOL §3 / `PARALLEL.md`
+Fallback).
 
 ## Notes
 - Optional per-project config: `./.aphelocoma/settings.yaml` (role→model map, `parallel_dispatch`

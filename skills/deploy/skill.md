@@ -72,4 +72,26 @@ Steps:
    - Copy any templates/, examples/, scripts/, references/ directories alongside the SKILL.md
 2. Generate `~/.codex/AGENTS.md` from `$APHELOCOMA_HOME/adapters/codex/agents-md-template.md`
 3. Copy `hooks.json` from `$APHELOCOMA_HOME/adapters/codex/hooks.json` to `~/.codex/hooks.json`
-4. Report what was deployed
+4. Generate the **Hamilton crew roles** (named collab-tool agents — the Codex analog of Claude Code's
+   crew agents). Run the generator:
+   ```bash
+   python3 "$APHELOCOMA_HOME/adapters/codex/scripts/gen-hamilton-crew-codex.py" \
+       "$HOME/.codex/skills/aph-hamilton/references" "$HOME/.codex"
+   ```
+   It writes one `~/.codex/agents/hamilton-<role>.toml` per role (display nickname = role title;
+   implementer or read-only reviewer contract as `developer_instructions`, from `agent-template.md`)
+   and maintains a **managed block** in `~/.codex/config.toml` (between
+   `# >>> aphelocoma hamilton crew >>>` / `# <<< ... <<<` markers — it never touches anything else,
+   and re-runs replace the block idempotently). Hamilton then spawns workers with
+   `agent_type: "hamilton-<role>"` so the UI shows the role, not a thread id. Per-role model/effort
+   are passed at spawn time from a project's settings.yaml — not baked in. Derived — never hand-edit.
+5. **Hamilton parallel readiness note.** Verify and report in one line:
+   - `~/.codex/skills/aph-hamilton/references/` contains `DISPATCH-CODEX.md`,
+     `result.implementer.schema.json`, `result.reviewer.schema.json` (they ride along with step 1's
+     references/ copy — if missing, re-copy).
+   - The crew role count from step 4 equals the number of role files (27); if fewer, regenerate.
+   - For the `codex exec` fallback backend: if `~/.codex/config.toml` lacks
+     `[sandbox_workspace_write] network_access = true`, mention that fan-out dispatch will ask for
+     escalated permission at Checkpoint 3 (DISPATCH-CODEX.md preflight) — optional to add, never edit
+     it beyond the step-4 managed block unprompted.
+6. Report what was deployed

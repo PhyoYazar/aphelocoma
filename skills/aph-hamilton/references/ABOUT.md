@@ -11,8 +11,8 @@ history is plain files. Nothing depends on a specific tool's features.
 ## Two layers
 
 - **Definition (read-only, installed once)** — this `references/` directory: `PROTOCOL.md`,
-  `roles/`, `sizes.yaml`, `roles.index.md`, `PARALLEL.md`, `agent-template.md`. Shared by every project; never copied
-  into them.
+  `roles/`, `sizes.yaml`, `roles.index.md`, `PARALLEL.md`, `DISPATCH-CODEX.md`, `agent-template.md`,
+  `result.*.schema.json`. Shared by every project; never copied into them.
 - **Per-project state** — a `.aphelocoma/` folder in the project being built:
   `hamilton.json`, `state/`, `ledger/`, `specs/`. Plus the **product** itself in the project (at the
   repo root, beside `.aphelocoma/`).
