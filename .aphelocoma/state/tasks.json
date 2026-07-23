@@ -2,7 +2,7 @@
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
   "phase": "implementation",
-  "updated": "2026-07-23T09:25:00Z",
+  "updated": "2026-07-23T10:32:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -28,7 +28,7 @@
       "id": "T2",
       "title": "Version and harden Hamilton project state",
       "owner": "fullstack-developer#2",
-      "status": "in_progress",
+      "status": "done",
       "dependencies": [],
       "artifacts": [
         "skills/aph-hamilton/skill.md",
@@ -43,12 +43,13 @@
         "skills/aph-hamilton/references/result.reviewer.schema.json",
         "skills/aph-hamilton/references/settings.example.yaml",
         "skills/aph-hamilton/templates/aphelocoma",
+        "skills/aph-hamilton/examples/todo-solo/NOTE.md",
         "skills/aph-hamilton/examples/todo-solo/.aphelocoma",
         "src/aphelocoma/hamilton_state.py",
         "tests/test_hamilton_state.py",
         "tests/fixtures/hamilton"
       ],
-      "updated": "2026-07-23T09:12:00Z"
+      "updated": "2026-07-23T12:05:00Z"
     },
     {
       "id": "T3",

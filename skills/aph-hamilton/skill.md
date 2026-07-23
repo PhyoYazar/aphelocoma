@@ -27,7 +27,8 @@ From `<skill>`, these are fixed:
 - **Definition (read-only):** `<skill>/references/` — `PROTOCOL.md`, `PARALLEL.md`,
   `DISPATCH-CODEX.md`, `roles/<id>.md`, `sizes.yaml`, `roles.index.md`, `settings.example.yaml`,
   `agent-template.md`, `result.implementer.schema.json`, `result.reviewer.schema.json`,
-  `FOUNDATIONS.md`, `CRITIQUE.md`, `CRAFT.md`, `validate.py` are siblings inside it.
+  `state.schema.json`, `FOUNDATIONS.md`, `CRITIQUE.md`, `CRAFT.md`, `validate.py`, and `migrate.py`
+  are siblings inside it.
 - **Per-project skeleton:** `<skill>/templates/aphelocoma/` — copied into the project at `start`.
 - **Per-project state (read/write):** `./.aphelocoma/` in the **current project** — never in the definition.
 - **The product:** the project itself — at the repo root, beside `.aphelocoma/`, structured however the work needs (no forced `product/` folder). Never inside `.aphelocoma/`.
@@ -51,11 +52,15 @@ When `$ARGUMENTS` is empty, run a short guided start:
 
 ### `start "<brief>" <size>`  (fast path — skips the wizard)
 For when the advisor already knows the brief; otherwise use the bare `/aph-hamilton` wizard above.
-1. Read `<skill>/references/PROTOCOL.md`. If `./.aphelocoma/` already exists, STOP and offer `resume`
-   (never overwrite). Otherwise copy `<skill>/templates/aphelocoma/` → `./.aphelocoma/` (leaves
-   `ledger/events.jsonl` empty so `seq` starts at 1).
-2. Write `./.aphelocoma/hamilton.json`: `project` (slug from the brief / directory name), `created`
-   (ISO-8601 now), `phase: "kickoff"`. (Roles + size are filled in after Discovery — step 4.)
+1. Read `<skill>/references/PROTOCOL.md`. If `./.aphelocoma/` already exists, inspect its version
+   fields and STOP (never overwrite): offer `resume` when schema `1` / protocol `1.0.0` is current,
+   or the explicit backed-up migration below when it is unversioned v0.2 state. A future version must
+   stop with "upgrade Aphelocoma"; never interpret or downgrade it. Otherwise copy
+   `<skill>/templates/aphelocoma/` → `./.aphelocoma/` (leaves `ledger/events.jsonl` empty so `seq`
+   starts at 1).
+2. Write `./.aphelocoma/hamilton.json`: retain `schema_version: 1` and
+   `protocol_version: "1.0.0"` from the template; fill `project` (slug from the brief / directory
+   name), `created` (ISO-8601 now), and `phase: "kickoff"`. Roles + size are filled in after Discovery.
 3. **Kickoff:** activate only the **leadership core** (`cto`, `software-architect`, `product-manager`;
    `solo` → `cto` covers all per §7). Log `role_activated` each.
 4. Run the protocol as the **advisor flow** (PROTOCOL §1.5) — adopt one role at a time from
@@ -79,7 +84,8 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
    self-review is the floor only when neither exists. A review counts ONLY when you log a `critique` event
    for it (record the tier). At CP4 every task is reviewed **individually** (a fresh per-task subagent is
    the right tier — the host tool reviews the whole context, not one task) and reaches `done` only once
-   its `critique` + `review_passed` are in the ledger. No `critique` event = it didn't happen.
+   its `critique` + `review_passed` are in the ledger. The CP4 critique actor must differ from the
+   builder. No `critique` event = it didn't happen.
    Build the product **in the project (at the repo root, beside `.aphelocoma/`)** — no `product/`. Keep
    `./.aphelocoma/state/tasks.json` current and append every action to `./.aphelocoma/ledger/`
    (events.jsonl + agents/<role>.md) per PROTOCOL §3/§5. **Git (PROTOCOL §5.5):** the orchestrator is
@@ -98,12 +104,17 @@ For when the advisor already knows the brief; otherwise use the bare `/aph-hamil
      role and narrate by role, not thread id). On platforms with no backend, build sequentially.
 
 ### `resume`
-Read `./.aphelocoma/`. **Integrity check first:** run `python3 <skill>/references/validate.py .` (skip
-silently if `python3` is unavailable — the check is optional, never a blocker). It verifies the PROTOCOL
-invariants mechanically — gap-free `seq`, no `done` task without its `critique` + `review_passed`, no
-assigned task without a spec. Report any findings to the advisor before continuing; fix ledger/state
-drift as new corrective events (never rewrite history — PROTOCOL §5). Then report the current `phase`
-and open tasks (anything not `done`) from `./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
+Read `./.aphelocoma/`. **Version + integrity check first:** run
+`python3 <skill>/references/validate.py .` (skip silently only if `python3` is unavailable). Current
+schema `1` / protocol `1.0.0` continues. Unversioned v0.2 state must stop and offer
+`python3 <skill>/references/migrate.py check .` then `... migrate.py apply .`; apply retains a
+recoverable backup and rolls back on any failed validation. An unsupported future version must stop
+and tell the advisor to upgrade Aphelocoma. The validator also checks event references/transitions,
+reviewer independence/order, task IDs/specs, tracked transient data, and representative credentials.
+It mechanically enforces `state.schema.json`; schema documentation is never merely advisory.
+Report findings before continuing; fix ledger/state drift as new corrective events (never rewrite
+history — PROTOCOL §5). Then report the current `phase`, schema/protocol, visibility, and open tasks
+(anything not `done`) from `./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
 Hit a bug or want a change? Just say so — it becomes a tracked **fix task** routed to the owning role
 (PROTOCOL §6.5), not a side channel.
 
@@ -111,7 +122,9 @@ Hit a bug or want a change? Just say so — it becomes a tracked **fix task** ro
 Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, the last few
 `./.aphelocoma/ledger/events.jsonl` entries, and the active crew's `role → model → effort → tools` table
 (from the generated agents / the applicable settings). Also run the integrity check
-(`python3 <skill>/references/validate.py .`, skip if no `python3`) and include its verdict.
+(`python3 <skill>/references/validate.py .`, skip if no `python3`) and include its verdict plus the
+project's schema version, protocol version, and `tracked`/`local` visibility. Do not silently inspect
+unversioned or unsupported-future state; report the same migration/upgrade remediation as `resume`.
 Read-only — no state changes.
 
 ### `sync-agents`  (Claude Code only — per-project override)
@@ -150,7 +163,14 @@ per-project model/effort overrides in `.aphelocoma/settings.yaml` apply at dispa
 Fallback).
 
 ## Notes
-- Optional per-project config: `./.aphelocoma/settings.yaml` (role→model map, `parallel_dispatch`
-  toggle), modeled on `<skill>/references/settings.example.yaml`. Hamilton runs fine without it.
+- Per-project `./.aphelocoma/settings.yaml` declares required privacy fields
+  (`visibility: tracked|local`, `redact_sensitive: true`); model, effort, dispatch, and concurrency
+  overrides remain optional. It is modeled on `<skill>/references/settings.example.yaml`.
+- `.aphelocoma/dispatch/`, prompts, worker results, temporary files, backups, and logs are transient
+  in both visibility modes and never enter durable state. Durable notes contain only compact redacted
+  summaries — never raw prompts or credentials.
+- Migration backups remain recoverable but untrackable: Git projects store them under the repository's
+  Git metadata (`.git/aphelocoma-backups/`, including the resolved gitdir for worktrees); non-Git
+  projects use a clearly named sibling backup.
 - The definition is shared and read-only. Do not edit `<skill>/references/` while running a project
   (PROTOCOL §7 "Stay in lane").

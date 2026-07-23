@@ -9,6 +9,7 @@
       "title": "Todo list app (single file)",
       "status": "done",
       "owner": "fullstack-developer",
+      "dependencies": [],
       "spec": "specs/T1.md",
       "artifacts": ["todo.html"],
       "updated": "2026-06-23T17:23:00Z"

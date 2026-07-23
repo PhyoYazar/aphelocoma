@@ -1,0 +1,92 @@
+# Full-stack Developer #2 — activity log
+
+- 2026-07-23T08:17:35Z — Started T2 after reading the task contract, conventions, and advisor-owned
+  Codex baseline. Wrote validator, migration, schema, privacy, review-order, and doctor-extension tests
+  first and observed the expected missing-module failure before implementation.
+- 2026-07-23T08:17:35Z — Implemented versioned Hamilton schema/protocol validation, backed-up staged
+  v0.2 migration with failure rollback, independent ordered review gates, task/event reference and
+  transition checks, tracked/local privacy enforcement, durable-state secret scanning, and the T1
+  doctor registry hook. Updated the owned templates, example, state/result schemas, and
+  Codex parallel-dispatch protocol while preserving exec/collab selection, role labels,
+  output-schema enforcement, reviewer sandboxing, and per-role model/effort behavior.
+- 2026-07-23T08:17:35Z — Verification passed: 49 unittest cases; live and example Hamilton validator
+  runs with zero errors/warnings; JSON schema and Python syntax checks; and healthy `aph doctor --json`
+  project version, integrity, and privacy diagnostics. Handing T2 to qa-engineer for independent review.
+- 2026-07-23T08:33:21Z — CP4 bounce-back started after the independent reviewer found six blocking
+  contract gaps. Added the schema-enforcement, all-status lifecycle, Git-safe backup/status,
+  conditional result, protocol prerelease/build, and conventions-warning regressions first and
+  observed the expected missing schema-validator failure before changing implementation.
+- 2026-07-23T08:33:21Z — Reworked T2 to mechanically load and enforce `state.schema.json`, reconcile
+  every live task status with ordered history, keep Git-repository migration backups recoverable under
+  Git metadata, enforce conditional implementer/reviewer result semantics, require exact protocol
+  compatibility, and restore missing/stub conventions warnings.
+- 2026-07-23T08:33:21Z — Bounce-back verification passed: 39 focused T2 tests and 64 full tests;
+  current-version fixture and normalized example validators each report zero errors/warnings; schema
+  JSON and Python syntax checks pass; fixture `aph doctor --json` is healthy. The live project
+  validator reports only T2's expected in-flight lifecycle mismatch until the orchestrator serializes
+  this work_started/handoff result. Handing the corrected T2 back to qa-engineer.
+- 2026-07-23T08:44:18Z — Second CP4 bounce-back started tests-first. Reproduced the same-second Git
+  backup collision escaping `.git/aphelocoma-backups`, contradictory result-schema branches, reviewer
+  failure without a blocking finding, and missing blocked live-status coverage before applying fixes.
+- 2026-07-23T08:44:18Z — Corrected collision suffix placement, made blocked/in-review and pass/fail
+  schema branches semantically exclusive, and added valid plus mismatched blocked lifecycle tests.
+  Verification passed: 44 focused tests, 69 full tests, zero-findings fixture/example validators, and
+  schema JSON/Python syntax checks. Live validation has only the expected T2 in-flight mismatch until
+  the orchestrator serializes this handoff.
+- 2026-07-23T08:53:48Z — Final CP4 bounce-back started tests-first. Reproduced backups escaping actual
+  Git metadata for nested projects/worktrees, missed repo-relative local-state tracking, blocked
+  serialization/status disagreement, and accepted reordered/duplicated/wrong-target worker events.
+- 2026-07-23T08:53:48Z — Added nearest enclosing worktree/gitdir discovery, nested-project index path
+  normalization, a durable blocked-status model, and the exact ordered successful/blocked event tuple
+  schemas. Verification passed: 47 focused tests, 72 full tests, zero-findings fixture/example
+  validators, and schema JSON/Python syntax checks. Live validation reports only T2's expected
+  in-flight mismatch until this result is serialized.
+- 2026-07-23T09:05:46Z — `role_activated` / `work_started`: Began the final T2 privacy bounce-back
+  tests-first and reproduced migration acceptance of a force-tracked dispatch result plus fail-open
+  Git index-v4 and unavailable-tracking behavior.
+- 2026-07-23T09:05:46Z — `artifact_written`: Replaced direct index parsing with authoritative
+  enclosing-worktree `git ls-files -z` discovery, made indeterminate tracking a privacy/doctor error,
+  and added real-project post-swap migration validation with byte-for-byte rollback. Updated the
+  migration worktree regression to use a real temporary separate Git directory.
+- 2026-07-23T09:05:46Z — `task_completed`: All five new privacy regressions, 52 focused Hamilton
+  tests, and 77 repository tests pass. Current fixture/example validation, schema JSON, Python syntax,
+  and fixture doctor checks pass; live validation has only T2's expected in-flight lifecycle mismatch.
+  Handing T2 back to qa-engineer for independent review.
+- 2026-07-23T09:16:37Z — `role_activated` / `work_started`: Began the CP4 closure tests-first and
+  reproduced project-visible backup creation beneath an outer repository when a nested project had an
+  unresolved `.git` marker. Added real Git split-index/index-v4 privacy coverage.
+- 2026-07-23T09:16:37Z — `artifact_written`: Made backup selection fail before any write when an
+  enclosing Git marker cannot be structurally resolved, including invalid directories and dangling
+  links. The split-index regression stages both local Hamilton state and a forced transient result,
+  creates a shared index, and proves authoritative path discovery catches both violations.
+- 2026-07-23T09:16:37Z — `task_completed`: Both closure regressions, 54 focused tests, and 79 full
+  tests pass. Current fixture/example validators, fixture doctor, schema JSON, and Python syntax pass;
+  live validation has only T2's expected in-flight lifecycle mismatch. Handing T2 to qa-engineer.
+- 2026-07-23T09:26:02Z — `role_activated` / `work_started`: Reproduced three fresh Git-boundary
+  blockers tests-first: a HEAD-only fake gitdir, a symlinked Git backup root escaping into the project,
+  and outer-index tracking hidden by a newly initialized inner repository.
+- 2026-07-23T09:26:02Z — `artifact_written`: Added Git-authoritative context verification for every
+  enclosing worktree, unioned tracked paths across inner and outer indexes, and hardened backup
+  selection with symlink rejection plus resolved gitdir containment checks before copying.
+- 2026-07-23T09:26:02Z — `task_completed`: All three exact reviewer regressions, 57 focused tests, and
+  82 full tests pass. Current fixture/example validators, fixture doctor, schema JSON, and Python
+  syntax pass; live validation has only T2's expected in-flight mismatch. Handing T2 to qa-engineer.
+- 2026-07-23T09:31:03Z — `role_activated` / `work_started`: Reproduced the final containment escape
+  tests-first by replacing `.aphelocoma/state` with a directory symlink to an external byte snapshot;
+  migration followed it during staged writes and retained a backup.
+- 2026-07-23T09:31:03Z — `artifact_written`: Added non-following recursive symlink preflight before
+  version detection or backup selection and a second staging-tree guard before migrated writes. Both
+  directory and file symlinks anywhere inside Hamilton state now fail closed.
+- 2026-07-23T09:31:03Z — `task_completed`: The exact containment regression, 58 focused tests, and 83
+  full tests pass. Original links and external bytes remain unchanged with no backup/staging residue;
+  fixture/example validators, fixture doctor, schemas, and syntax pass. Live validation has only T2's
+  expected in-flight lifecycle mismatch. Handing T2 to qa-engineer.
+- 2026-07-23T09:37:43Z — `role_activated` / `work_started`: Reproduced the final protocol/replay
+  mismatch tests-first: the validator deterministically returned a failed review to `assigned`, while
+  two canonical protocol passages permitted `assigned` or `in_progress`.
+- 2026-07-23T09:37:43Z — `artifact_written`: Canonicalized both protocol passages to
+  `review_failed → assigned`, with only a subsequent `work_started → in_progress`, and added exact
+  prose plus two-step replay regressions. A full T2 docs/examples search found no remaining ambiguity.
+- 2026-07-23T09:37:43Z — `task_completed`: Both new contract tests, 60 focused tests, and 85 full tests
+  pass. Fixture/example validators, fixture doctor, schemas, and syntax pass; live validation has only
+  T2's expected in-flight lifecycle mismatch. Handing T2 to qa-engineer.

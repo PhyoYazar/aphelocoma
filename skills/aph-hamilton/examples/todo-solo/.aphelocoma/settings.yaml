@@ -1,0 +1,3 @@
+# Compact, redacted project state is committed in this reference run.
+visibility: tracked
+redact_sensitive: true

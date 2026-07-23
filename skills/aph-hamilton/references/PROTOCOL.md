@@ -22,6 +22,10 @@ depends on **no platform-specific features** — only the ability to read and wr
     `.aphelocoma/state/brief.md`): the *current* truth (what exists, who owns what, status).
   - **History** — `.aphelocoma/ledger/events.jsonl` (+ `.aphelocoma/ledger/agents/<role>.md`):
     an *append-only* record of what happened. See §5.
+- `.aphelocoma/hamilton.json` declares `schema_version: 1` and `protocol_version: "1.0.0"`.
+  `.aphelocoma/settings.yaml` declares `visibility: tracked|local` and
+  `redact_sensitive: true`. Dispatch prompts/results/logs are transient and never part of either
+  durable record.
 
 ## 1. Execution model
 
@@ -55,7 +59,8 @@ presenting 2–3 options with trade-offs (or targeted questions) and a recommend
 4. **At Review** — the advisor accepts, or says what to fix / add.
 
 Before CP1, CP2, and CP4 an **independent reviewer** — a fresh subagent or the host's own review tool
-(e.g. Claude Code's `advisor`), or a persona self-review only when neither exists — double-checks the
+(e.g. Claude Code's `advisor`), or a persona review under a different role only when neither exists —
+double-checks the
 crew's work against `CRITIQUE.md` (blind spots at brainstorm, holes at plan, defects at implementation),
 **always recorded as a `critique` event** (§5). The work is presented to the advisor
 *with* the reviewer's findings and any fixes (see §2 Phases 1/2/5). CP3 has no artifact, so no critique.
@@ -69,7 +74,8 @@ scope** — an unknown becomes a question to the advisor, not an assumption.
 ## 2. Phases
 
 Run these in order. Skip a phase only if no active role covers it (see §7 coverage). On each
-transition, set `.aphelocoma/state/tasks.json`'s `phase` and log a `phase_advanced` event (note `from`→`to`).
+transition, set both `.aphelocoma/hamilton.json` and `.aphelocoma/state/tasks.json` to the same `phase`
+and log a `phase_advanced` event (note `from`→`to`).
 Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`, `breakdown`,
 `implementation`, `review`, `integration`, `done`.
 
@@ -134,16 +140,19 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    after QA. qa-engineer (or covering role per §7) reviews **each** `in_review` task as a fresh-context
    reviewer — a fresh subagent on Claude Code or a read-only headless worker on Codex
    (`DISPATCH-CODEX.md`; both the right tier for per-task CP4), the host's own review
-   tool (`tier: host_tool`), or, only when neither exists, a persona self-review (`tier: persona`, the
-   floor) — independent of the builder wherever a subagent or host tool is available — against
+   tool (`tier: host_tool`), or, only when neither exists, a persona review under a different active
+   role/instance (`tier: persona`, the floor) — the recorded critique actor must never be the task's
+   builder — against
    `CRITIQUE.md`'s CP4 lens:
    **(a)** its acceptance criteria (incl. tests-first when TDD is on), **(b)** the craft bar (`CRAFT.md`),
    and **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
-   (§5; tier recorded). Pass → status `done`, log `review_passed`, commit the task (§5.5). Serious findings → status back to
-   `assigned`/`in_progress` with notes, log `review_failed`, **one** bounce-back to the owner. **No task
+   (§5; tier recorded). Pass → status `done`, log `review_passed`, commit the task (§5.5). Serious
+   findings → log `review_failed`, set status to `assigned`, attach the findings, and send **one**
+   bounce-back to the owner. Canonical replay: `review_failed` → `assigned`; a subsequent
+   `work_started` → `in_progress`. **No task
    moves to `done` until both its `critique` and `review_passed` events are in the ledger** (in `solo`
-   without subagents, the persona self-review is the acknowledged floor; on Claude Code prefer
-   `host_tool`). End at **Checkpoint 4**: the advisor accepts, or says
+   without subagents, a persona review under a role distinct from the builder is the acknowledged
+   floor; on Claude Code prefer `host_tool`). End at **Checkpoint 4**: the advisor accepts, or says
    what to fix / add (log a `decision`); fixes loop back as re-assigned tasks.
 6. **Integration** — devops/sre/cloud (if active) integrate, build, and judge readiness.
    When all roadmap tasks are `done` and integration passes, set `phase: done` and log `project_completed`.
@@ -186,6 +195,10 @@ back to the author.
 
 - `.aphelocoma/state/tasks.json` is the **single source of truth for current status**. Mutate it in
   place. Always refresh `updated` to an ISO-8601 timestamp.
+- `.aphelocoma/hamilton.json` is the compatibility envelope. Schema `1` and protocol `1.0.0` are the
+  current contract. Never guess at unversioned or future state: use the §6 migration check or stop for
+  an Aphelocoma upgrade. Compatibility is exact: prerelease/build-tagged values such as
+  `1.0.0-alpha` and `1.0.0+local` are not protocol `1.0.0`.
 - `.aphelocoma/ledger/events.jsonl` is **append-only history**. One JSON object per line:
   `{"ts":"<iso>","seq":<int>,"event":"<type>","actor":"<role-id>","task":"<id|null>","to":"<role-id|null>","note":"<text>"}`
   `seq` increases by 1 each append (read the last line to find the next). Never edit or
@@ -199,8 +212,10 @@ back to the author.
 - The **`advisor`** actor is the human (the user) in the top seat; it appears on `decision` events
   (the options offered + the pick), on `bug_reported` (a defect you raise; §6.5), and on any direction
   the human gives. Crew actors are role-ids.
-- The **`reviewer`** actor marks an independent critique pass (§1.5); `critique` events use it. The
-  `note` records the gate (CP1/CP2/CP4), the verdict (`clear` / `findings`), severity, and the
+- A `critique` event's `actor` is the exact reviewing role/instance (`qa-engineer`, `cto`, etc.);
+  phase-level host-tool critiques may use the reserved `reviewer` actor. At CP4 that actor MUST differ
+  from the task's builder actor. The `note` records the gate (CP1/CP2/CP4), the verdict
+  (`clear` / `findings`), severity, and the
   independence **tier** — one of `subagent` (a fresh-context dispatched reviewer — a Claude Code
   subagent or a Codex read-only worker), `host_tool` (the
   host's own review feature, e.g. Claude Code's `advisor`, pointed at the artifact + lens), or `persona`
@@ -208,6 +223,17 @@ back to the author.
   from a self-review. `task` is null at CP1/CP2 (phase-level) and set at CP4 (per-task). At CP4 the
   `critique` event rides alongside the `review_passed` / `review_failed`, and a task reaches `done` ONLY
   once both exist.
+- Task event order is mechanically binding: `task_created → task_assigned → work_started → handoff →
+  critique → review_passed|review_failed`. Artifact and blocked events do not bypass this lifecycle;
+  every task/event/dependency reference must name a real unique task ID. A review verdict before its
+  handoff/critique, or a critique by the builder, is invalid state. Every live task status must equal
+  the status derived from this ordered history; current-state updates and their events are serialized
+  together by the orchestrator.
+- **Privacy/visibility:** `visibility: tracked` permits compact plans, specs, and redacted audit state
+  in version control. `visibility: local` means every `.aphelocoma/` path stays untracked. In both
+  modes `.aphelocoma/dispatch/`, prompts, results, `*.tmp`, `*.bak`, and `*.log` are transient and
+  ignored; delete dispatch scratch after serialization. Durable notes contain redacted summaries only,
+  never raw prompts, access tokens, passwords, private keys, or other credentials.
 - A role file's **Ledger rule** is *indicative, not an exclusive whitelist* — a role may emit
   any documented event its work legitimately requires (especially when covering another role
   per §7; e.g. a CTO covering QA logs `review_passed`).
@@ -241,11 +267,17 @@ On start, read `.aphelocoma/state/brief.md`:
 - If it is populated → a project is in progress. Report the current `phase` and the open
   tasks (anything not `done`) from `.aphelocoma/state/tasks.json`, then **continue** from there. Do not
   restart or rebuild completed work.
-- **Integrity check (when `python3` exists):** run `validate.py` (a sibling of this file) against the
-  project before continuing. It mechanically verifies the invariants this protocol otherwise trusts to
-  discipline — gap-free `seq`, the §8 `done` gate (`critique` + `review_passed` present), specs behind
-  every assigned task. Surface findings to the advisor; repair drift with **new corrective events**,
-  never by editing history (§5). Unavailable `python3` skips the check — it is a net, not a gate.
+- **Version + integrity check (when `python3` exists):** run `validate.py` (a sibling of this file)
+  against the project before continuing. It verifies version compatibility, privacy, gap-free `seq`,
+  task references/transitions, independent ordered reviews, the §8 done gate, and specs behind assigned
+  tasks. Unversioned v0.2 state stops: run `migrate.py check .`, then `migrate.py apply .` only with the
+  advisor's approval. Apply creates a recoverable backup under `.git/aphelocoma-backups/` in Git
+  repositories (the resolved gitdir in a worktree) or as a named sibling in non-Git projects, validates
+  a staging copy, and leaves the original byte-for-byte on failure. Backups therefore never appear as
+  trackable project files. A future schema/protocol stops with "upgrade Aphelocoma";
+  never downgrade it. Surface other findings; repair ledger drift with **new corrective events**, never
+  by editing history (§5). Unavailable `python3` skips the check — it is a net, not a license to guess
+  at a version if fields are visibly absent.
 
 ## 6.5 Bug & fix intake (advisor-reported defects)
 
@@ -289,7 +321,9 @@ cannot crack goes `blocked` and escalates to the lead/architect (§7).
   work. Use the strongest reviewer the platform offers — a fresh read-only **subagent** (Claude Code), the
   host's own **review tool** (e.g. `advisor`; `tier: host_tool`), or, only when neither exists, a
   **persona pass** (a self-review — the floor) — but it counts only when
-  the orchestrator logs a `critique` event for it; the reviewer never writes state itself (single-writer
+  the orchestrator logs a `critique` event for it. For CP4, the exact critique actor role/instance must
+  differ from the builder; role coverage never permits a builder to pass its own task. The reviewer
+  never writes state itself (single-writer
   contract, `PARALLEL.md`). **No `critique` event means no review happened:** do not present at CP1/CP2,
   and do not move any task to `done` at CP4, until the matching `critique` (and, at CP4, `review_passed`)
   is in the ledger.
@@ -299,7 +333,10 @@ cannot crack goes `blocked` and escalates to the lead/architect (§7).
 ## 8. Quick reference — status lifecycle
 
 `pending → assigned → in_progress → in_review → done`
-(`blocked` reachable from any state; return to `assigned`/`in_progress` on `review_failed`.)
+(`blocked` is reachable from any state; `review_failed` returns to `assigned`, and only a subsequent
+`work_started` advances it to `in_progress`.)
+After a worker emits `blocked`, live status remains `blocked`; resumption requires a later
+`task_assigned` event before `work_started`.
 The **`in_review → done`** step is gated: it requires a logged `critique` **and** `review_passed`
-(§2 Phase 5, §7) — from an independent reviewer (subagent or host tool) where one exists, or the persona
-self-review floor in `solo` with neither. No shortcut to `done`.
+(§2 Phase 5, §7) — in that order after handoff, with a critique actor different from the builder.
+No shortcut to `done`.

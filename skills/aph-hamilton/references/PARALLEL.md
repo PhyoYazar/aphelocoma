@@ -28,7 +28,8 @@ travels back* differ. The contract (step 3) and the collect/serialize rules (ste
   JSON arrives as the subagent's tool result.
 - **Codex — headless workers (default), collab tools (opt-in/fallback).** Fan out one background
   `codex exec` per task, role body injected into the prompt and `--output-schema` pinned to the result
-  schema; the result JSON arrives as a file at `.aphelocoma/dispatch/<task-id>/result.json`. The
+  schema; the result JSON arrives as a file at
+  `.aphelocoma/dispatch/<task-id>--<role-id>/result.json`. The
   experimental collab tools (`spawn_agent`/`wait_agent`) are used only when `dispatch: collab` is set
   or the exec preflight fails. Selection order, mechanics, preflight, flags, and labeling rules:
   `DISPATCH-CODEX.md`.
@@ -50,6 +51,11 @@ manager role running the Implementation phase):
   write the same file.
 
 Parallel work on disjoint files + a single writer for the board and ledger ⇒ no races.
+
+`.aphelocoma/dispatch/` is transient scratch in both `tracked` and `local` visibility modes. Prompts,
+result JSON, and worker logs never enter `tasks.json`, `events.jsonl`, agent ledgers, commits, or other
+durable state. The orchestrator serializes only compact redacted `events[]` summaries, then deletes
+dispatch scratch after the task commit.
 
 ## The loop
 
@@ -100,6 +106,13 @@ Each subagent:
 
 If the subagent cannot complete the task, it returns `"status": "blocked"`, a populated
 `"blocked_reason"`, whatever `artifacts` exist, and a single `{"event":"blocked", ...}` entry.
+Notes and blocked reasons must be compact and redacted — never copy raw prompts, credentials, or
+worker logs into the result that the orchestrator will serialize.
+The pinned implementer schema enforces exclusive branches: `blocked` requires a nonempty reason and
+exactly one blocked event; `in_review` requires a null blocked reason, at least one artifact, and the
+exact ordered tuple `work_started(to=null)`, `artifact_written(to=null)`, then
+`handoff(to=<nonempty-reviewer>)`, with no duplicate or blocked event. The reviewer schema forbids a
+`pass` containing a blocking finding and requires every `fail` to contain at least one.
 
 ### 4. Collect + serialize (single writer)
 After all workers in the batch return (on Codex: after the batch's processes exit and their result
@@ -115,7 +128,8 @@ ascending `task` order** (deterministic). For each result:
 - (visibility) annotate the `work_started` entry's note with the dispatched agent + its model/effort, so
   the ledger is an audit of which model ran which task;
 - update that task in `.aphelocoma/state/tasks.json`: set `status` (→ `in_review`, or back to
-  `assigned` on `blocked`), record `artifacts`, refresh `updated`.
+  `blocked` on a blocked result), record `artifacts`, refresh `updated`. A later explicit
+  `task_assigned` event moves a blocked task back to `assigned`; status and history never disagree.
 
 **Scope check (after the batch, when the project is a git repo).** Disjointness is *declared* in specs;
 verify it actually held: compare the files that changed during the batch (a `git diff --name-only`
@@ -136,9 +150,11 @@ parallelized across independent `in_review` tasks under the same rules — each 
 `codex exec --sandbox read-only` worker on Codex; returns findings + a `pass`/`fail` verdict, writes
 nothing), and the orchestrator logs the `critique` + `review_passed`/`review_failed` per
 task (CRITIQUE.md; PROTOCOL §2 Phase 5).
+Before serialization, the orchestrator verifies the reviewer result's exact role/instance differs from
+the task's builder; reviewer=builder is invalid and cannot produce `review_passed`.
 
 ## Failure & honesty
-- A `blocked` result leaves its task `assigned`; the orchestrator logs the `blocked` event and
+- A `blocked` result leaves its task `blocked`; the orchestrator logs the `blocked` event and
   continues the other results — one blocked task never corrupts the batch.
 - All the PROTOCOL §7 honesty rules still apply: §7 role coverage, `assumption_logged` disclosure, and
   "a task is `done` only when its acceptance criteria are met" are unchanged under parallelism.

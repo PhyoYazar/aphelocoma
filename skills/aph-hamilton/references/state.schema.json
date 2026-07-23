@@ -1,0 +1,236 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aphelocoma.dev/schemas/hamilton-state-v1.json",
+  "title": "Hamilton project state schema 1",
+  "description": "Normalized schema for the durable files split across .aphelocoma/. Dispatch prompts, worker results, temporary files, and logs are deliberately excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hamilton", "settings", "tasks", "events"],
+  "properties": {
+    "hamilton": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project",
+        "schema_version",
+        "protocol_version",
+        "size",
+        "roles",
+        "created",
+        "phase"
+      ],
+      "properties": {
+        "project": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "protocol_version": {
+          "type": "string",
+          "const": "1.0.0"
+        },
+        "size": {
+          "type": "string",
+          "minLength": 1
+        },
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "created": {
+          "type": "string",
+          "minLength": 1
+        },
+        "phase": {
+          "$ref": "#/definitions/phase"
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "required": ["visibility", "redact_sensitive"],
+      "properties": {
+        "visibility": {
+          "type": "string",
+          "enum": ["tracked", "local"]
+        },
+        "redact_sensitive": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "tasks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project", "size", "phase", "updated", "tasks"],
+      "properties": {
+        "project": {
+          "type": ["string", "null"]
+        },
+        "size": {
+          "type": ["string", "null"]
+        },
+        "phase": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/phase"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "updated": {
+          "type": ["string", "null"]
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/task"
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/event"
+      }
+    }
+  },
+  "definitions": {
+    "phase": {
+      "type": "string",
+      "enum": [
+        "kickoff",
+        "discovery",
+        "planning",
+        "breakdown",
+        "implementation",
+        "review",
+        "integration",
+        "done"
+      ]
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "owner",
+        "status",
+        "dependencies",
+        "artifacts",
+        "updated"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": ["string", "null"]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "assigned",
+            "in_progress",
+            "in_review",
+            "done",
+            "blocked"
+          ]
+        },
+        "dependencies": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"
+          }
+        },
+        "spec": {
+          "type": "string"
+        },
+        "artifacts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "updated": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ts", "seq", "event", "actor", "task", "to", "note"],
+      "properties": {
+        "ts": {
+          "type": "string",
+          "minLength": 1
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "event": {
+          "type": "string",
+          "enum": [
+            "role_activated",
+            "brainstorm_note",
+            "plan_created",
+            "roadmap_updated",
+            "task_created",
+            "task_assigned",
+            "work_started",
+            "artifact_written",
+            "task_completed",
+            "review_passed",
+            "review_failed",
+            "blocked",
+            "assumption_logged",
+            "handoff",
+            "phase_advanced",
+            "project_completed",
+            "decision",
+            "critique",
+            "bug_reported",
+            "scope_violation"
+          ]
+        },
+        "actor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task": {
+          "type": ["string", "null"]
+        },
+        "to": {
+          "type": ["string", "null"]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -8,6 +8,10 @@ end) are used ONLY per the selection order below — never improvise a dispatch 
 because they appear in the toolbox. Everything else — the single-writer rule, the subagent contract,
 collect + serialize, the scope check — is `PARALLEL.md`, unchanged.
 
+All `.aphelocoma/dispatch/` content is transient regardless of project visibility. Raw prompts,
+result files, and worker logs are never committed or copied into durable ledger notes; only compact
+redacted result summaries are serialized.
+
 ## Backend selection (decide at Checkpoint 3, announce the choice + why)
 
 In order, from `.aphelocoma/settings.yaml` `dispatch:` (absent = `auto`):
@@ -92,8 +96,14 @@ For each task in the selected batch (disjoint `files touched`, inputs `done` —
 
 For each task, read `.aphelocoma/dispatch/<task-id>--<role-id>/result.json`:
 
-- **Present and valid** → this is the worker's result object; hand it to the serialize loop
+- **Present and valid** → validate it against the pinned schema and confirm its `task` and exact
+  role/instance match the dispatch; for a reviewer also confirm the role/instance differs from the
+  task builder. Hand it to the serialize loop
   (PARALLEL.md step 4: replay-safety check, append events with the next `seq`, update the board).
+  Conditional schema rules reject contradictory results (`blocked` without its exact blocked
+  lifecycle, `in_review` without its ordered work/artifact/handoff tuple and targets or with a blocked
+  reason/event, reviewer
+  `pass` with a blocking finding, or reviewer `fail` without one).
 - **Missing, empty, or unparseable** (worker crashed, timed out, or died mid-run) → treat as
   `"status": "blocked"` with `blocked_reason` = a one-liner from the tail of `worker.log`, and a single
   `blocked` event. One dead worker never corrupts the batch (PARALLEL.md "Failure & honesty").

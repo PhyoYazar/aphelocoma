@@ -1,5 +1,7 @@
 {
   "project": "simple-todo-list-app",
+  "schema_version": 1,
+  "protocol_version": "1.0.0",
   "size": "solo",
   "roles": ["cto", "fullstack-developer"],
   "created": "2026-06-23T17:18:00Z",

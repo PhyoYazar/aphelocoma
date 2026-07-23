@@ -1,0 +1,9 @@
+{"ts":"2026-06-23T00:00:00Z","seq":1,"event":"role_activated","actor":"fullstack-developer","task":null,"to":null,"note":"Builder activated."}
+{"ts":"2026-06-23T00:00:01Z","seq":2,"event":"role_activated","actor":"qa-engineer","task":null,"to":null,"note":"Reviewer activated."}
+{"ts":"2026-06-23T00:00:02Z","seq":3,"event":"task_created","actor":"cto","task":"T1","to":null,"note":"Task created."}
+{"ts":"2026-06-23T00:00:03Z","seq":4,"event":"task_assigned","actor":"cto","task":"T1","to":"fullstack-developer","note":"Task assigned."}
+{"ts":"2026-06-23T00:00:04Z","seq":5,"event":"work_started","actor":"fullstack-developer","task":"T1","to":null,"note":"Work started."}
+{"ts":"2026-06-23T00:00:05Z","seq":6,"event":"artifact_written","actor":"fullstack-developer","task":"T1","to":null,"note":"Artifact written."}
+{"ts":"2026-06-23T00:00:06Z","seq":7,"event":"handoff","actor":"fullstack-developer","task":"T1","to":"qa-engineer","note":"Ready for review."}
+{"ts":"2026-06-23T00:00:07Z","seq":8,"event":"critique","actor":"qa-engineer","task":"T1","to":"fullstack-developer","note":"CP4 clear, tier=subagent."}
+{"ts":"2026-06-23T00:00:08Z","seq":9,"event":"review_passed","actor":"qa-engineer","task":"T1","to":null,"note":"Review passed."}

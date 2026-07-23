@@ -12,7 +12,8 @@ history is plain files. Nothing depends on a specific tool's features.
 
 - **Definition (read-only, installed once)** — this `references/` directory: `PROTOCOL.md`,
   `roles/`, `sizes.yaml`, `roles.index.md`, `PARALLEL.md`, `DISPATCH-CODEX.md`, `agent-template.md`,
-  `result.*.schema.json`. Shared by every project; never copied into them.
+  `state.schema.json`, `result.*.schema.json`, `validate.py`, `migrate.py`. Shared by every project;
+  never copied into them.
 - **Per-project state** — a `.aphelocoma/` folder in the project being built:
   `hamilton.json`, `state/`, `ledger/`, `specs/`. Plus the **product** itself in the project (at the
   repo root, beside `.aphelocoma/`).
@@ -49,7 +50,10 @@ Only the selected roles activate; the rest stay dormant in `roles/`.
 
 Run `/aph-hamilton resume`. Hamilton reads `.aphelocoma/state/brief.md` +
 `.aphelocoma/state/tasks.json`, reports the current phase and open tasks, and continues —
-projects don't need to finish in one session.
+projects don't need to finish in one session. Resume first validates schema `1`, protocol `1.0.0`,
+the mechanically loaded `state.schema.json`, every live status against lifecycle history, review
+independence/order, and privacy. Unversioned v0.2 state uses the explicit
+backed-up `migrate.py check|apply` flow; unsupported future state requires an Aphelocoma upgrade.
 
 ## Review who did what (history)
 
@@ -72,6 +76,7 @@ projects don't need to finish in one session.
 
     <project>/.aphelocoma/  <- per-project state (created by `start`)
       hamilton.json         <- project, size, roles, phase
+      settings.yaml         <- tracked/local visibility + optional dispatch/model overrides
       state/                <- tasks.json (live board), roadmap.md, brief.md
       specs/                <- one spec per task (handoff contracts w/ acceptance criteria)
       ledger/               <- events.jsonl + agents/<role>.md (append-only history)
@@ -79,9 +84,11 @@ projects don't need to finish in one session.
 
 ## Optional settings
 
-`.aphelocoma/settings.yaml` is optional — Hamilton runs without it. It can set a role→model mapping
-(used when generating native agents). The product always builds at the project root, and the build
-style is chosen by the advisor at the Implementation checkpoint. See `settings.example.yaml`.
+`.aphelocoma/settings.yaml` always declares `visibility: tracked|local` and
+`redact_sensitive: true`; role→model/effort and dispatch settings are optional. `tracked` permits the
+compact redacted audit state in version control; `local` keeps all Hamilton state untracked. Dispatch
+prompts, worker results, temporary files, backups, and logs are transient in both modes. See
+`settings.example.yaml`.
 
 ## Example run
 

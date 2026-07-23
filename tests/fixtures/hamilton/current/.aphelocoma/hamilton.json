@@ -1,0 +1,9 @@
+{
+  "project": "fixture-current",
+  "schema_version": 1,
+  "protocol_version": "1.0.0",
+  "size": "solo",
+  "roles": ["cto", "fullstack-developer", "qa-engineer"],
+  "created": "2026-07-23T00:00:00Z",
+  "phase": "done"
+}
