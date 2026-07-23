@@ -8,3 +8,10 @@
   doctor/support verification, and unprotected custom legacy data. Returned it for one bounce-back.
 - 2026-07-23T08:07:00Z — Re-reviewed the revised CP2 roadmap after the bounce-back and returned PASS:
   all findings were addressed, contracts are dependency-safe, and no blocking contradiction remains.
+- 2026-07-23T09:05:00Z — T1 CP4 failed because base doctor accepted a one-role partial Hamilton
+  installation as complete.
+- 2026-07-23T09:12:00Z — T2 CP4 failed on unenforced state/schema semantics, incomplete lifecycle
+  reconciliation, trackable migration backups, contradictory result-schema outcomes, version and
+  conventions regressions, and one declared-scope miss.
+- 2026-07-23T09:25:00Z — Fresh T1 CP4 re-review passed after the exact 18-reference/27-role inventory
+  and partial-install regression closed the blocker.
