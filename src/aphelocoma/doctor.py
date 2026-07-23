@@ -8,6 +8,7 @@ import platform
 from pathlib import Path
 import re
 import shutil
+import subprocess
 import sys
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -84,6 +85,14 @@ DEFINITION_FILES = (
     )
 )
 EXTENSION_MODULES = ("aphelocoma.hamilton_state",)
+HOST_MINIMUM_VERSIONS = {
+    "claude": (2, 1, 0),
+    "codex": (0, 145, 0),
+}
+HOST_TESTED_VERSIONS = {
+    "claude": "2.1.217",
+    "codex": "0.145.0",
+}
 
 
 @dataclass(frozen=True)
@@ -265,6 +274,163 @@ def default_registry() -> CheckRegistry:
         register = getattr(module, "register_doctor_checks", None)
         if register is not None:
             register(registry)
+    for check_id, callback in deployment_registry().callbacks():
+        registry.register(check_id, callback)
+    return registry
+
+
+def _parsed_command_version(executable: str) -> Optional[Tuple[int, int, int]]:
+    completed = subprocess.run(
+        [executable, "--version"],
+        check=False,
+        text=True,
+        capture_output=True,
+        timeout=5,
+    )
+    if completed.returncode != 0:
+        return None
+    match = re.search(r"(?<!\d)(\d+)\.(\d+)\.(\d+)(?!\d)", completed.stdout)
+    if match is None:
+        match = re.search(r"(?<!\d)(\d+)\.(\d+)\.(\d+)(?!\d)", completed.stderr)
+    if match is None:
+        return None
+    return tuple(int(value) for value in match.groups())
+
+
+def _host_tools_check(context: DoctorContext) -> Diagnostic:
+    del context
+    available = []
+    failures = []
+    for tool, minimum in HOST_MINIMUM_VERSIONS.items():
+        executable = shutil.which(tool)
+        if executable is None:
+            continue
+        try:
+            version = _parsed_command_version(executable)
+        except (OSError, subprocess.SubprocessError):
+            version = None
+        if version is None:
+            failures.append(f"{tool} version could not be read")
+            continue
+        formatted = ".".join(str(value) for value in version)
+        required = ".".join(str(value) for value in minimum)
+        if version < minimum:
+            failures.append(f"{tool} {formatted} is below minimum {required}")
+        else:
+            available.append(
+                f"{tool} {formatted} "
+                f"(minimum {required}, tested {HOST_TESTED_VERSIONS[tool]})"
+            )
+    if failures:
+        return Diagnostic(
+            "host-tools",
+            "error",
+            "Host readiness failed: " + "; ".join(failures) + ".",
+            "Upgrade the affected host CLI or use Hamilton's sequential fallback.",
+        )
+    if available:
+        return Diagnostic(
+            "host-tools",
+            "ok",
+            "Parallel host readiness: " + ", ".join(available) + ".",
+            None,
+        )
+    return Diagnostic(
+        "host-tools",
+        "ok",
+        "Claude and Codex CLIs are not on PATH; Hamilton's sequential fallback remains "
+        "available. Supported floors/tested versions: Claude 2.1.0/2.1.217, "
+        "Codex 0.145.0/0.145.0.",
+        None,
+    )
+
+
+def _deployments_check(context: DoctorContext) -> Diagnostic:
+    from .deploy import inspect_deployments
+
+    inspection = inspect_deployments(context.paths)
+    message = " ".join(inspection.messages)
+    if inspection.ok:
+        return Diagnostic("deployments", "ok", message, None)
+    return Diagnostic(
+        "deployments",
+        "error",
+        message,
+        "Run aph deploy <claude|codex> to repair owned files; "
+        "move modified files aside before redeploying.",
+    )
+
+
+def _installation_check(context: DoctorContext) -> Diagnostic:
+    from .lifecycle import inspect_installation
+
+    inspection = inspect_installation(context.paths)
+    message = " ".join(inspection.messages)
+    if inspection.ok:
+        return Diagnostic("installation", "ok", message, None)
+    return Diagnostic(
+        "installation",
+        "error",
+        message,
+        "Restore the manifest-owned tool and PATH block, or reinstall Aphelocoma.",
+    )
+
+
+def _legacy_check(context: DoctorContext) -> Diagnostic:
+    from .legacy import inspect_legacy
+
+    report = inspect_legacy(context.paths)
+    protected = (
+        " Protected legacy data: "
+        + ", ".join(str(path) for path in report.protected_data)
+        + "; it remains untouched."
+        if report.protected_data
+        else " No protected legacy data location is present."
+    )
+    if report.safety_issues:
+        return Diagnostic(
+            "legacy",
+            "error",
+            "Legacy cleanup safety check failed: "
+            + " ".join(report.safety_issues)
+            + protected,
+            "Replace symlinked active/host paths and choose an APHELOCOMA_ROOT "
+            "outside protected legacy data.",
+        )
+    if report.artifacts or report.path_markers:
+        artifact_paths = [str(artifact.path) for artifact in report.artifacts]
+        path_markers = [str(path) for path in report.path_markers]
+        paths = ", ".join((*artifact_paths, *path_markers))
+        path_detail = (
+            " Exact pre-v0.3 PATH configuration is present."
+            if report.path_markers
+            else ""
+        )
+        return Diagnostic(
+            "legacy",
+            "error",
+            "Legacy global artifacts detected: "
+            + paths
+            + "."
+            + path_detail
+            + protected,
+            "Run aph update or aph uninstall for exact/proven-owned cleanup; "
+            "modified or ambiguous files will be preserved.",
+        )
+    return Diagnostic(
+        "legacy",
+        "ok",
+        "No legacy global artifacts detected." + protected,
+        None,
+    )
+
+
+def deployment_registry() -> CheckRegistry:
+    registry = CheckRegistry()
+    registry.register("host-tools", _host_tools_check)
+    registry.register("installation", _installation_check)
+    registry.register("deployments", _deployments_check)
+    registry.register("legacy", _legacy_check)
     return registry
 
 

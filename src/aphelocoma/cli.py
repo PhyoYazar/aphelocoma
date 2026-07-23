@@ -4,11 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 from typing import List, Optional, Sequence
 
+from .deploy import DeploymentError, deploy_hamilton, undeploy_hamilton
 from .doctor import DoctorContext, default_registry, run_checks as run_doctor
+from .lifecycle import (
+    LifecycleError,
+    uninstall_installation,
+    update_installation,
+)
+from .manifest import ManifestError
 from .paths import RuntimePaths, resolve_paths
 
 
@@ -93,15 +101,6 @@ def _warn_legacy_home(paths: RuntimePaths) -> None:
     )
 
 
-def _unavailable(command: str) -> int:
-    print(
-        f"Error: 'aph {command}' is not available in this build. "
-        "Install the complete Aphelocoma lifecycle components and try again.",
-        file=sys.stderr,
-    )
-    return 1
-
-
 def _version(paths: RuntimePaths) -> int:
     version_file = paths.tool_root / "VERSION"
     try:
@@ -139,6 +138,36 @@ def _doctor(paths: RuntimePaths, *, json_output: bool) -> int:
     return report.exit_code
 
 
+def _print_result(messages: Sequence[str], ok: bool) -> int:
+    stream = sys.stdout if ok else sys.stderr
+    for message in messages:
+        print(message, file=stream)
+    return 0 if ok else 1
+
+
+def _deploy(paths: RuntimePaths, tool: str) -> int:
+    result = deploy_hamilton(paths, tool)
+    return _print_result(result.messages, result.ok)
+
+
+def _undeploy(paths: RuntimePaths, tool: str) -> int:
+    result = undeploy_hamilton(paths, tool)
+    return _print_result(result.messages, result.ok)
+
+
+def _update(paths: RuntimePaths) -> int:
+    result = update_installation(
+        paths,
+        fail_at=os.environ.get("APHELOCOMA_FAIL_AT"),
+    )
+    return _print_result(result.messages, result.ok)
+
+
+def _uninstall(paths: RuntimePaths) -> int:
+    result = uninstall_installation(paths)
+    return _print_result(result.messages, result.ok)
+
+
 def _show_help(parser: AphArgumentParser, topic: Optional[str]) -> int:
     if topic is None:
         parser.print_help()
@@ -169,8 +198,14 @@ def _dispatch(
         return _doctor(paths, json_output=arguments.json_output)
     if command == "version":
         return _version(paths)
-    if command in ("deploy", "undeploy", "update", "uninstall"):
-        return _unavailable(command)
+    if command == "deploy":
+        return _deploy(paths, arguments.tool)
+    if command == "undeploy":
+        return _undeploy(paths, arguments.tool)
+    if command == "update":
+        return _update(paths)
+    if command == "uninstall":
+        return _uninstall(paths)
     raise UsageError(
         f"Unknown command {command!r}. Run 'aph help' for the supported commands."
     )
@@ -184,6 +219,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         paths = resolve_paths()
         return _dispatch(parser, arguments, paths)
     except UsageError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+    except (DeploymentError, LifecycleError, ManifestError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
     except SystemExit as exit_signal:

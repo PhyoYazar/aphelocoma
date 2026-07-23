@@ -89,18 +89,19 @@ class CliSubprocessTests(unittest.TestCase):
         self.assertEqual(unsupported.returncode, 1)
         self.assertIn("cursor", unsupported.stderr)
 
-    def test_lifecycle_command_placeholders_have_stable_actionable_exit(self):
-        commands = (
-            ("deploy", "claude"),
-            ("undeploy", "codex"),
-            ("update",),
-            ("uninstall",),
-        )
-        for arguments in commands:
-            with self.subTest(arguments=arguments):
-                completed, _ = self.run_aph(*arguments)
-                self.assertEqual(completed.returncode, 1)
-                self.assertIn("not available", completed.stderr)
+    def test_lifecycle_commands_are_implemented_not_placeholders(self):
+        deploy, _ = self.run_aph("deploy", "claude")
+        undeploy, _ = self.run_aph("undeploy", "codex")
+        update, _ = self.run_aph("update")
+        uninstall, _ = self.run_aph("uninstall")
+
+        self.assertEqual(deploy.returncode, 0, deploy.stderr)
+        self.assertEqual(undeploy.returncode, 0, undeploy.stderr)
+        self.assertEqual(update.returncode, 1)
+        self.assertIn("not installed", update.stderr.lower())
+        self.assertEqual(uninstall.returncode, 0, uninstall.stderr)
+        for completed in (deploy, undeploy, update, uninstall):
+            self.assertNotIn("not available", completed.stderr)
 
     def test_legacy_home_with_spaces_and_apostrophe_is_ignored_and_untouched(self):
         with tempfile.TemporaryDirectory(prefix="aph locations ") as directory:

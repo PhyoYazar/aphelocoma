@@ -27,3 +27,17 @@
   returns to `assigned` until `work_started`.
 - 2026-07-23T12:05:00Z — Fresh T2 CP4 sign-off passed with all 85 tests and every prior
   schema, lifecycle, privacy, Git-boundary, migration, rollback, and protocol blocker closed.
+- 2026-07-23T12:38:00Z — T3 CP4 failed five adversarial ownership cases: symlink path escapes,
+  drifted-tool update replacement, unremovable exact legacy skills, arbitrary manifest block markers,
+  and unverified collision backups.
+- 2026-07-23T13:08:00Z — T3 re-review found three legacy gaps: nested protected data could be removed
+  with an owned parent, the tagged v0.2 Codex hooks signature was missing, and doctor did not report
+  the exact v0.2 PATH line.
+- 2026-07-23T13:31:00Z — Final T3 review found first-run managed-block collisions could overwrite
+  and later remove unowned Codex or PATH content that reused Aphelocoma's canonical markers.
+- 2026-07-23T13:53:00Z — Restarted T3 sign-off found clean install scanned only its selected shell
+  rc, allowing an unowned canonical PATH block in another supported shell file.
+- 2026-07-23T14:13:00Z — T3 cross-shell sign-off found preflight skipped symlinked unselected
+  `.bashrc`/`.bash_profile` candidates and allowed clean installation.
+- 2026-07-23T14:28:00Z — Fresh T3 CP4 sign-off passed with all 147 tests and every lifecycle,
+  ownership, rollback, legacy, manifest, backup, generator, and cross-shell blocker closed.

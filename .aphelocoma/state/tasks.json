@@ -55,10 +55,25 @@
       "id": "T3",
       "title": "Implement transactional lifecycle and deployment",
       "owner": "fullstack-developer#1",
-      "status": "assigned",
+      "status": "done",
       "dependencies": ["T1", "T2"],
-      "artifacts": [],
-      "updated": "2026-07-23T08:18:00Z"
+      "artifacts": [
+        "install.sh",
+        "src/aphelocoma/cli.py",
+        "src/aphelocoma/lifecycle.py",
+        "src/aphelocoma/deploy.py",
+        "src/aphelocoma/manifest.py",
+        "src/aphelocoma/legacy.py",
+        "src/aphelocoma/doctor.py",
+        "adapters/claude-code/scripts/gen-hamilton-crew.py",
+        "adapters/codex/scripts/gen-hamilton-crew-codex.py",
+        "tests/test_lifecycle.py",
+        "tests/test_deploy.py",
+        "tests/test_legacy.py",
+        "tests/test_generators.py",
+        "tests/test_cli.py"
+      ],
+      "updated": "2026-07-23T14:28:00Z"
     },
     {
       "id": "T4",
