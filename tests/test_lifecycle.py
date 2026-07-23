@@ -11,6 +11,7 @@ import unittest
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 SRC = REPOSITORY / "src"
+LEGACY_FIXTURES = REPOSITORY / "tests" / "fixtures" / "legacy"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
@@ -56,6 +57,29 @@ def make_release(base, version):
 
 
 class ActivationTests(unittest.TestCase):
+    def test_activation_refuses_symlinked_allowlisted_release_asset(self):
+        with tempfile.TemporaryDirectory(
+            prefix="aph symlinked release asset "
+        ) as directory:
+            base = Path(directory)
+            paths = isolated_paths(base)
+            release = make_release(base, "0.3.0")
+            external = base / "external-aph"
+            shutil.copy2(release / "bin" / "aph", external)
+            release.joinpath("bin", "aph").unlink()
+            release.joinpath("bin", "aph").symlink_to(external)
+
+            with self.assertRaisesRegex(LifecycleError, "symlink"):
+                activate_release(release, paths)
+
+            self.assertTrue(release.joinpath("bin", "aph").is_symlink())
+            self.assertEqual(
+                external.read_bytes(),
+                (REPOSITORY / "bin" / "aph").read_bytes(),
+            )
+            self.assertFalse((paths.root / "tool").exists())
+            self.assertFalse(install_manifest_path(paths.root).exists())
+
     def test_default_root_can_mutate_owned_siblings_without_touching_legacy_data(self):
         with tempfile.TemporaryDirectory(prefix="aph normal default root ") as directory:
             base = Path(directory)
@@ -395,19 +419,14 @@ class ActivationTests(unittest.TestCase):
             paths = isolated_paths(base)
             release = make_release(base, "0.3.0")
             exact = paths.home / ".claude" / "skills" / "adr"
-            exact.mkdir(parents=True)
-            shutil.copyfile(
-                REPOSITORY / "skills" / "adr" / "skill.md",
-                exact / "SKILL.md",
-            )
             shutil.copytree(
-                REPOSITORY / "skills" / "adr" / "templates",
-                exact / "templates",
+                LEGACY_FIXTURES / "skills" / "adr",
+                exact,
             )
             modified = paths.home / ".codex" / "skills" / "capture"
             modified.mkdir(parents=True)
             shutil.copyfile(
-                REPOSITORY / "skills" / "capture" / "skill.md",
+                LEGACY_FIXTURES / "skills" / "capture" / "SKILL.md",
                 modified / "SKILL.md",
             )
             (modified / "user-note").write_bytes(b"keep")

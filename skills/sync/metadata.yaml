@@ -1,3 +1,0 @@
-name: sync
-description: Sync current project with aphelocoma — checks for gaps in registry, tasks, context, ADRs, and proposes fixes one by one.
-type: manual

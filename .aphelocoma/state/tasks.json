@@ -79,10 +79,21 @@
       "id": "T4",
       "title": "Remove the legacy context product",
       "owner": "fullstack-developer#2",
-      "status": "assigned",
+      "status": "done",
       "dependencies": ["T3"],
-      "artifacts": [],
-      "updated": "2026-07-23T08:18:00Z"
+      "artifacts": [
+        ".gitignore",
+        "CLAUDE.md",
+        "skills",
+      "skills/aph-hamilton/HANDOFF.md",
+      "adapters",
+      "src/aphelocoma/lifecycle.py",
+      "tests/test_package_inventory.py",
+        "tests/test_legacy.py",
+        "tests/test_lifecycle.py",
+        "tests/fixtures/legacy"
+      ],
+      "updated": "2026-07-23T15:35:00Z"
     },
     {
       "id": "T5",

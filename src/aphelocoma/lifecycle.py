@@ -53,6 +53,21 @@ RELEASE_RUNTIME_FILES = (
     "adapters/claude-code/scripts/gen-hamilton-crew.py",
     "adapters/codex/scripts/gen-hamilton-crew-codex.py",
 )
+HAMILTON_RELEASE_FILES = (
+    "skills/aph-hamilton/metadata.yaml",
+    "skills/aph-hamilton/skill.md",
+)
+HAMILTON_RELEASE_DIRECTORIES = (
+    "skills/aph-hamilton/references",
+    "skills/aph-hamilton/templates",
+    "skills/aph-hamilton/examples",
+)
+RELEASE_COPY_PATHS = (
+    "VERSION",
+    *RELEASE_RUNTIME_FILES,
+    *HAMILTON_RELEASE_FILES,
+    *HAMILTON_RELEASE_DIRECTORIES,
+)
 
 
 class LifecycleError(RuntimeError):
@@ -270,14 +285,50 @@ def _verify_active_install(
 
 
 def _copy_release(source: Path, destination: Path) -> None:
+    if source.is_symlink() or not source.is_dir():
+        raise LifecycleError(
+            f"Release source is missing or unsafe: {source}."
+        )
     ignored = shutil.ignore_patterns(
-        ".git",
-        ".aphelocoma",
         "__pycache__",
         "*.pyc",
         ".DS_Store",
     )
-    shutil.copytree(source, destination, symlinks=True, ignore=ignored)
+    assets = []
+    for relative in RELEASE_COPY_PATHS:
+        asset = source / relative
+        if asset.is_symlink():
+            raise LifecycleError(
+                f"Release asset is a symlink and was refused: {asset}."
+            )
+        if asset.is_dir():
+            for child in asset.rglob("*"):
+                if child.is_symlink():
+                    raise LifecycleError(
+                        f"Release asset is a symlink and was refused: {child}."
+                    )
+                if not child.is_dir() and not child.is_file():
+                    raise LifecycleError(
+                        f"Release asset is not a regular file or directory: {child}."
+                    )
+        elif not asset.is_file():
+            raise LifecycleError(
+                f"Release asset is missing or unsafe: {asset}."
+            )
+        assets.append((asset, destination / relative))
+
+    destination.mkdir()
+    for asset, target in assets:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if asset.is_dir():
+            shutil.copytree(
+                asset,
+                target,
+                symlinks=True,
+                ignore=ignored,
+            )
+        else:
+            shutil.copy2(asset, target, follow_symlinks=False)
 
 
 def verify_release(tool_root: Path) -> str:

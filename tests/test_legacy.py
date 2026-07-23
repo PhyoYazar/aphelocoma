@@ -7,6 +7,7 @@ import unittest
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 SRC = REPOSITORY / "src"
+LEGACY_FIXTURES = REPOSITORY / "tests" / "fixtures" / "legacy"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
@@ -107,18 +108,15 @@ class LegacyProtectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="aph legacy skill proof ") as directory:
             paths = isolated_paths(Path(directory))
             claude_skill = paths.home / ".claude" / "skills" / "adr"
-            claude_skill.mkdir(parents=True)
-            shutil.copyfile(
-                REPOSITORY / "skills" / "adr" / "skill.md",
-                claude_skill / "SKILL.md",
-            )
             shutil.copytree(
-                REPOSITORY / "skills" / "adr" / "templates",
-                claude_skill / "templates",
+                LEGACY_FIXTURES / "skills" / "adr",
+                claude_skill,
             )
             codex_skill = paths.home / ".codex" / "skills" / "adr"
             codex_skill.mkdir(parents=True)
-            body = (REPOSITORY / "skills" / "adr" / "skill.md").read_text(
+            body = (
+                LEGACY_FIXTURES / "skills" / "adr" / "SKILL.md"
+            ).read_text(
                 encoding="utf-8"
             )
             codex_skill.joinpath("SKILL.md").write_text(
@@ -131,13 +129,13 @@ class LegacyProtectionTests(unittest.TestCase):
                 encoding="utf-8",
             )
             shutil.copytree(
-                REPOSITORY / "skills" / "adr" / "templates",
+                LEGACY_FIXTURES / "skills" / "adr" / "templates",
                 codex_skill / "templates",
             )
             modified = paths.home / ".claude" / "skills" / "capture"
             modified.mkdir(parents=True)
             shutil.copyfile(
-                REPOSITORY / "skills" / "capture" / "skill.md",
+                LEGACY_FIXTURES / "skills" / "capture" / "SKILL.md",
                 modified / "SKILL.md",
             )
             (modified / "user-note").write_bytes(b"keep")
@@ -243,7 +241,7 @@ class LegacyProtectionTests(unittest.TestCase):
             modified = paths.home / ".claude" / "agents" / "reviewer.md"
             exact.parent.mkdir(parents=True)
             shutil.copyfile(
-                REPOSITORY / "adapters" / "claude-code" / "agents" / "architect.md",
+                LEGACY_FIXTURES / "files" / "claude-architect.md",
                 exact,
             )
             modified.write_bytes(b"user changed legacy-looking file\n")
@@ -272,7 +270,7 @@ class LegacyProtectionTests(unittest.TestCase):
             legacy_agent = paths.home / ".claude" / "agents" / "architect.md"
             legacy_agent.parent.mkdir(parents=True)
             shutil.copyfile(
-                REPOSITORY / "adapters" / "claude-code" / "agents" / "architect.md",
+                LEGACY_FIXTURES / "files" / "claude-architect.md",
                 legacy_agent,
             )
             unhealthy = run_checks(

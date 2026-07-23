@@ -41,3 +41,10 @@
   `.bashrc`/`.bash_profile` candidates and allowed clean installation.
 - 2026-07-23T14:28:00Z — Fresh T3 CP4 sign-off passed with all 147 tests and every lifecycle,
   ownership, rollback, legacy, manifest, backup, generator, and cross-shell blocker closed.
+- 2026-07-23T14:56:00Z — T4 CP4 failed because root `CLAUDE.md` still activated the retired
+  context/Cursor product, the Hamilton skill shipped a stale internal handoff, and package inventory
+  did not cover either.
+- 2026-07-23T15:17:00Z — T4 re-review found the lifecycle copier still installed the whole checkout,
+  including retired brainstorms, historical docs, legacy fixtures, and root tool helpers.
+- 2026-07-23T15:35:00Z — Fresh T4 CP4 sign-off passed with all 156 tests and the source plus
+  activated installed package verified Hamilton-only.

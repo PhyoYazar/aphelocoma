@@ -1,6 +1,4 @@
-core/
-views/
-.cursor/
-.omc/
 .DS_Store
+.omc/
 __pycache__/
+*.py[cod]

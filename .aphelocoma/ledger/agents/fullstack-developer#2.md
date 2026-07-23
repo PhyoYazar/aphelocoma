@@ -90,3 +90,36 @@
 - 2026-07-23T09:37:43Z — `task_completed`: Both new contract tests, 60 focused tests, and 85 full tests
   pass. Fixture/example validators, fixture doctor, schemas, and syntax pass; live validation has only
   T2's expected in-flight lifecycle mismatch. Handing T2 to qa-engineer.
+- 2026-07-23T12:33:53Z — `role_activated` / `work_started`: Began T4 tests-first. Added a package
+  inventory regression and observed four expected failures proving the repository still shipped
+  non-Hamilton skills, context/view ignores, legacy adapter assets, and Cursor assets.
+- 2026-07-23T12:33:53Z — `artifact_written`: Removed every non-Hamilton skill plus obsolete Claude,
+  Codex, and Cursor adapter asset, leaving only the two Hamilton crew generators. Replaced the exact
+  v0.2 ADR, capture, and Claude architect cleanup inputs with byte-identical test fixtures, including
+  the narrowly authorized lifecycle reference changes, and removed context-specific root ignores
+  while preserving `.omc/` as agent-runtime state.
+- 2026-07-23T12:33:53Z — `task_completed`: T4 verification passes 151 tests, the live Hamilton
+  validator (126 events, 6 tasks, 3 done), explicit Claude/Codex deploy-undeploy smoke tests, package
+  inventory checks, runtime Cursor/removed-feature audits, and `git diff --check`. Handing T4 to
+  qa-engineer for independent review.
+- 2026-07-23T12:42:27Z — `work_started`: Began the T4 CP4 bounce-back tests-first. Expanded the
+  package boundary and observed the expected failures for retired context/Cursor instructions in
+  root `CLAUDE.md` and the unexpected installable `skills/aph-hamilton/HANDOFF.md` payload.
+- 2026-07-23T12:42:27Z — `artifact_written`: Added exact Hamilton top-level allowlisting,
+  package-wide retired path/filename detection, and active root instruction content checks. Deleted
+  the two stale runtime instruction/handoff files without rewriting T5-owned documentation.
+- 2026-07-23T12:42:27Z — `task_completed`: The corrected T4 passes 154 tests, live Hamilton
+  validation at 132 events, explicit Claude/Codex deploy-undeploy smoke tests, clean package/runtime
+  `rg` audits, and `git diff --check`. Handing the CP4 correction back to qa-engineer.
+- 2026-07-23T12:50:22Z — `work_started`: Began the installed-package CP4 bounce-back tests-first.
+  Activation from the repository root reproduced the whole-checkout leak: project docs, tests,
+  fixtures, agent tooling, brainstorms, and other history were installed, while nested Hamilton
+  example state was incorrectly omitted.
+- 2026-07-23T12:50:22Z — `artifact_written`: Replaced whole-tree copying with an explicit release
+  allowlist for `VERSION`, installer/CLI Python runtime, the complete Hamilton skill runtime, and the
+  two Claude/Codex generators. Added exact installed-file/top-level inventory, executable-mode
+  preservation checks, and fail-closed symlinked release-asset coverage.
+- 2026-07-23T12:50:22Z — `task_completed`: The installed-boundary correction passes 156 tests,
+  137-event Hamilton validation, `bash -n`, source/package `rg` audits, an actual isolated
+  install→Claude/Codex deploy/undeploy→uninstall smoke, and `git diff --check`. Handing T4 back to
+  qa-engineer.
