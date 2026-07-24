@@ -182,3 +182,7 @@
 - 2026-07-24T10:40:00Z — `handoff`: Final candidate passes 5 mapped migration tests, all 177 tests,
   every local gate, and a fresh isolated 3,314-event/173-task rehearsal with both SHA-256 digests and
   zero findings. The live external state still byte-matches the failed-attempt backup.
+- 2026-07-24T10:50:00Z — `task_completed`: Reviewed T8 was committed as `21c8d84`, installed as
+  Aphelocoma 0.3.0, and redeployed to Codex and Claude. Both deployed validators, `aph doctor`,
+  source/deployment byte comparisons, read-only external checks, and an installed-runtime isolated
+  migration pass; the advisor's live external project remains unchanged.
