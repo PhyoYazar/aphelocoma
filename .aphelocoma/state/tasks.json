@@ -99,10 +99,16 @@
       "id": "T5",
       "title": "Reposition and document Aphelocoma",
       "owner": "technical-writer",
-      "status": "assigned",
+      "status": "done",
       "dependencies": ["T3", "T4"],
-      "artifacts": [],
-      "updated": "2026-07-23T08:18:00Z"
+      "artifacts": [
+        "README.md",
+        "CHANGELOG.md",
+        "docs/migration-v0.3.md",
+        "docs/documentation-assertions-v0.3.md",
+        "skills/aph-hamilton/references/ABOUT.md"
+      ],
+      "updated": "2026-07-24T06:50:00Z"
     },
     {
       "id": "T6",

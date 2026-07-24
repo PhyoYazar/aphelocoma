@@ -48,3 +48,9 @@
   including retired brainstorms, historical docs, legacy fixtures, and root tool helpers.
 - 2026-07-23T15:35:00Z — Fresh T4 CP4 sign-off passed with all 156 tests and the source plus
   activated installed package verified Hamilton-only.
+- 2026-07-24T06:18:00Z — T5 CP4 found accurate prose but an incomplete mandatory evidence map for
+  exit codes, install/upgrade rollback, and protocol-backed commit/branch/push behavior.
+- 2026-07-24T06:35:00Z — T5 re-review found DOC-038 cited an existing schema test under the wrong
+  unittest class name, invalidating the claimed citation audit.
+- 2026-07-24T06:50:00Z — Fresh T5 CP4 sign-off passed with all 82 cited tests resolving and passing,
+  plus a clean 156-test suite, validator, claim/policy/link/date audit, and retired-feature scan.
