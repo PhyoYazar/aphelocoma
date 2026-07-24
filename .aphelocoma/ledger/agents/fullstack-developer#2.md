@@ -150,3 +150,7 @@
 - 2026-07-24T09:45:00Z — `handoff`: Final closure candidate passes 4 focused runtime tests, all 172
   tests, live and isolated-source validators, read-only migration, Bash syntax, actionlint, Python
   3.9 syntax, and diff checks; handed to qa-engineer before any local reinstall or redeploy.
+- 2026-07-24T10:00:00Z — `task_completed`: Reviewed T7 was committed as `592ee31`, installed from
+  the local release source, and redeployed to Claude and Codex. Both live deployed validators,
+  current and legacy read-only migration checks, byte comparisons, and `aph doctor` pass; the
+  advisor's external test project was not changed.
