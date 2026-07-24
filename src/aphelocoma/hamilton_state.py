@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,7 @@ from .io import atomic_write_json, atomic_write_text
 
 CURRENT_SCHEMA_VERSION = 1
 CURRENT_PROTOCOL_VERSION = "1.0.0"
+LEGACY_HISTORY_SOURCE = "unversioned-v0.2"
 VISIBILITIES = {"tracked", "local"}
 STATUSES = {
     "pending",
@@ -58,6 +60,7 @@ EVENT_TYPES = {
     "critique",
     "bug_reported",
     "scope_violation",
+    "migration_baseline",
 }
 TASK_REQUIRED_EVENTS = {
     "task_created",
@@ -1001,16 +1004,269 @@ def _event_error(
     )
 
 
+def _event_prefix_digest(
+    events: Sequence[Mapping[str, object]],
+    through_seq: int,
+) -> str:
+    digest = hashlib.sha256()
+    for event in events:
+        sequence = event.get("seq")
+        if (
+            isinstance(sequence, bool)
+            or not isinstance(sequence, int)
+            or sequence > through_seq
+        ):
+            continue
+        digest.update(
+            json.dumps(
+                event,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            + b"\n"
+        )
+    return digest.hexdigest()
+
+
+def _task_states_digest(task_states: Sequence[object]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            task_states,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        + b"\n"
+    ).hexdigest()
+
+
+def _migration_marker_note(
+    through_seq: int,
+    prefix_digest: str,
+    task_states_digest: str,
+) -> str:
+    return (
+        "Migrated unversioned v0.2 history through seq %d with event "
+        "SHA-256 %s and task-state SHA-256 %s; strict replay begins after "
+        "this marker."
+        % (through_seq, prefix_digest, task_states_digest)
+    )
+
+
+def _legacy_history_baseline(
+    metadata: Mapping[str, object],
+    events: Sequence[Mapping[str, object]],
+    by_id: Mapping[str, Mapping[str, object]],
+    issues: _Issues,
+) -> Tuple[int, Dict[str, str]]:
+    raw = metadata.get("history_baseline")
+    if raw is None:
+        if any(
+            event.get("event") == "migration_baseline"
+            for event in events
+        ):
+            issues.error(
+                "invalid_history_baseline",
+                "ledger/events.jsonl",
+                "A migration baseline marker requires matching Hamilton metadata.",
+            )
+        return 0, {}
+    if not isinstance(raw, dict):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline must be an object.",
+        )
+        return 0, {}
+    if raw.get("source") != LEGACY_HISTORY_SOURCE:
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline source must be %r." % LEGACY_HISTORY_SOURCE,
+        )
+        return 0, {}
+    through_seq = raw.get("through_seq")
+    if (
+        isinstance(through_seq, bool)
+        or not isinstance(through_seq, int)
+        or through_seq < 0
+    ):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline through_seq must be a non-negative integer.",
+        )
+        return 0, {}
+    event_sequences = [
+        event.get("seq")
+        for event in events
+        if isinstance(event.get("seq"), int)
+        and not isinstance(event.get("seq"), bool)
+    ]
+    if through_seq > (max(event_sequences) if event_sequences else 0):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline through_seq exceeds the ledger sequence.",
+        )
+        return 0, {}
+    prefix_digest = raw.get("prefix_digest")
+    if (
+        not isinstance(prefix_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", prefix_digest) is None
+    ):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline prefix_digest must be a SHA-256 digest.",
+        )
+        return 0, {}
+    actual_digest = _event_prefix_digest(events, through_seq)
+    if prefix_digest != actual_digest:
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline digest does not match the declared ledger prefix.",
+        )
+        return 0, {}
+    raw_states = raw.get("task_states")
+    if not isinstance(raw_states, list):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline task_states must be an array.",
+        )
+        return 0, {}
+    task_states_digest = raw.get("task_states_digest")
+    if (
+        not isinstance(task_states_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", task_states_digest) is None
+    ):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline task_states_digest must be a SHA-256 digest.",
+        )
+        return 0, {}
+    if task_states_digest != _task_states_digest(raw_states):
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "history_baseline digest does not match its task-state snapshot.",
+        )
+        return 0, {}
+    markers = [
+        event
+        for event in events
+        if event.get("event") == "migration_baseline"
+    ]
+    expected_note = _migration_marker_note(
+        through_seq,
+        prefix_digest,
+        task_states_digest,
+    )
+    if (
+        len(markers) != 1
+        or markers[0].get("seq") != through_seq + 1
+        or markers[0].get("actor") != "orchestrator"
+        or markers[0].get("task") is not None
+        or markers[0].get("to") is not None
+        or markers[0].get("note") != expected_note
+    ):
+        issues.error(
+            "invalid_history_baseline",
+            "ledger/events.jsonl",
+            "history_baseline requires one canonical marker immediately after "
+            "the bound legacy prefix.",
+        )
+        return 0, {}
+
+    states: Dict[str, str] = {}
+    for index, item in enumerate(raw_states):
+        location = "hamilton.json:history_baseline.task_states[%d]" % index
+        if not isinstance(item, dict):
+            issues.error(
+                "invalid_history_baseline",
+                location,
+                "History baseline task state must be an object.",
+            )
+            continue
+        task_id = item.get("id")
+        status = item.get("status")
+        if not isinstance(task_id, str) or task_id not in by_id:
+            issues.error(
+                "invalid_history_baseline",
+                location,
+                "History baseline references an unknown task %r." % task_id,
+            )
+            continue
+        if task_id in states:
+            issues.error(
+                "invalid_history_baseline",
+                location,
+                "History baseline repeats task %s." % task_id,
+            )
+            continue
+        if not isinstance(status, str) or status not in STATUSES:
+            issues.error(
+                "invalid_history_baseline",
+                location,
+                "History baseline has invalid status %r for task %s."
+                % (status, task_id),
+            )
+            continue
+        states[task_id] = status
+    legacy_task_ids = {
+        str(event["task"])
+        for event in events
+        if isinstance(event.get("seq"), int)
+        and event["seq"] <= through_seq
+        and isinstance(event.get("task"), str)
+        and event["task"] in by_id
+    }
+    missing = sorted(legacy_task_ids - set(states))
+    if missing:
+        issues.error(
+            "invalid_history_baseline",
+            "hamilton.json",
+            "History baseline omits legacy task(s): %s." % ", ".join(missing),
+        )
+        return 0, {}
+    return through_seq, states
+
+
 def _validate_event_protocol(
     events: Sequence[Mapping[str, object]],
     by_id: Mapping[str, Mapping[str, object]],
     issues: _Issues,
+    *,
+    baseline_seq: int = 0,
+    baseline_states: Optional[Mapping[str, str]] = None,
 ) -> Dict[str, str]:
-    states: Dict[str, str] = {}
-    builders: Dict[str, str] = {}
+    states: Dict[str, str] = dict(baseline_states or {})
+    builders: Dict[str, str] = {
+        task_id: str(by_id[task_id].get("owner"))
+        for task_id, status in states.items()
+        if status in {"in_progress", "in_review"}
+        and isinstance(by_id[task_id].get("owner"), str)
+    }
     critiques: Dict[str, str] = {}
 
     for event in events:
+        sequence = event.get("seq")
+        if (
+            isinstance(sequence, int)
+            and not isinstance(sequence, bool)
+            and sequence <= baseline_seq
+        ):
+            task_value = event.get("task")
+            if isinstance(task_value, str) and task_value not in by_id:
+                _event_error(
+                    issues,
+                    event,
+                    "unknown_task_reference",
+                    "Legacy event references missing task %s." % task_value,
+                )
+            continue
         event_type = event.get("event")
         task_value = event.get("task")
         task_id = task_value if isinstance(task_value, str) else None
@@ -1435,7 +1691,19 @@ def validate_project(
         ),
         issues,
     )
-    _validate_event_protocol(events, by_id, issues)
+    baseline_seq, baseline_states = _legacy_history_baseline(
+        metadata,
+        events,
+        by_id,
+        issues,
+    )
+    _validate_event_protocol(
+        events,
+        by_id,
+        issues,
+        baseline_seq=baseline_seq,
+        baseline_states=baseline_states,
+    )
     _validate_tracking(
         root,
         aph,
@@ -1727,8 +1995,6 @@ def _migrate_staging(staging: Path) -> None:
     if "schema_version" not in migrated:
         migrated["schema_version"] = CURRENT_SCHEMA_VERSION
         migrated["protocol_version"] = CURRENT_PROTOCOL_VERSION
-    atomic_write_json(hamilton_path, migrated)
-
     settings_path = staging / "settings.yaml"
     try:
         settings = settings_path.read_text(encoding="utf-8")
@@ -1750,10 +2016,100 @@ def _migrate_staging(staging: Path) -> None:
 
     tasks_path = staging / "state" / "tasks.json"
     board = json.loads(tasks_path.read_text(encoding="utf-8"))
+    missing_dependency_field = object()
     for task in board.get("tasks", []):
         if isinstance(task, dict):
-            task.setdefault("dependencies", [])
+            legacy_dependencies = task.pop(
+                "depends_on",
+                missing_dependency_field,
+            )
+            current_dependencies = task.get(
+                "dependencies",
+                missing_dependency_field,
+            )
+            if (
+                legacy_dependencies is not missing_dependency_field
+                and current_dependencies is not missing_dependency_field
+                and legacy_dependencies != current_dependencies
+            ):
+                raise ValueError(
+                    "Task %s has conflicting depends_on and dependencies."
+                    % task.get("id")
+                )
+            if current_dependencies is missing_dependency_field:
+                task["dependencies"] = (
+                    []
+                    if legacy_dependencies is missing_dependency_field
+                    or legacy_dependencies is None
+                    else legacy_dependencies
+                )
     atomic_write_json(tasks_path, board)
+
+    events_path = staging / "ledger" / "events.jsonl"
+    event_lines = events_path.read_text(encoding="utf-8").splitlines()
+    events: List[object] = []
+    for line in event_lines:
+        if not line.strip():
+            continue
+        event = json.loads(line)
+        if isinstance(event, dict):
+            event.setdefault("task", None)
+            event.setdefault("to", None)
+        events.append(event)
+    through_seq = (
+        events[-1].get("seq")
+        if events and isinstance(events[-1], dict)
+        else 0
+    )
+    digest_events = [
+        event for event in events if isinstance(event, dict)
+    ]
+    prefix_digest = _event_prefix_digest(
+        digest_events,
+        through_seq if isinstance(through_seq, int) else 0,
+    )
+    task_states = [
+        {"id": task.get("id"), "status": task.get("status")}
+        for task in board.get("tasks", [])
+        if isinstance(task, dict)
+    ]
+    task_states_digest = _task_states_digest(task_states)
+    migrated["history_baseline"] = {
+        "source": LEGACY_HISTORY_SOURCE,
+        "through_seq": through_seq,
+        "prefix_digest": prefix_digest,
+        "task_states_digest": task_states_digest,
+        "task_states": task_states,
+    }
+    marker_seq = (
+        through_seq + 1
+        if isinstance(through_seq, int)
+        and not isinstance(through_seq, bool)
+        else 1
+    )
+    events.append(
+        {
+            "ts": datetime.now(timezone.utc).isoformat(),
+            "seq": marker_seq,
+            "event": "migration_baseline",
+            "actor": "orchestrator",
+            "task": None,
+            "to": None,
+            "note": _migration_marker_note(
+                through_seq if isinstance(through_seq, int) else 0,
+                prefix_digest,
+                task_states_digest,
+            ),
+        }
+    )
+    atomic_write_text(
+        events_path,
+        "".join(
+            json.dumps(event, separators=(",", ":")) + "\n"
+            for event in events
+        ),
+    )
+    atomic_write_json(hamilton_path, migrated)
 
 
 def migrate_project(

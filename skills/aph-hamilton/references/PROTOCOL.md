@@ -23,6 +23,9 @@ depends on **no platform-specific features** — only the ability to read and wr
   - **History** — `.aphelocoma/ledger/events.jsonl` (+ `.aphelocoma/ledger/agents/<role>.md`):
     an *append-only* record of what happened. See §5.
 - `.aphelocoma/hamilton.json` declares `schema_version: 1` and `protocol_version: "1.0.0"`.
+  A project migrated from unversioned v0.2 may also declare a `history_baseline`: the exact final
+  legacy ledger sequence plus the live task-status snapshot at that boundary. Separate SHA-256
+  digests bind both inputs to the canonical migration marker.
   `.aphelocoma/settings.yaml` declares `visibility: tracked|local` and
   `redact_sensitive: true`. Dispatch prompts/results/logs are transient and never part of either
   durable record.
@@ -203,12 +206,22 @@ back to the author.
   `{"ts":"<iso>","seq":<int>,"event":"<type>","actor":"<role-id>","task":"<id|null>","to":"<role-id|null>","note":"<text>"}`
   `seq` increases by 1 each append (read the last line to find the next). Never edit or
   delete a line; corrections are new events.
+- **Migrated v0.2 history:** successful migration retains every legacy event in its original order
+  and adds omitted nullable `task` / `to` keys as `null`. Because v0.2 did not mechanically enforce
+  today's ordered lifecycle, `hamilton.json.history_baseline` records the legacy prefix, its SHA-256
+  digest, its task statuses, and a separate task-state snapshot digest; one canonical
+  `migration_baseline` event binds both digests immediately after that exact prefix. The validator
+  still checks the prefix's JSON shape, sequence, event types, references, privacy, secrets, both
+  digests, and marker; ordered lifecycle replay starts from the recorded snapshot immediately after
+  the marker. Moving the boundary or changing the prefix or snapshot invalidates it. Every
+  post-migration event follows the full current protocol. Native v0.3 projects have no baseline and
+  replay their complete history.
 - Event types: `role_activated`, `brainstorm_note`, `plan_created`, `roadmap_updated`,
   `task_created`, `task_assigned`, `work_started`, `artifact_written`, `task_completed`,
   `review_passed`, `review_failed`, `blocked`, `assumption_logged`, `handoff`,
   `phase_advanced`, `project_completed`, `decision`, `critique`, `bug_reported`,
   `scope_violation` (a parallel batch changed files outside its specs' declared scope —
-  `PARALLEL.md` §4).
+  `PARALLEL.md` §4), and `migration_baseline` (the migration-owned legacy boundary).
 - The **`advisor`** actor is the human (the user) in the top seat; it appears on `decision` events
   (the options offered + the pick), on `bug_reported` (a defect you raise; §6.5), and on any direction
   the human gives. Crew actors are role-ids.
@@ -278,6 +291,8 @@ On start, read `.aphelocoma/state/brief.md`:
   never downgrade it. Surface other findings; repair ledger drift with **new corrective events**, never
   by editing history (§5). Unavailable `python3` skips the check — it is a net, not a license to guess
   at a version if fields are visibly absent.
+  The v0.2 migration also renames task `depends_on` to `dependencies`, preserves optional task notes
+  and Hamilton update metadata, and records the legacy-history boundary described in §5.
 
 ## 6.5 Bug & fix intake (advisor-reported defects)
 

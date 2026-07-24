@@ -6,7 +6,7 @@ This is the source-of-truth checklist for behavioral claims in `README.md`,
 test below or is labeled as an explicit support policy. Test IDs use
 `module.Class.test_method`.
 
-Checked items were reverified on 2026-07-24 against the full 156-test suite, CLI help, doctor JSON,
+Checked items were reverified on 2026-07-24 against the full 177-test suite, CLI help, doctor JSON,
 the Hamilton validator, and a local-link/test-ID audit.
 
 ## Product and command surface
@@ -216,3 +216,14 @@ the Hamilton validator, and a local-link/test-ID audit.
   `test_hamilton_state.ContractTests.test_implementer_schema_requires_exclusive_lifecycle_branch`,
   `test_hamilton_state.ContractTests.test_reviewer_pass_schema_rejects_blocking_finding`,
   `test_hamilton_state.ContractTests.test_reviewer_fail_schema_requires_blocking_finding`.
+- [x] **DOC-039 — Real-world v0.2 history migration.** Migration normalizes omitted nullable event
+  keys and the legacy `depends_on` task field, preserves optional legacy notes/spec/update metadata,
+  and retains the original event order. Separate SHA-256 digests bind the exact legacy history prefix
+  and task-status snapshot into one canonical marker; strict lifecycle replay begins after that
+  marker. A self-declared or advanced boundary and snapshot tampering are rejected, and conflicting
+  dependency aliases roll back.
+  Tests: `test_hamilton_state.MigrationTests.test_apply_normalizes_realistic_v02_state_and_baselines_legacy_history`,
+  `test_hamilton_state.MigrationTests.test_post_migration_history_is_still_strictly_replayed`,
+  `test_hamilton_state.MigrationTests.test_history_baseline_cannot_be_self_declared_or_advanced`,
+  `test_hamilton_state.MigrationTests.test_history_baseline_rejects_task_snapshot_tampering`,
+  `test_hamilton_state.MigrationTests.test_conflicting_legacy_and_current_dependencies_roll_back`.

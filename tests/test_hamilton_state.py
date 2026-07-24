@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import shutil
@@ -166,6 +167,31 @@ class MigrationTests(ProjectFixture):
                     snapshot[relative] = ("file", path.read_bytes())
         return snapshot
 
+    def event_prefix_digest(self, events, through_seq):
+        digest = hashlib.sha256()
+        for event in events:
+            if event.get("seq", 0) > through_seq:
+                continue
+            digest.update(
+                json.dumps(
+                    event,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+                + b"\n"
+            )
+        return digest.hexdigest()
+
+    def task_states_digest(self, task_states):
+        return hashlib.sha256(
+            json.dumps(
+                task_states,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            + b"\n"
+        ).hexdigest()
+
     def test_check_reports_migration_without_writing(self):
         before = self.snapshot()
 
@@ -188,6 +214,235 @@ class MigrationTests(ProjectFixture):
         settings = (self.project / ".aphelocoma" / "settings.yaml").read_text()
         self.assertIn("visibility: tracked", settings)
         self.assertTrue(validate_project(self.project, tracked_files=[]).ok)
+
+    def test_apply_normalizes_realistic_v02_state_and_baselines_legacy_history(self):
+        metadata_path = self.project / ".aphelocoma" / "hamilton.json"
+        metadata = json.loads(metadata_path.read_text())
+        metadata["updated"] = "2026-07-24T09:48:05Z"
+        metadata_path.write_text(json.dumps(metadata))
+
+        board_path = self.project / ".aphelocoma" / "state" / "tasks.json"
+        board = json.loads(board_path.read_text())
+        task = board["tasks"][0]
+        task["depends_on"] = []
+        task["spec"] = None
+        task["note"] = "Preserve this legacy task note."
+        board_path.write_text(json.dumps(board))
+
+        events = self.read_events()
+        events[0].pop("to")
+        events[1].pop("task")
+        events = [
+            event for event in events if event["event"] != "work_started"
+        ]
+        for seq, event in enumerate(events, start=1):
+            event["seq"] = seq
+        self.write_events(events)
+        before = self.snapshot()
+
+        result = migrate_project(self.project, apply=True)
+
+        backup = {
+            path.relative_to(result.backup).as_posix(): path.read_bytes()
+            for path in result.backup.rglob("*")
+            if path.is_file()
+        }
+        self.assertEqual(before, backup)
+        migrated_metadata = json.loads(metadata_path.read_text())
+        normalized_events = [
+            {
+                **event,
+                "task": event.get("task"),
+                "to": event.get("to"),
+            }
+            for event in events
+        ]
+        prefix_digest = self.event_prefix_digest(
+            normalized_events,
+            len(events),
+        )
+        task_states = [{"id": "T1", "status": "done"}]
+        task_states_digest = self.task_states_digest(task_states)
+        self.assertEqual(
+            "2026-07-24T09:48:05Z",
+            migrated_metadata["updated"],
+        )
+        self.assertEqual(
+            {
+                "source": "unversioned-v0.2",
+                "through_seq": len(events),
+                "prefix_digest": prefix_digest,
+                "task_states_digest": task_states_digest,
+                "task_states": task_states,
+            },
+            migrated_metadata["history_baseline"],
+        )
+        migrated_board = json.loads(board_path.read_text())
+        migrated_task = migrated_board["tasks"][0]
+        self.assertNotIn("depends_on", migrated_task)
+        self.assertEqual([], migrated_task["dependencies"])
+        self.assertIsNone(migrated_task["spec"])
+        self.assertEqual(
+            "Preserve this legacy task note.",
+            migrated_task["note"],
+        )
+        migrated_events = self.read_events()
+        self.assertEqual(len(events) + 1, len(migrated_events))
+        for legacy, migrated in zip(
+            normalized_events,
+            migrated_events[: len(events)],
+        ):
+            self.assertEqual(legacy, migrated)
+        self.assertEqual(
+            {
+                "ts": migrated_events[-1]["ts"],
+                "seq": len(events) + 1,
+                "event": "migration_baseline",
+                "actor": "orchestrator",
+                "task": None,
+                "to": None,
+                "note": (
+                    "Migrated unversioned v0.2 history through seq %d with event "
+                    "SHA-256 %s and task-state SHA-256 %s; strict replay begins "
+                    "after this marker."
+                    % (len(events), prefix_digest, task_states_digest)
+                ),
+            },
+            migrated_events[-1],
+        )
+        report = validate_project(self.project, tracked_files=[])
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+
+    def test_post_migration_history_is_still_strictly_replayed(self):
+        migrate_project(self.project, apply=True)
+        events = self.read_events()
+        events.append(
+            {
+                "ts": "2026-07-24T09:48:06Z",
+                "seq": len(events) + 1,
+                "event": "work_started",
+                "actor": "fullstack-developer",
+                "task": "T1",
+                "to": None,
+                "note": "Invalidly restarted a completed task.",
+            }
+        )
+        self.write_events(events)
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertIn("invalid_transition", self.issue_codes(report))
+
+    def test_history_baseline_cannot_be_self_declared_or_advanced(self):
+        shutil.rmtree(self.project)
+        shutil.copytree(FIXTURES / "current", self.project)
+        events = [
+            event
+            for event in self.read_events()
+            if event["event"] != "work_started"
+        ]
+        for seq, event in enumerate(events, start=1):
+            event["seq"] = seq
+        self.write_events(events)
+        metadata_path = self.project / ".aphelocoma" / "hamilton.json"
+        metadata = json.loads(metadata_path.read_text())
+        metadata["history_baseline"] = {
+            "source": "unversioned-v0.2",
+            "through_seq": len(events),
+            "prefix_digest": self.event_prefix_digest(events, len(events)),
+            "task_states_digest": self.task_states_digest(
+                [{"id": "T1", "status": "done"}]
+            ),
+            "task_states": [{"id": "T1", "status": "done"}],
+        }
+        metadata_path.write_text(json.dumps(metadata))
+
+        self_declared = validate_project(self.project, tracked_files=[])
+
+        self.assertIn(
+            "invalid_history_baseline",
+            self.issue_codes(self_declared),
+        )
+
+        shutil.rmtree(self.project)
+        shutil.copytree(FIXTURES / "unversioned-v02", self.project)
+        migrate_project(self.project, apply=True)
+        events = self.read_events()
+        events.append(
+            {
+                "ts": "2026-07-24T09:48:07Z",
+                "seq": len(events) + 1,
+                "event": "work_started",
+                "actor": "fullstack-developer",
+                "task": "T1",
+                "to": None,
+                "note": "Invalidly restarted a completed task.",
+            }
+        )
+        self.write_events(events)
+        metadata = json.loads(metadata_path.read_text())
+        metadata["history_baseline"]["through_seq"] = len(events)
+        metadata["history_baseline"]["prefix_digest"] = self.event_prefix_digest(
+            events,
+            len(events),
+        )
+        metadata_path.write_text(json.dumps(metadata))
+
+        advanced = validate_project(self.project, tracked_files=[])
+
+        self.assertIn(
+            "invalid_history_baseline",
+            self.issue_codes(advanced),
+        )
+
+    def test_history_baseline_rejects_task_snapshot_tampering(self):
+        migrate_project(self.project, apply=True)
+        metadata_path = self.project / ".aphelocoma" / "hamilton.json"
+        metadata = json.loads(metadata_path.read_text())
+        metadata["history_baseline"]["task_states"][0]["status"] = "assigned"
+        metadata_path.write_text(json.dumps(metadata))
+
+        board_path = self.project / ".aphelocoma" / "state" / "tasks.json"
+        board = json.loads(board_path.read_text())
+        board["tasks"][0]["status"] = "in_progress"
+        board_path.write_text(json.dumps(board))
+
+        events = self.read_events()
+        events.append(
+            {
+                "ts": "2026-07-24T09:48:08Z",
+                "seq": len(events) + 1,
+                "event": "work_started",
+                "actor": "fullstack-developer",
+                "task": "T1",
+                "to": None,
+                "note": "Invalidly restarted a completed task.",
+            }
+        )
+        self.write_events(events)
+
+        tampered = validate_project(self.project, tracked_files=[])
+
+        self.assertIn(
+            "invalid_history_baseline",
+            self.issue_codes(tampered),
+        )
+
+    def test_conflicting_legacy_and_current_dependencies_roll_back(self):
+        board_path = self.project / ".aphelocoma" / "state" / "tasks.json"
+        board = json.loads(board_path.read_text())
+        board["tasks"][0]["dependencies"] = []
+        board["tasks"][0]["depends_on"] = None
+        board_path.write_text(json.dumps(board))
+        before = self.snapshot()
+
+        with self.assertRaisesRegex(
+            MigrationError,
+            "conflicting depends_on and dependencies",
+        ):
+            migrate_project(self.project, apply=True)
+
+        self.assertEqual(before, self.snapshot())
 
     def test_injected_failure_preserves_original_byte_for_byte(self):
         before = self.snapshot()

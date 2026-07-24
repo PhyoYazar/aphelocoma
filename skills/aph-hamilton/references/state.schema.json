@@ -49,6 +49,55 @@
           "type": "string",
           "minLength": 1
         },
+        "updated": {
+          "type": ["string", "null"]
+        },
+        "history_baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "through_seq",
+            "prefix_digest",
+            "task_states_digest",
+            "task_states"
+          ],
+          "properties": {
+            "source": {
+              "type": "string",
+              "const": "unversioned-v0.2"
+            },
+            "through_seq": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "prefix_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "task_states_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "task_states": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "status"],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"
+                  },
+                  "status": {
+                    "$ref": "#/definitions/status"
+                  }
+                }
+              }
+            }
+          }
+        },
         "phase": {
           "$ref": "#/definitions/phase"
         }
@@ -121,6 +170,17 @@
         "done"
       ]
     },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "assigned",
+        "in_progress",
+        "in_review",
+        "done",
+        "blocked"
+      ]
+    },
     "task": {
       "type": "object",
       "additionalProperties": false,
@@ -146,15 +206,7 @@
           "type": ["string", "null"]
         },
         "status": {
-          "type": "string",
-          "enum": [
-            "pending",
-            "assigned",
-            "in_progress",
-            "in_review",
-            "done",
-            "blocked"
-          ]
+          "$ref": "#/definitions/status"
         },
         "dependencies": {
           "type": "array",
@@ -165,6 +217,9 @@
           }
         },
         "spec": {
+          "type": ["string", "null"]
+        },
+        "note": {
           "type": "string"
         },
         "artifacts": {
@@ -214,7 +269,8 @@
             "decision",
             "critique",
             "bug_reported",
-            "scope_violation"
+            "scope_violation",
+            "migration_baseline"
           ]
         },
         "actor": {

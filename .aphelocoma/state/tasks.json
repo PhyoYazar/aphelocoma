@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "done",
-  "updated": "2026-07-24T10:00:00Z",
+  "phase": "integration",
+  "updated": "2026-07-24T10:45:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -139,6 +139,24 @@
         "tests/test_release_smoke.py"
       ],
       "updated": "2026-07-24T09:50:00Z"
+    },
+    {
+      "id": "T8",
+      "title": "Migrate real-world v0.2 Hamilton state",
+      "owner": "fullstack-developer#2",
+      "status": "done",
+      "dependencies": [
+        "T7"
+      ],
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "skills/aph-hamilton/references/state.schema.json",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "docs/migration-v0.3.md",
+        "docs/documentation-assertions-v0.3.md",
+        "tests/test_hamilton_state.py"
+      ],
+      "updated": "2026-07-24T10:45:00Z"
     }
   ]
 }

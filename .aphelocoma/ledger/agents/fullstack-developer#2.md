@@ -154,3 +154,31 @@
   the local release source, and redeployed to Claude and Codex. Both live deployed validators,
   current and legacy read-only migration checks, byte comparisons, and `aph doctor` pass; the
   advisor's external test project was not changed.
+- 2026-07-24T10:10:00Z — `work_started`: Began T8 tests-first after a real v0.2 field migration
+  safely rolled back. The legacy state has omitted nullable event keys, `depends_on` task fields,
+  preserved task notes/metadata, and history created before strict lifecycle replay existed.
+- 2026-07-24T10:20:00Z — `artifact_written`: Added shape normalization for sparse v0.2 events and
+  tasks, an explicit history-baseline snapshot with strict replay immediately after its boundary,
+  conflict rollback, mechanical schema coverage, documentation, and realistic regressions.
+- 2026-07-24T10:20:00Z — `handoff`: T8 passes 3 focused regressions, 63 Hamilton-state tests, all
+  175 tests, the live validator and release gates, plus an isolated rehearsal of the advisor's
+  3,314-event/173-task state with zero errors or warnings. No external project file was changed.
+- 2026-07-24T10:25:00Z — `work_started`: Began the T8 CP4 bounce-back with adversarial tests for
+  self-declared and moved baselines, `depends_on: null` versus `dependencies: []`, and the mandatory
+  documentation evidence map.
+- 2026-07-24T10:30:00Z — `artifact_written`: Bound the normalized legacy prefix to a SHA-256 digest
+  and canonical marker, distinguished missing dependency aliases from explicit null values, added
+  adversarial regressions, and mapped the public migration claims to exact tests.
+- 2026-07-24T10:30:00Z — `handoff`: The bounce-back candidate passes the 4 mapped migration tests,
+  all 176 tests, validation/schema/syntax/workflow/diff gates, and the isolated
+  3,314-event/173-task field-state rehearsal. Handed to a fresh QA reviewer without changing the
+  advisor's external project.
+- 2026-07-24T10:35:00Z — `work_started`: Began a disclosed closure fix, authorized by the advisor's
+  standing direction to continue solving migration blockers, with a failing regression for tampering
+  with the task-state snapshot used as strict replay's starting point.
+- 2026-07-24T10:40:00Z — `artifact_written`: Added a canonical task-state snapshot digest and bound
+  it with the event-prefix digest in the migration marker; updated schema, protocol, migration docs,
+  evidence, and the failing-then-passing tampering regression.
+- 2026-07-24T10:40:00Z — `handoff`: Final candidate passes 5 mapped migration tests, all 177 tests,
+  every local gate, and a fresh isolated 3,314-event/173-task rehearsal with both SHA-256 digests and
+  zero findings. The live external state still byte-matches the failed-attempt backup.

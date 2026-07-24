@@ -8,3 +8,8 @@
   ownership, per-tool verification, and protection for custom legacy data paths.
 - 2026-07-24T09:18:20Z — Triaged the deployed validator/migrator import failure as a severity-high
   pre-release regression, reopened implementation, and assigned T7 to the T2 state-runtime owner.
+# T8 field migration triage
+
+- 2026-07-24T10:10:00Z — Triaged the advisor's failed v0.2 migration as a severity-high pre-release
+  compatibility defect in Hamilton state migration. Assigned T8 to `fullstack-developer#2`, the state
+  owner, with transactional rollback and the external project kept outside mutation scope.

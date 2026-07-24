@@ -71,3 +71,12 @@
   full tests plus exact digest, full runtime inventory, install precedence, required-API,
   source/default/custom root, both-host, read-only migration, validator, Bash, actionlint, diff, and
   Python 3.9 checks.
+- 2026-07-24T10:25:00Z — T8 CP4 failed because `history_baseline` was self-declared and movable
+  without a bound prefix digest/migration marker, dependency alias comparison conflated an absent key
+  with JSON `null`, and new public migration claims were missing from the mandatory evidence map.
+- 2026-07-24T10:35:00Z — Fresh T8 closure review found one remaining blocker: the prefix digest and
+  canonical marker did not bind the task-status snapshot trusted as strict replay's starting state.
+  Mutating that snapshot could make an otherwise invalid post-marker `work_started` event validate.
+- 2026-07-24T10:45:00Z — New independent T8 integrity review passed all nine acceptance criteria with
+  no findings: 5 mapped regressions, all 177 tests, every validator/gate, and adversarial rejection of
+  event, boundary, marker, snapshot, and append-only digest bypass attempts.

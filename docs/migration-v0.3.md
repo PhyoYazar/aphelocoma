@@ -106,6 +106,17 @@ repository the backup lives under the authoritative Git metadata in `aphelocoma-
 it recoverable without making it a project file. Outside Git it uses a timestamped
 `.aphelocoma.backup-v0.2-*` sibling. A failed migration restores the original state.
 
+Real v0.2 projects may omit nullable `task` / `to` keys in ledger events, use `depends_on` in the task
+board, or contain task lifecycle history written before strict replay validation existed. Migration
+normalizes those nullable keys and dependency names while retaining every legacy event in order. It
+records `hamilton.json.history_baseline` with the final legacy sequence, SHA-256 prefix digest,
+task-status snapshot, and a separate SHA-256 digest of that snapshot, followed by one canonical
+migration marker that binds both digests. Structural, sequence, privacy, secret, digest, and marker
+checks still cover and bind that exact legacy prefix and replay starting point; moving the boundary
+or changing the prefix or snapshot invalidates it. Strict ordered lifecycle replay applies to every
+event written after the marker. Optional legacy task notes and Hamilton update metadata are
+preserved.
+
 The migration adds explicit privacy settings:
 
 ```yaml
