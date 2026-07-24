@@ -466,5 +466,277 @@ class HamiltonStateReleaseSmokeTests(unittest.TestCase):
                 self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
 
 
+class DeployedStateToolRuntimeTests(unittest.TestCase):
+    def _installation(self, base, custom_root):
+        home = base / "home"
+        home.mkdir()
+        environment = os.environ.copy()
+        for name in ("APHELOCOMA_HOME", "APHELOCOMA_ROOT", "PYTHONPATH"):
+            environment.pop(name, None)
+        environment["HOME"] = str(home)
+        if custom_root:
+            environment["APHELOCOMA_ROOT"] = str(
+                base / "custom active root's directory"
+            )
+        paths = resolve_paths(environment, tool_root=REPOSITORY)
+        activate_release(REPOSITORY, paths)
+        return paths, environment
+
+    def _run_state_tool(
+        self, script, arguments, caller, environment, pythonpath=""
+    ):
+        isolated = environment.copy()
+        isolated["PYTHONPATH"] = str(pythonpath)
+        return subprocess.run(
+            [sys.executable, str(script), *map(str, arguments)],
+            cwd=str(caller),
+            env=isolated,
+            check=False,
+            text=True,
+            capture_output=True,
+        )
+
+    def _write_shadow_runtime(self, source):
+        package = source / "aphelocoma"
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("", encoding="utf-8")
+        (package / "hamilton_state.py").write_text(
+            'raise RuntimeError("UNTRUSTED SHADOW RUNTIME EXECUTED")\n',
+            encoding="utf-8",
+        )
+
+    def _write_partial_release(self, root, execution_marker=None):
+        self._write_shadow_runtime(root / "src")
+        if execution_marker is not None:
+            (
+                root / "src" / "aphelocoma" / "hamilton_state.py"
+            ).write_text(
+                "from pathlib import Path\n"
+                f"Path({str(execution_marker)!r}).write_text('executed')\n"
+                'raise RuntimeError("UNTRUSTED SHADOW RUNTIME EXECUTED")\n',
+                encoding="utf-8",
+            )
+        (root / "VERSION").write_text("0.3.0\n", encoding="utf-8")
+        (root / "install.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+        binary = root / "bin" / "aph"
+        binary.parent.mkdir()
+        binary.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+
+    def test_deployed_validator_and_migrator_find_default_and_custom_runtime(self):
+        for custom_root in (False, True):
+            with self.subTest(custom_root=custom_root), tempfile.TemporaryDirectory(
+                prefix="aph deployed state tools "
+            ) as directory:
+                base = Path(directory)
+                paths, environment = self._installation(base, custom_root)
+                caller = base / "unrelated caller"
+                caller.mkdir()
+                current = base / "current project"
+                legacy = base / "legacy project"
+                global_shadow = base / "global shadow"
+                shutil.copytree(CURRENT_FIXTURE, current)
+                shutil.copytree(V02_FIXTURE, legacy)
+                self._write_shadow_runtime(global_shadow)
+
+                for tool in ("claude", "codex"):
+                    deploy_hamilton(paths, tool)
+                    host = paths.home / (
+                        ".claude" if tool == "claude" else ".codex"
+                    )
+                    self._write_partial_release(host)
+                    skill = (
+                        host
+                        / "skills"
+                        / "aph-hamilton"
+                        / "references"
+                    )
+                    with self.subTest(custom_root=custom_root, tool=tool):
+                        validated = self._run_state_tool(
+                            skill / "validate.py",
+                            (current,),
+                            caller,
+                            environment,
+                        )
+                        shadowed = self._run_state_tool(
+                            skill / "validate.py",
+                            (current,),
+                            caller,
+                            environment,
+                            pythonpath=global_shadow,
+                        )
+                        checked = self._run_state_tool(
+                            skill / "migrate.py",
+                            ("check", legacy),
+                            caller,
+                            environment,
+                        )
+
+                        self.assertEqual(
+                            validated.returncode,
+                            0,
+                            validated.stderr + validated.stdout,
+                        )
+                        self.assertIn("OK", validated.stdout)
+                        self.assertEqual(
+                            shadowed.returncode,
+                            0,
+                            shadowed.stderr + shadowed.stdout,
+                        )
+                        self.assertIn("OK", shadowed.stdout)
+                        self.assertEqual(
+                            checked.returncode,
+                            1,
+                            checked.stderr + checked.stdout,
+                        )
+                        self.assertIn("migrate.py apply", checked.stdout)
+                        self.assertNotIn(
+                            "Traceback",
+                            validated.stderr
+                            + validated.stdout
+                            + shadowed.stderr
+                            + shadowed.stdout
+                            + checked.stderr
+                            + checked.stdout,
+                        )
+
+    def test_detached_state_tools_report_missing_runtime_without_traceback(self):
+        with tempfile.TemporaryDirectory(
+            prefix="aph detached state tools "
+        ) as directory:
+            base = Path(directory)
+            caller = base / "caller"
+            caller.mkdir()
+            detached = base / "detached" / "skills" / "aph-hamilton" / "references"
+            detached.mkdir(parents=True)
+            execution_marker = base / "partial release executed"
+            self._write_partial_release(
+                base / "detached",
+                execution_marker=execution_marker,
+            )
+            project = base / "project"
+            shutil.copytree(CURRENT_FIXTURE, project)
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "HOME": str(base / "home"),
+                    "APHELOCOMA_ROOT": str(base / "missing active root"),
+                    "PYTHONPATH": "",
+                }
+            )
+
+            for script_name, arguments in (
+                ("validate.py", (project,)),
+                ("migrate.py", ("check", project)),
+            ):
+                shutil.copy2(
+                    REPOSITORY
+                    / "skills"
+                    / "aph-hamilton"
+                    / "references"
+                    / script_name,
+                    detached / script_name,
+                )
+                with self.subTest(script=script_name):
+                    completed = self._run_state_tool(
+                        detached / script_name,
+                        arguments,
+                        caller,
+                        environment,
+                    )
+                    output = completed.stderr + completed.stdout
+                    self.assertEqual(completed.returncode, 2, output)
+                    self.assertIn("Reinstall Aphelocoma", output)
+                    self.assertIn("aph deploy", output)
+                    self.assertNotIn("Traceback", output)
+                    self.assertFalse(execution_marker.exists(), output)
+
+    def test_deployed_tools_reject_corrupt_manifest_owned_runtime(self):
+        with tempfile.TemporaryDirectory(
+            prefix="aph corrupt installed runtime "
+        ) as directory:
+            base = Path(directory)
+            paths, environment = self._installation(base, custom_root=True)
+            caller = base / "unrelated caller"
+            caller.mkdir()
+            project = base / "current project"
+            shutil.copytree(CURRENT_FIXTURE, project)
+            deployed = []
+
+            for tool in ("claude", "codex"):
+                deploy_hamilton(paths, tool)
+                host = paths.home / (
+                    ".claude" if tool == "claude" else ".codex"
+                )
+                deployed.append(
+                    host / "skills" / "aph-hamilton" / "references"
+                )
+
+            (paths.root / "tool" / "src" / "aphelocoma" / "hamilton_state.py").write_text(
+                "BROKEN_RUNTIME = True\n",
+                encoding="utf-8",
+            )
+
+            for skill in deployed:
+                for script_name, arguments in (
+                    ("validate.py", (project,)),
+                    ("migrate.py", ("check", project)),
+                ):
+                    with self.subTest(host=skill.parents[2].name, script=script_name):
+                        completed = self._run_state_tool(
+                            skill / script_name,
+                            arguments,
+                            caller,
+                            environment,
+                        )
+                        output = completed.stderr + completed.stdout
+                        self.assertEqual(completed.returncode, 2, output)
+                        self.assertIn("Reinstall Aphelocoma", output)
+                        self.assertIn("aph deploy", output)
+                        self.assertNotIn("Traceback", output)
+
+    def test_source_checkout_tools_work_without_an_installation(self):
+        with tempfile.TemporaryDirectory(
+            prefix="aph source checkout state tools "
+        ) as directory:
+            base = Path(directory)
+            caller = base / "unrelated caller"
+            caller.mkdir()
+            project = base / "current project"
+            shutil.copytree(CURRENT_FIXTURE, project)
+            global_shadow = base / "global shadow"
+            self._write_shadow_runtime(global_shadow)
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "HOME": str(base / "home"),
+                    "APHELOCOMA_ROOT": str(base / "missing active root"),
+                    "PYTHONPATH": str(global_shadow),
+                }
+            )
+            before = digest_path(project)
+
+            for script_name, arguments in (
+                ("validate.py", (project,)),
+                ("migrate.py", ("check", project)),
+            ):
+                with self.subTest(script=script_name):
+                    completed = self._run_state_tool(
+                        REPOSITORY
+                        / "skills"
+                        / "aph-hamilton"
+                        / "references"
+                        / script_name,
+                        arguments,
+                        caller,
+                        environment,
+                    )
+                    output = completed.stderr + completed.stdout
+                    self.assertEqual(completed.returncode, 0, output)
+                    self.assertNotIn("UNTRUSTED SHADOW", output)
+                    self.assertNotIn("Traceback", output)
+
+            self.assertEqual(digest_path(project), before)
+
+
 if __name__ == "__main__":
     unittest.main()

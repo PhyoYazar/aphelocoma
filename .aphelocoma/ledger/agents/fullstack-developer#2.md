@@ -123,3 +123,30 @@
   137-event Hamilton validation, `bash -n`, source/package `rg` audits, an actual isolated
   install→Claude/Codex deploy/undeploy→uninstall smoke, and `git diff --check`. Handing T4 back to
   qa-engineer.
+- 2026-07-24T09:20:00Z — `work_started`: Began T7 with a deployed-skill subprocess regression for
+  the advisor-reported missing `aphelocoma.hamilton_state` import, covering both hosts, default and
+  custom install roots, caller-directory independence, and traceback-free missing-runtime failure.
+- 2026-07-24T09:25:00Z — `artifact_written`: Added runtime discovery for source checkouts and
+  default/custom installed roots to both standalone state tools, with actionable missing-runtime
+  errors; the regression now passes for deployed Claude and Codex copies.
+- 2026-07-24T09:25:00Z — `handoff`: T7 passes its focused tests, all 170 tests, the live validator,
+  a read-only migration check, Bash syntax, actionlint, and patch checks; handed to qa-engineer.
+- 2026-07-24T09:31:00Z — `work_started`: Began the T7 CP4 bounce-back with failing adversarial tests
+  for global and host-adjacent shadow packages, then trusted-runtime selection will be restricted to
+  a verified release bundle or the configured active installation.
+- 2026-07-24T09:36:00Z — `artifact_written`: Restricted both tools to complete release bundles or a
+  manifest-matched active installation, purged cached shadow modules, and added global plus
+  host-adjacent shadow regressions.
+- 2026-07-24T09:36:00Z — `handoff`: The bounce-back passes focused adversarial tests, all 170 tests,
+  live validation, read-only migration check, Bash syntax, actionlint, and patch checks; handed to a
+  fresh qa-engineer for closure.
+- 2026-07-24T09:40:00Z — `work_started`: Began tests-first closure work for the reviewer's remaining
+  trust-boundary findings: corrupt installed-tool digest drift and partial host-adjacent release
+  inventory shadowing.
+- 2026-07-24T09:45:00Z — `artifact_written`: Added exact active-tool digest verification,
+  matching-install precedence, full release-runtime inventory checks, and required API validation;
+  expanded regressions to cover corrupt installs, executable partial pseudo-releases, isolated source
+  checkout, default/custom roots, global shadows, and both deployed hosts.
+- 2026-07-24T09:45:00Z — `handoff`: Final closure candidate passes 4 focused runtime tests, all 172
+  tests, live and isolated-source validators, read-only migration, Bash syntax, actionlint, Python
+  3.9 syntax, and diff checks; handed to qa-engineer before any local reinstall or redeploy.

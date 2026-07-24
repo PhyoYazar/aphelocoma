@@ -60,3 +60,14 @@
 - 2026-07-24T07:05:00Z — A separate strict whole-reset release audit also returned PASS with no
   blocking findings across Hamilton-only scope, transactional lifecycle, protected legacy data,
   versioned/private state, supported hosts, release evidence, branch, tag, and worktree boundaries.
+- 2026-07-24T09:30:00Z — T7 CP4 failed because standalone state tools preferred any global package
+  or unowned host-adjacent `~/.claude/src` / `~/.codex/src` over the configured installation, allowing
+  stale or shadow code to replace the matching runtime and potentially traceback in migration.
+- 2026-07-24T09:40:00Z — T7 closure review failed because runtime discovery did not verify the
+  install manifest's `tool_digest`, allowing an importable but incompatible installed module to
+  traceback, and its four-file release check allowed a partial host-adjacent pseudo-release to
+  outrank the healthy configured installation.
+- 2026-07-24T09:50:00Z — Fresh T7 closure review passed with no findings after 4 focused and 172
+  full tests plus exact digest, full runtime inventory, install precedence, required-API,
+  source/default/custom root, both-host, read-only migration, validator, Bash, actionlint, diff, and
+  Python 3.9 checks.

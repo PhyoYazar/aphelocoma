@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "done",
-  "updated": "2026-07-24T07:10:00Z",
+  "phase": "integration",
+  "updated": "2026-07-24T09:50:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -124,6 +124,21 @@
         "VERSION"
       ],
       "updated": "2026-07-24T07:05:00Z"
+    },
+    {
+      "id": "T7",
+      "title": "Make deployed state tools locate the installed runtime",
+      "owner": "fullstack-developer#2",
+      "status": "done",
+      "dependencies": [
+        "T6"
+      ],
+      "artifacts": [
+        "skills/aph-hamilton/references/validate.py",
+        "skills/aph-hamilton/references/migrate.py",
+        "tests/test_release_smoke.py"
+      ],
+      "updated": "2026-07-24T09:50:00Z"
     }
   ]
 }
