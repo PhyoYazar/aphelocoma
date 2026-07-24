@@ -54,3 +54,9 @@
   unittest class name, invalidating the claimed citation audit.
 - 2026-07-24T06:50:00Z — Fresh T5 CP4 sign-off passed with all 82 cited tests resolving and passing,
   plus a clean 156-test suite, validator, claim/policy/link/date audit, and retired-feature scan.
+- 2026-07-24T07:05:00Z — Fresh T6 CP4 sign-off passed every T1–T6 acceptance criterion with 168 full
+  and 20 focused tests, validator, actionlint, Bash syntax, diff, chronology, package/privacy, and
+  non-publishing CI audits clean; hosted CI remains explicitly pending.
+- 2026-07-24T07:05:00Z — A separate strict whole-reset release audit also returned PASS with no
+  blocking findings across Hamilton-only scope, transactional lifecycle, protected legacy data,
+  versioned/private state, supported hosts, release evidence, branch, tag, and worktree boundaries.
