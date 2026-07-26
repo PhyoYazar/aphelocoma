@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "review",
-  "updated": "2026-07-26T03:20:00Z",
+  "phase": "implementation",
+  "updated": "2026-07-26T03:45:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -190,6 +190,18 @@
         "CHANGELOG.md"
       ],
       "updated": "2026-07-26T03:35:00Z"
+    },
+    {
+      "id": "T10",
+      "title": "Correct the v0.3 documentation assertions for the status board",
+      "owner": "technical-writer",
+      "status": "assigned",
+      "dependencies": [
+        "T9"
+      ],
+      "spec": ".aphelocoma/specs/T10.md",
+      "artifacts": [],
+      "updated": "2026-07-26T03:40:00Z"
     }
   ]
 }
