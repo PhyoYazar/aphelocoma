@@ -22,8 +22,10 @@ from aphelocoma.hamilton_state import (  # noqa: E402
     CURRENT_PROTOCOL_VERSION,
     CURRENT_SCHEMA_VERSION,
     MigrationError,
+    StatusError,
     migrate_project,
     schema_validation_errors,
+    summarize_project,
     validate_project,
 )
 
@@ -1808,6 +1810,349 @@ class ConventionsWarningTests(ProjectFixture):
             "stub_conventions",
             {issue.code for issue in report.warnings},
         )
+
+
+class StatusBoardTests(ProjectFixture):
+    """The read-only progress board described by PROTOCOL.md §5.6."""
+
+    def hamilton_path(self):
+        return self.project / ".aphelocoma" / "hamilton.json"
+
+    def read_metadata(self):
+        return json.loads(self.hamilton_path().read_text(encoding="utf-8"))
+
+    def write_metadata(self, metadata):
+        self.hamilton_path().write_text(
+            json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
+        )
+
+    def write_tasks(self, tasks, phase="implementation"):
+        path = self.project / ".aphelocoma" / "state" / "tasks.json"
+        board = json.loads(path.read_text(encoding="utf-8"))
+        board["phase"] = phase
+        board["tasks"] = tasks
+        path.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
+
+    def sample_tasks(self):
+        return [
+            {
+                "id": "T1",
+                "title": "Ship the base",
+                "owner": "fullstack-developer#2",
+                "status": "done",
+                "dependencies": [],
+            },
+            {
+                "id": "T2",
+                "title": "Unblock the pipeline",
+                "owner": "devops-engineer",
+                "status": "blocked",
+                "dependencies": [],
+            },
+            {
+                "id": "T3",
+                "title": "Wait on the pipeline",
+                "owner": "qa-engineer",
+                "status": "pending",
+                "dependencies": ["T2"],
+            },
+            {
+                "id": "T4",
+                "title": "Render the board",
+                "owner": "fullstack-developer#1",
+                "status": "assigned",
+                "dependencies": ["T1"],
+            },
+        ]
+
+    def run_git(self, *arguments, when=None):
+        environment = dict(os.environ)
+        environment.update(
+            {
+                "GIT_AUTHOR_NAME": "Fixture",
+                "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
+                "GIT_COMMITTER_NAME": "Fixture",
+                "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
+            }
+        )
+        if when is not None:
+            environment["GIT_AUTHOR_DATE"] = when
+            environment["GIT_COMMITTER_DATE"] = when
+        completed = subprocess.run(
+            ["git", "-C", str(self.project), *arguments],
+            text=True,
+            capture_output=True,
+            check=False,
+            env=environment,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        return completed.stdout
+
+    def start_repository(self):
+        self.run_git("init", "-q", ".")
+        self.run_git("symbolic-ref", "HEAD", "refs/heads/work")
+
+    def commit_all(self, message, when):
+        self.run_git("add", "-A", when=when)
+        self.run_git(
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-q",
+            "-m",
+            message,
+            when=when,
+        )
+
+    def test_summary_reports_identity_versions_and_progress(self):
+        self.write_tasks(self.sample_tasks())
+
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.project, "fixture-current")
+        self.assertEqual(summary.phase, "done")
+        self.assertEqual(summary.schema_version, CURRENT_SCHEMA_VERSION)
+        self.assertEqual(summary.protocol_version, CURRENT_PROTOCOL_VERSION)
+        self.assertEqual(summary.visibility, "tracked")
+        self.assertEqual(summary.done_count, 1)
+        self.assertEqual(summary.total_count, 4)
+        self.assertEqual(
+            [(task.id, task.status, task.owner) for task in summary.tasks],
+            [
+                ("T1", "done", "fullstack-developer#2"),
+                ("T2", "blocked", "devops-engineer"),
+                ("T3", "pending", "qa-engineer"),
+                ("T4", "assigned", "fullstack-developer#1"),
+            ],
+        )
+
+    def test_blocked_tasks_are_called_out_and_gate_the_next_action(self):
+        self.write_tasks(self.sample_tasks())
+
+        summary = summarize_project(self.project)
+
+        self.assertEqual([task.id for task in summary.blocked], ["T2"])
+        self.assertIsNotNone(summary.next_task)
+        self.assertEqual(summary.next_task.id, "T4")
+        self.assertEqual(summary.next_task.owner, "fullstack-developer#1")
+
+    def test_completed_project_has_no_next_actionable_task(self):
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.done_count, 1)
+        self.assertEqual(summary.total_count, 1)
+        self.assertIsNone(summary.next_task)
+        self.assertEqual(summary.blocked, ())
+
+    def test_summary_dictionary_is_stable_and_machine_readable(self):
+        self.write_tasks(self.sample_tasks())
+
+        payload = summarize_project(self.project).as_dict()
+
+        self.assertEqual(payload["schema_version"], 1)
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(
+            payload["project"],
+            {
+                "name": "fixture-current",
+                "phase": "done",
+                "schema_version": CURRENT_SCHEMA_VERSION,
+                "protocol_version": CURRENT_PROTOCOL_VERSION,
+                "visibility": "tracked",
+            },
+        )
+        self.assertEqual(payload["progress"], {"done": 1, "total": 4})
+        self.assertEqual(
+            payload["tasks"][3],
+            {
+                "id": "T4",
+                "title": "Render the board",
+                "status": "assigned",
+                "owner": "fullstack-developer#1",
+                "dependencies": ["T1"],
+            },
+        )
+        self.assertEqual([task["id"] for task in payload["blocked"]], ["T2"])
+        self.assertEqual(payload["next"]["id"], "T4")
+        self.assertEqual(payload["repo"]["state"], "absent")
+        self.assertIn("summary", payload["repo"])
+
+    def test_non_git_project_states_the_absence_plainly(self):
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.repo.state, "absent")
+        self.assertIsNone(summary.repo.branch)
+        self.assertIsNone(summary.repo.head)
+        self.assertIsNone(summary.repo.commits_since_start)
+        self.assertIn("not in a Git repository", summary.repo.summary)
+
+    def test_unreadable_git_worktree_degrades_instead_of_crashing(self):
+        (self.project / ".git").write_text(
+            "gitdir: ./nowhere-at-all\n", encoding="utf-8"
+        )
+
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.repo.state, "unavailable")
+        self.assertIsNone(summary.repo.branch)
+        self.assertIsNone(summary.repo.commits_since_start)
+        self.assertIn("could not be read", summary.repo.summary)
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_repo_line_reports_branch_head_commit_count_and_dirty_tree(self):
+        self.start_repository()
+        self.commit_all("before kickoff", "2026-07-22T00:00:00+00:00")
+        (self.project / "artifact.txt").write_text("changed\n", encoding="utf-8")
+        self.commit_all("first crew commit", "2026-07-23T01:00:00+00:00")
+        (self.project / "artifact.txt").write_text("changed twice\n", encoding="utf-8")
+        self.commit_all("second crew commit", "2026-07-23T02:00:00+00:00")
+        (self.project / "uncommitted.txt").write_text("dirty\n", encoding="utf-8")
+
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.repo.state, "ok")
+        self.assertEqual(summary.repo.branch, "work")
+        self.assertFalse(summary.repo.detached)
+        self.assertEqual(
+            summary.repo.head,
+            self.run_git("rev-parse", "--short", "HEAD").strip(),
+        )
+        self.assertEqual(summary.repo.commits_since_start, 2)
+        self.assertFalse(summary.repo.clean)
+        self.assertEqual(summary.repo.changed_files, 1)
+        self.assertIn("branch work", summary.repo.summary)
+        self.assertIn("2 commits since kickoff", summary.repo.summary)
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_clean_worktree_is_reported_as_clean(self):
+        self.start_repository()
+        self.commit_all("only commit", "2026-07-23T01:00:00+00:00")
+
+        summary = summarize_project(self.project)
+
+        self.assertTrue(summary.repo.clean)
+        self.assertEqual(summary.repo.changed_files, 0)
+        self.assertIn("working tree clean", summary.repo.summary)
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_ambient_git_configuration_cannot_hide_uncommitted_work(self):
+        self.start_repository()
+        self.commit_all("only commit", "2026-07-23T01:00:00+00:00")
+        (self.project / "uncommitted.txt").write_text("dirty\n", encoding="utf-8")
+        self.run_git("config", "status.showUntrackedFiles", "no")
+        self.run_git("config", "log.showSignature", "true")
+
+        summary = summarize_project(self.project)
+
+        self.assertFalse(summary.repo.clean)
+        self.assertEqual(summary.repo.changed_files, 1)
+        self.assertEqual(summary.repo.commits_since_start, 1)
+        self.assertIn("1 uncommitted or untracked file", summary.repo.summary)
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_detached_head_reports_no_branch_and_never_guesses_one(self):
+        self.start_repository()
+        self.commit_all("only commit", "2026-07-23T01:00:00+00:00")
+        head = self.run_git("rev-parse", "HEAD").strip()
+        self.run_git("checkout", "-q", "--detach", head)
+
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.repo.state, "ok")
+        self.assertIsNone(summary.repo.branch)
+        self.assertTrue(summary.repo.detached)
+        self.assertIn("detached HEAD", summary.repo.summary)
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_unknown_run_start_reports_unknown_rather_than_a_number(self):
+        self.start_repository()
+        self.commit_all("only commit", "2026-07-23T01:00:00+00:00")
+        metadata = self.read_metadata()
+        del metadata["created"]
+        self.write_metadata(metadata)
+
+        summary = summarize_project(self.project)
+
+        self.assertIsNone(summary.repo.commits_since_start)
+        self.assertIn("unknown", summary.repo.summary)
+        self.assertNotIn("0 commits", summary.repo.summary)
+
+    def test_missing_project_state_is_an_actionable_status_error(self):
+        empty = Path(self.tempdir.name) / "empty"
+        empty.mkdir()
+
+        with self.assertRaises(StatusError) as raised:
+            summarize_project(empty)
+
+        self.assertIn("No Hamilton project state", str(raised.exception))
+        self.assertTrue(raised.exception.remediation)
+
+    def test_missing_directory_is_an_actionable_status_error(self):
+        with self.assertRaises(StatusError) as raised:
+            summarize_project(Path(self.tempdir.name) / "not-there")
+
+        self.assertIn("not a directory", str(raised.exception))
+        self.assertTrue(raised.exception.remediation)
+
+    def test_unsupported_schema_version_refuses_with_upgrade_remediation(self):
+        metadata = self.read_metadata()
+        metadata["schema_version"] = CURRENT_SCHEMA_VERSION + 98
+        self.write_metadata(metadata)
+
+        with self.assertRaises(StatusError) as raised:
+            summarize_project(self.project)
+
+        self.assertIn("newer than supported", str(raised.exception))
+        self.assertIn("upgrade Aphelocoma", raised.exception.remediation)
+
+    def test_prerelease_protocol_refuses_with_its_own_remediation(self):
+        metadata = self.read_metadata()
+        metadata["protocol_version"] = "1.0.0-alpha"
+        self.write_metadata(metadata)
+
+        with self.assertRaises(StatusError) as raised:
+            summarize_project(self.project)
+
+        self.assertIn("distinct contracts", raised.exception.remediation)
+
+    def test_unreadable_task_board_names_the_artifact_and_remediation(self):
+        path = self.project / ".aphelocoma" / "state" / "tasks.json"
+        path.write_text("{not json", encoding="utf-8")
+
+        with self.assertRaises(StatusError) as raised:
+            summarize_project(self.project)
+
+        self.assertEqual(raised.exception.path, "state/tasks.json")
+        self.assertTrue(raised.exception.remediation)
+
+    def test_privacy_findings_do_not_refuse_the_board(self):
+        (self.project / ".aphelocoma" / "settings.yaml").write_text(
+            "visibility: local\n", encoding="utf-8"
+        )
+
+        summary = summarize_project(self.project)
+
+        self.assertEqual(summary.visibility, "local")
+
+    def test_unknown_visibility_is_reported_as_unknown_not_guessed(self):
+        (self.project / ".aphelocoma" / "settings.yaml").write_text(
+            "redact_sensitive: true\n", encoding="utf-8"
+        )
+
+        summary = summarize_project(self.project)
+
+        self.assertIsNone(summary.visibility)
+
+
+class UnversionedStatusBoardTests(ProjectFixture):
+    fixture_name = "unversioned-v02"
+
+    def test_unversioned_state_refuses_with_migration_remediation(self):
+        with self.assertRaises(StatusError) as raised:
+            summarize_project(self.project)
+
+        self.assertIn("unversioned Hamilton v0.2", str(raised.exception))
+        self.assertIn("migrate.py", raised.exception.remediation)
 
 
 if __name__ == "__main__":

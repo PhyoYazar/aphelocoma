@@ -19,6 +19,7 @@ from .io import atomic_write_json, atomic_write_text
 
 CURRENT_SCHEMA_VERSION = 1
 CURRENT_PROTOCOL_VERSION = "1.0.0"
+STATUS_REPORT_SCHEMA_VERSION = 1
 LEGACY_HISTORY_SOURCE = "unversioned-v0.2"
 VISIBILITIES = {"tracked", "local"}
 STATUSES = {
@@ -100,6 +101,30 @@ VERSION_CODES = {
     "invalid_protocol_version",
 }
 
+GIT_TIMEOUT_SECONDS = 15
+STATUS_PATH_REMEDIATION = (
+    "Pass the project directory that contains .aphelocoma/, or run `aph status` "
+    "from inside the project."
+)
+STATUS_START_REMEDIATION = (
+    "Run `/aph-hamilton` in the project to start a Hamilton run, or pass the "
+    "correct project directory."
+)
+STATUS_METADATA_REMEDIATION = (
+    "Restore .aphelocoma/hamilton.json or recover it from a migration backup."
+)
+STATUS_BOARD_REMEDIATION = (
+    "Repair .aphelocoma/state/tasks.json, then rerun the Hamilton validator "
+    "(`python3 <skill>/references/validate.py <project-dir>`)."
+)
+REPO_ABSENT_SUMMARY = (
+    "This project is not in a Git repository, so branch, commit, and "
+    "working-tree details are unavailable."
+)
+REPO_UNAVAILABLE_SUMMARY = (
+    "Git details are unavailable: the enclosing Git worktree could not be read."
+)
+
 SECRET_PATTERNS = (
     (
         "private key",
@@ -176,6 +201,98 @@ class MigrationError(RuntimeError):
     def __init__(self, message: str, backup: Optional[Path] = None) -> None:
         super().__init__(message)
         self.backup = backup
+
+
+class StatusError(RuntimeError):
+    """A progress board could not be rendered from the project's state."""
+
+    def __init__(self, path: str, message: str, remediation: str) -> None:
+        super().__init__(message)
+        self.path = path
+        self.remediation = remediation
+
+
+@dataclass(frozen=True)
+class TaskSummary:
+    id: str
+    title: str
+    status: str
+    owner: Optional[str]
+    dependencies: Tuple[str, ...]
+
+    def as_dict(self) -> Dict[str, object]:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "status": self.status,
+            "owner": self.owner,
+            "dependencies": list(self.dependencies),
+        }
+
+
+@dataclass(frozen=True)
+class RepoSummary:
+    """What Git could truthfully report; unknown fields stay ``None``."""
+
+    state: str
+    branch: Optional[str]
+    detached: bool
+    head: Optional[str]
+    commits_since_start: Optional[int]
+    clean: Optional[bool]
+    changed_files: Optional[int]
+    summary: str
+
+    def as_dict(self) -> Dict[str, object]:
+        return {
+            "state": self.state,
+            "branch": self.branch,
+            "detached": self.detached,
+            "head": self.head,
+            "commits_since_start": self.commits_since_start,
+            "clean": self.clean,
+            "changed_files": self.changed_files,
+            "summary": self.summary,
+        }
+
+
+@dataclass(frozen=True)
+class ProjectSummary:
+    project: str
+    phase: str
+    schema_version: Optional[int]
+    protocol_version: Optional[str]
+    visibility: Optional[str]
+    tasks: Tuple[TaskSummary, ...]
+    blocked: Tuple[TaskSummary, ...]
+    next_task: Optional[TaskSummary]
+    repo: RepoSummary
+
+    @property
+    def total_count(self) -> int:
+        return len(self.tasks)
+
+    @property
+    def done_count(self) -> int:
+        return sum(1 for task in self.tasks if task.status == "done")
+
+    def as_dict(self) -> Dict[str, object]:
+        return {
+            "schema_version": STATUS_REPORT_SCHEMA_VERSION,
+            "status": "ok",
+            "project": {
+                "name": self.project,
+                "phase": self.phase,
+                "schema_version": self.schema_version,
+                "protocol_version": self.protocol_version,
+                "visibility": self.visibility,
+            },
+            "progress": {"done": self.done_count, "total": self.total_count},
+            "tasks": [task.as_dict() for task in self.tasks],
+            "blocked": [task.as_dict() for task in self.blocked],
+            "next": None if self.next_task is None else self.next_task.as_dict(),
+            "repo": self.repo.as_dict(),
+        }
 
 
 @dataclass(frozen=True)
@@ -1754,6 +1871,330 @@ def validate_project(
         done_count,
         tuple(issues.errors),
         tuple(issues.warnings),
+    )
+
+
+def _parse_timestamp(value: object) -> Optional[datetime]:
+    """Parse an ISO-8601 instant, returning ``None`` when it is unusable.
+
+    Python 3.9's ``fromisoformat`` rejects the ``Z`` suffix Hamilton writes, and a
+    naive value is read as UTC so comparisons never raise.
+    """
+
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    if text[-1] in {"Z", "z"}:
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _git_output(worktree_root: Path, arguments: Sequence[str]) -> Optional[str]:
+    """Run one read-only Git command. ``None`` means the answer is unknown."""
+
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(worktree_root), *arguments],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if completed.returncode != 0:
+        return None
+    try:
+        return completed.stdout.decode("utf-8", "surrogateescape")
+    except (AttributeError, UnicodeError):
+        return None
+
+
+def _commits_since(
+    worktree_root: Path,
+    started_at: Optional[datetime],
+) -> Tuple[Optional[int], str]:
+    """Count commits recorded since the run began, or say why it is unknown.
+
+    Every reachable commit is inspected rather than relying on Git's
+    walk-stopping ``--since`` heuristic, which under-reports across merges. A
+    single unreadable timestamp makes the whole count unknown: the board must
+    never print a number it cannot stand behind.
+    """
+
+    if started_at is None:
+        return None, (
+            "commits since kickoff unknown (hamilton.json has no readable "
+            "`created` timestamp)"
+        )
+    # `--no-show-signature` keeps a user's `log.showSignature` from interleaving
+    # verification output that would turn a readable count into a false unknown.
+    log = _git_output(
+        worktree_root, ["log", "--no-show-signature", "--format=%cI", "HEAD"]
+    )
+    if log is None:
+        return None, (
+            "commits since kickoff unknown (the commit history could not be read)"
+        )
+    count = 0
+    for line in log.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        committed = _parse_timestamp(stripped)
+        if committed is None:
+            return None, (
+                "commits since kickoff unknown (a commit timestamp could not "
+                "be read)"
+            )
+        if committed >= started_at:
+            count += 1
+    return count, "%d commit%s since kickoff" % (count, "" if count == 1 else "s")
+
+
+def _summarize_repo(
+    project_root: Path,
+    started_at: Optional[datetime],
+) -> RepoSummary:
+    """Describe the enclosing repository, degrading instead of failing."""
+
+    contexts = _git_contexts(project_root)
+    if contexts is None:
+        return RepoSummary(
+            "unavailable",
+            None,
+            False,
+            None,
+            None,
+            None,
+            None,
+            REPO_UNAVAILABLE_SUMMARY,
+        )
+    if not contexts:
+        return RepoSummary(
+            "absent", None, False, None, None, None, None, REPO_ABSENT_SUMMARY
+        )
+
+    worktree_root = contexts[0][0]
+    branch_output = _git_output(
+        worktree_root, ["symbolic-ref", "--quiet", "--short", "HEAD"]
+    )
+    branch = branch_output.strip() if branch_output else None
+    head_output = _git_output(worktree_root, ["rev-parse", "--short", "HEAD"])
+    head = head_output.strip() if head_output else None
+    detached = branch is None and head is not None
+
+    commits: Optional[int] = None
+    commits_clause: Optional[str] = None
+    if head is None:
+        location = (
+            "branch %s has no commits yet" % branch
+            if branch
+            else "HEAD names neither a branch nor a commit yet"
+        )
+    else:
+        commits, commits_clause = _commits_since(worktree_root, started_at)
+        location = (
+            "detached HEAD at %s" % head
+            if detached
+            else "branch %s at %s" % (branch, head)
+        )
+
+    # `--untracked-files=normal` overrides a user's `status.showUntrackedFiles`,
+    # which would otherwise let a repository full of untracked work report clean.
+    porcelain = _git_output(
+        worktree_root, ["status", "--porcelain", "--untracked-files=normal"]
+    )
+    if porcelain is None:
+        clean: Optional[bool] = None
+        changed: Optional[int] = None
+        tree_clause = "working-tree state could not be read"
+    else:
+        changed = sum(1 for line in porcelain.splitlines() if line.strip())
+        clean = changed == 0
+        tree_clause = (
+            "working tree clean"
+            if clean
+            else "%d uncommitted or untracked file%s"
+            % (changed, "" if changed == 1 else "s")
+        )
+
+    clauses = [location]
+    if commits_clause is not None:
+        clauses.append(commits_clause)
+    clauses.append(tree_clause)
+    return RepoSummary(
+        "ok",
+        branch,
+        detached,
+        head,
+        commits,
+        clean,
+        changed,
+        ", ".join(clauses) + ".",
+    )
+
+
+def _status_tasks(board: object) -> Tuple[TaskSummary, ...]:
+    """Read the task board for display, refusing state that cannot be trusted."""
+
+    if not isinstance(board, dict) or not isinstance(board.get("tasks"), list):
+        raise StatusError(
+            "state/tasks.json",
+            "state/tasks.json must contain a JSON object with a tasks array.",
+            STATUS_BOARD_REMEDIATION,
+        )
+    summaries: List[TaskSummary] = []
+    for index, raw_task in enumerate(board["tasks"]):
+        if not isinstance(raw_task, dict):
+            raise StatusError(
+                "state/tasks.json",
+                "state/tasks.json tasks[%d] is not a JSON object." % index,
+                STATUS_BOARD_REMEDIATION,
+            )
+        task_id = raw_task.get("id")
+        if not isinstance(task_id, str) or not task_id:
+            raise StatusError(
+                "state/tasks.json",
+                "state/tasks.json tasks[%d] has no usable task id." % index,
+                STATUS_BOARD_REMEDIATION,
+            )
+        title = raw_task.get("title")
+        status = raw_task.get("status")
+        owner = raw_task.get("owner")
+        raw_dependencies = raw_task.get("dependencies")
+        summaries.append(
+            TaskSummary(
+                task_id,
+                title if isinstance(title, str) and title else "(untitled)",
+                status if isinstance(status, str) and status else "unknown",
+                owner if isinstance(owner, str) and owner else None,
+                tuple(
+                    item
+                    for item in raw_dependencies
+                    if isinstance(item, str)
+                )
+                if isinstance(raw_dependencies, list)
+                else (),
+            )
+        )
+    return tuple(summaries)
+
+
+def _next_actionable(tasks: Sequence[TaskSummary]) -> Optional[TaskSummary]:
+    """The first board-order task that is open and whose dependencies are done."""
+
+    finished = {task.id for task in tasks if task.status == "done"}
+    for task in tasks:
+        if task.status in {"done", "blocked"}:
+            continue
+        if all(dependency in finished for dependency in task.dependencies):
+            return task
+    return None
+
+
+def summarize_project(project_root: Path) -> ProjectSummary:
+    """Summarize one project's Hamilton state and Git context, read-only.
+
+    Nothing under ``.aphelocoma/`` is written and no ledger event is appended:
+    rendering the board is looking, not acting (PROTOCOL §5.6). Unversioned or
+    unsupported state is refused with the same remediation ``resume`` reports,
+    rather than being interpreted on a guess.
+    """
+
+    root = Path(project_root)
+    try:
+        resolved = root.resolve()
+    except (OSError, RuntimeError) as error:
+        raise StatusError(
+            str(root),
+            "Project path %s could not be resolved: %s." % (root, error),
+            STATUS_PATH_REMEDIATION,
+        ) from error
+    if not resolved.is_dir():
+        raise StatusError(
+            str(resolved),
+            "%s is not a directory." % resolved,
+            STATUS_PATH_REMEDIATION,
+        )
+    aph = resolved / ".aphelocoma"
+    if not aph.is_dir():
+        raise StatusError(
+            ".aphelocoma",
+            "No Hamilton project state exists in %s." % resolved,
+            STATUS_START_REMEDIATION,
+        )
+
+    metadata_issues = _Issues()
+    hamilton = _load_json(aph / "hamilton.json", metadata_issues, "hamilton.json")
+    if metadata_issues.errors:
+        first = metadata_issues.errors[0]
+        raise StatusError(
+            first.path,
+            first.message,
+            first.remediation or STATUS_METADATA_REMEDIATION,
+        )
+    if not isinstance(hamilton, dict):
+        raise StatusError(
+            "hamilton.json",
+            "hamilton.json must contain a JSON object.",
+            STATUS_METADATA_REMEDIATION,
+        )
+
+    # Only version findings refuse the board. Privacy and integrity findings
+    # belong to `aph doctor` and the validator; looking must still work.
+    version_issues = _Issues()
+    _validate_versions(hamilton, version_issues)
+    blocking = [
+        issue for issue in version_issues.errors if issue.code in VERSION_CODES
+    ]
+    if blocking:
+        raise StatusError(
+            blocking[0].path,
+            blocking[0].message,
+            blocking[0].remediation
+            or "Run the Hamilton validator against this project for details.",
+        )
+
+    board_issues = _Issues()
+    board = _load_json(
+        aph / "state" / "tasks.json", board_issues, "state/tasks.json"
+    )
+    if board_issues.errors:
+        first = board_issues.errors[0]
+        raise StatusError(
+            first.path,
+            first.message,
+            first.remediation or STATUS_BOARD_REMEDIATION,
+        )
+    tasks = _status_tasks(board)
+
+    settings = _parse_settings(aph / "settings.yaml", _Issues())
+    visibility = settings.get("visibility")
+    project = hamilton.get("project")
+    phase = hamilton.get("phase")
+    schema_version = hamilton.get("schema_version")
+    protocol_version = hamilton.get("protocol_version")
+    return ProjectSummary(
+        project if isinstance(project, str) and project else resolved.name,
+        phase if isinstance(phase, str) and phase else "unknown",
+        schema_version
+        if isinstance(schema_version, int) and not isinstance(schema_version, bool)
+        else None,
+        protocol_version if isinstance(protocol_version, str) else None,
+        visibility if visibility in VISIBILITIES else None,
+        tasks,
+        tuple(task for task in tasks if task.status == "blocked"),
+        _next_actionable(tasks),
+        _summarize_repo(resolved, _parse_timestamp(hamilton.get("created"))),
     )
 
 

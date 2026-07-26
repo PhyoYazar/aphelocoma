@@ -80,3 +80,14 @@
 - 2026-07-24T10:45:00Z — New independent T8 integrity review passed all nine acceptance criteria with
   no findings: 5 mapped regressions, all 177 tests, every validator/gate, and adversarial rejection of
   event, boundary, marker, snapshot, and append-only digest bypass attempts.
+
+# T9 run-visibility board — CP4
+
+- 2026-07-26T03:35:00Z — Reviewed T9 as an independent fresh-context subagent and passed it. Verified
+  every acceptance criterion by running it: red-without-implementation for the new tests, byte-identical
+  `.aphelocoma/` hashes across five real runs, an independent recount of commits since kickoff, real
+  `NO_COLOR` and piped-output checks, eight Git degradation paths, and the 0/1/2 exit codes with a
+  malformed-board battery. Upheld both builder decisions under scrutiny. Routed one major finding out of
+  scope: `docs/documentation-assertions-v0.3.md` DOC-002 now asserts a CLI surface without `status` and
+  cites the very test T9 changed, and DOC-006's test-ID list is incomplete. Nothing machine-consumes that
+  file, so no gate broke — but it is the v0.3 release-readiness audit and must be corrected before release.

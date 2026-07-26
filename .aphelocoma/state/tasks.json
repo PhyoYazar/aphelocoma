@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "done",
-  "updated": "2026-07-24T10:50:00Z",
+  "phase": "review",
+  "updated": "2026-07-26T03:20:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -56,7 +56,10 @@
       "title": "Implement transactional lifecycle and deployment",
       "owner": "fullstack-developer#1",
       "status": "done",
-      "dependencies": ["T1", "T2"],
+      "dependencies": [
+        "T1",
+        "T2"
+      ],
       "artifacts": [
         "install.sh",
         "src/aphelocoma/cli.py",
@@ -80,15 +83,17 @@
       "title": "Remove the legacy context product",
       "owner": "fullstack-developer#2",
       "status": "done",
-      "dependencies": ["T3"],
+      "dependencies": [
+        "T3"
+      ],
       "artifacts": [
         ".gitignore",
         "CLAUDE.md",
         "skills",
-      "skills/aph-hamilton/HANDOFF.md",
-      "adapters",
-      "src/aphelocoma/lifecycle.py",
-      "tests/test_package_inventory.py",
+        "skills/aph-hamilton/HANDOFF.md",
+        "adapters",
+        "src/aphelocoma/lifecycle.py",
+        "tests/test_package_inventory.py",
         "tests/test_legacy.py",
         "tests/test_lifecycle.py",
         "tests/fixtures/legacy"
@@ -100,7 +105,10 @@
       "title": "Reposition and document Aphelocoma",
       "owner": "technical-writer",
       "status": "done",
-      "dependencies": ["T3", "T4"],
+      "dependencies": [
+        "T3",
+        "T4"
+      ],
       "artifacts": [
         "README.md",
         "CHANGELOG.md",
@@ -115,7 +123,13 @@
       "title": "Add cross-platform CI and verify v0.3 readiness",
       "owner": "devops-engineer",
       "status": "done",
-      "dependencies": ["T1", "T2", "T3", "T4", "T5"],
+      "dependencies": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5"
+      ],
       "artifacts": [
         ".github/workflows/ci.yml",
         "tests/test_release_smoke.py",
@@ -157,6 +171,25 @@
         "tests/test_hamilton_state.py"
       ],
       "updated": "2026-07-24T10:45:00Z"
+    },
+    {
+      "id": "T9",
+      "title": "Show a progress board at every milestone",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [],
+      "spec": ".aphelocoma/specs/T9.md",
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "src/aphelocoma/cli.py",
+        "tests/test_hamilton_state.py",
+        "tests/test_cli.py",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/skill.md",
+        "README.md",
+        "CHANGELOG.md"
+      ],
+      "updated": "2026-07-26T03:35:00Z"
     }
   ]
 }

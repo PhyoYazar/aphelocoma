@@ -24,12 +24,14 @@ COMMANDS = (
     "deploy",
     "undeploy",
     "doctor",
+    "status",
     "update",
     "uninstall",
     "version",
     "help",
 )
 TOOLS = ("claude", "codex")
+STATUS_LABEL_WIDTH = 9
 
 
 class UsageError(Exception):
@@ -67,6 +69,23 @@ def build_parser() -> AphArgumentParser:
         help="Check installation health and print remediation.",
     )
     doctor.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit stable machine-readable JSON.",
+    )
+
+    status = subparsers.add_parser(
+        "status",
+        help="Show the Hamilton progress board for a project.",
+    )
+    status.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Project directory holding .aphelocoma/ (default: this directory).",
+    )
+    status.add_argument(
         "--json",
         action="store_true",
         dest="json_output",
@@ -138,6 +157,113 @@ def _doctor(paths: RuntimePaths, *, json_output: bool) -> int:
     return report.exit_code
 
 
+def _field(label: str, value: str) -> str:
+    return f"{label.ljust(STATUS_LABEL_WIDTH)} {value}"
+
+
+def _describe_task(task: object) -> str:
+    owner = getattr(task, "owner", None) or "unassigned"
+    return f"{task.id} {task.title} (owner {owner})"
+
+
+def _next_action(summary: object) -> str:
+    if summary.next_task is not None:
+        return _describe_task(summary.next_task)
+    open_tasks = summary.total_count - summary.done_count
+    if open_tasks == 0:
+        return "nothing open; every task is done"
+    return (
+        f"no actionable task; {open_tasks} open task(s) are blocked or waiting "
+        "on dependencies"
+    )
+
+
+def render_status_board(summary: object) -> List[str]:
+    """Render the PROTOCOL §5.6 board as plain text.
+
+    No colour and no glyphs: every task line carries its status as a word, so the
+    board reads identically in a pipe, a log, and a screen reader.
+    """
+
+    schema = "unknown" if summary.schema_version is None else summary.schema_version
+    protocol = summary.protocol_version or "unknown"
+    visibility = summary.visibility or "unknown"
+    lines = [
+        _field("Hamilton", f"{summary.project}, phase {summary.phase}"),
+        _field(
+            "State",
+            f"schema {schema}, protocol {protocol}, visibility {visibility}",
+        ),
+        _field(
+            "Progress",
+            f"{summary.done_count} of {summary.total_count} tasks done",
+        ),
+        "",
+        "Tasks",
+    ]
+    if not summary.tasks:
+        lines.append("  no tasks on the board yet")
+    else:
+        status_width = max(len(task.status) for task in summary.tasks) + 2
+        id_width = max(len(task.id) for task in summary.tasks)
+        for task in summary.tasks:
+            owner = task.owner or "unassigned"
+            status = f"[{task.status}]".ljust(status_width)
+            lines.append(
+                f"  {status}  {task.id.ljust(id_width)}  {task.title}  "
+                f"(owner {owner})"
+            )
+    lines.append("")
+    blocked = (
+        "; ".join(_describe_task(task) for task in summary.blocked)
+        if summary.blocked
+        else "none"
+    )
+    lines.append(_field("Blocked", blocked))
+    lines.append(_field("Next", _next_action(summary)))
+    lines.append(_field("Repo", summary.repo.summary))
+    return lines
+
+
+def _status(path: str, *, json_output: bool) -> int:
+    # Imported lazily so a damaged Hamilton runtime still leaves `aph doctor`
+    # and `aph version` able to report it.
+    from .hamilton_state import (
+        STATUS_REPORT_SCHEMA_VERSION,
+        StatusError,
+        summarize_project,
+    )
+
+    try:
+        summary = summarize_project(Path(path))
+    except StatusError as error:
+        if json_output:
+            print(
+                json.dumps(
+                    {
+                        "schema_version": STATUS_REPORT_SCHEMA_VERSION,
+                        "status": "error",
+                        "error": {
+                            "path": error.path,
+                            "message": str(error),
+                            "remediation": error.remediation,
+                        },
+                    },
+                    indent=2,
+                )
+            )
+        else:
+            print(f"Error: {error}", file=sys.stderr)
+            print(f"  Fix: {error.remediation}", file=sys.stderr)
+        return 1
+    if json_output:
+        print(json.dumps(summary.as_dict(), indent=2))
+    else:
+        for line in render_status_board(summary):
+            print(line)
+    return 0
+
+
 def _print_result(messages: Sequence[str], ok: bool) -> int:
     stream = sys.stdout if ok else sys.stderr
     for message in messages:
@@ -196,6 +322,8 @@ def _dispatch(
     _warn_legacy_home(paths)
     if command == "doctor":
         return _doctor(paths, json_output=arguments.json_output)
+    if command == "status":
+        return _status(arguments.path, json_output=arguments.json_output)
     if command == "version":
         return _version(paths)
     if command == "deploy":

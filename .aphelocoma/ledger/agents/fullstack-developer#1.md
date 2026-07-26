@@ -78,3 +78,47 @@
 - 2026-07-23T12:19:48Z — `task_completed` — T3 symlink-bypass closure passed all 147 unittest cases,
   the isolated real-installer symlink collision smoke for both shell variants, Bash syntax and diff
   checks, and the 121-event Hamilton validator.
+- 2026-07-26T04:10:00Z — `work_started` — Picked up T9 (progress board). Read the spec, the binding
+  conventions, `hamilton_state.py`'s loaders and Git helpers, and the `aph doctor --json` contract,
+  then wrote the red tests first per TDD: 26 focused cases across `tests/test_hamilton_state.py`
+  (`StatusBoardTests`, `UnversionedStatusBoardTests`) and `tests/test_cli.py`
+  (`CliStatusBoardTests`), all failing with `ImportError: cannot import name 'StatusError'` and
+  `Unknown command 'status'`.
+- 2026-07-26T04:10:00Z — `assumption_logged` — Three scope decisions recorded rather than guessed:
+  (1) the board emits no ANSI at all, matching the existing colour-free CLI, so `NO_COLOR` and a
+  non-TTY stdout are satisfied by construction instead of by a disable path; (2) only
+  `VERSION_CODES` findings refuse the board — privacy findings such as `redact_sensitive` remain
+  `aph doctor`'s business, because looking must keep working; (3) `docs/documentation-assertions-v0.3.md`
+  is outside the spec's declared files, so DOC-002's command list and DOC-006's test-ID list are
+  left for a technical-writer pass and flagged at handoff.
+- 2026-07-26T04:10:00Z — `artifact_written` — Added `summarize_project()` plus `StatusError`,
+  `TaskSummary`, `RepoSummary`, and `ProjectSummary` to `src/aphelocoma/hamilton_state.py`, reusing
+  `_load_json`, `_validate_versions`, `_parse_settings`, and `_git_contexts` rather than adding a
+  runtime module that would have to be registered in `lifecycle.py`, `validate.py`, and
+  `migrate.py`. Commits since kickoff are counted from every reachable commit's `%cI` against
+  `hamilton.json.created`, not Git's walk-stopping `--since`, and a single unreadable timestamp
+  makes the count `unknown` instead of a number the board cannot stand behind. Non-Git, detached
+  HEAD, and unreadable-worktree cases each degrade the repo line to a plain statement.
+- 2026-07-26T04:10:00Z — `artifact_written` — Added the `status` subcommand, help topic, and
+  colour-free renderer to `src/aphelocoma/cli.py` (exit `0`/`1`/`2` per conventions, artifact named
+  and remediation printed on failure, `--json` following the doctor report shape). Documented the
+  board in `PROTOCOL.md` §5.6 (required content, the four trigger points, the orchestrator-rendered
+  fallback for version skew), pointed `skill.md`'s `status` and `resume` modes at `aph status`, and
+  recorded the command in `README.md` and the unreleased 0.3.0 `CHANGELOG.md` entry. Removed the
+  empty untracked leftover directory `skills/aph-status/`.
+- 2026-07-26T04:10:00Z — `handoff` — T9 ready for independent CP4 review. The 26 new tests fail
+  before the implementation and pass after; the full standard-library suite is 203 passing;
+  `validate.py .` reports OK on 234 events / 9 tasks; `aph doctor` is healthy; and `aph status .`
+  renders a real board for this repository in both human and JSON form.
+- 2026-07-26T04:35:00Z — `artifact_written` — Pre-handoff review caught a wrong-claim defect: both
+  Git reads inherited ambient user configuration. With `status.showUntrackedFiles=no` a repository
+  full of untracked work reported "working tree clean", and `log.showSignature=true` could
+  interleave verification output that turned a readable commit count into a false unknown. Pinned
+  `git status --porcelain --untracked-files=normal` and `git log --no-show-signature --format=%cI`,
+  matching the existing house precedent of passing explicit untracked-file flags rather than
+  trusting config. Added `test_ambient_git_configuration_cannot_hide_uncommitted_work`, verified red
+  against the unpinned flag and green with it. Suite now 205 passing.
+
+- 2026-07-26T03:35:00Z — Correction to the entry above: the task added 28 new tests, not 26. The suite
+  total of 205 was reported correctly. Recorded as an appended correction rather than an edit, per
+  PROTOCOL §5.

@@ -273,13 +273,51 @@ The **advisor owns branches and pushing; the crew owns commits.** Rules:
   crew commit.
 - **Not a git repo:** skip all of this and log one `assumption_logged` noting version control is off.
 
+## 5.6 Progress board — visibility without asking
+
+The advisor must never have to ask "where are we?". The orchestrator prints one **progress board** —
+a rendered snapshot, never a file — at **four moments**:
+
+1. **After each `task_completed` commit** (§5.5) — a task reached `done` and was committed.
+2. **On `blocked`** — a worker could not finish.
+3. **On `review_failed`** — a CP4 verdict bounced work back (§2 Phase 5).
+4. **At the top of every `resume`** — after the §6 version + integrity check, before continuing.
+
+The board MUST report, for the project at hand:
+
+- the project name, the current `phase`, `schema_version` / `protocol_version`, and the
+  `tracked` / `local` visibility;
+- a done/total progress count;
+- one line per task carrying its id, **status as a word**, title, and owner;
+- any `blocked` tasks called out separately;
+- the **next actionable** task — the first open task that is not `blocked` and whose dependencies are
+  all `done` — with its owner;
+- the repo situation: current branch, short HEAD, the number of commits recorded since the run began
+  (`hamilton.json.created`), and whether the working tree is clean or has uncommitted files.
+
+**Looking is not acting.** Rendering the board writes nothing under `.aphelocoma/` and appends no
+ledger event. `tasks.json` remains the single source of truth (§5); no derived board file is stored.
+
+**Rendering.** `aph status [path]` prints it, and `aph status [path] --json` emits the same content
+machine-readably. Exit `0` on success; exit `1`, with the artifact named and remediation printed, when
+the path holds no `.aphelocoma/` or its version is unsupported — the same stop `resume` reports (§6).
+
+**Version skew — degrade, never break.** When `aph status` is missing, fails, or predates this
+section, the orchestrator renders the same board itself from `.aphelocoma/hamilton.json`,
+`.aphelocoma/settings.yaml`, `.aphelocoma/state/tasks.json`, and `git`, and names any field it could
+not determine. A missing or older CLI degrades the board's presentation; it never blocks the run.
+
+**Honesty over completeness.** A non-Git project, a detached HEAD, or an unreadable worktree replaces
+the repo line with a plain statement of what is known. Never claim a branch, commit, count, or
+cleanliness that could not be read — an undeterminable commit count is reported as unknown, not `0`.
+
 ## 6. Resumability
 
 On start, read `.aphelocoma/state/brief.md`:
 - If it is the stub / `status: no-active-project` → fresh start; go to Phase 0.
-- If it is populated → a project is in progress. Report the current `phase` and the open
-  tasks (anything not `done`) from `.aphelocoma/state/tasks.json`, then **continue** from there. Do not
-  restart or rebuild completed work.
+- If it is populated → a project is in progress. Print the §5.6 **progress board** — `aph status .` is
+  the fast path, otherwise render it yourself — then **continue** from there. Do not restart or
+  rebuild completed work.
 - **Version + integrity check (when `python3` exists):** run `validate.py` (a sibling of this file)
   against the project before continuing. It verifies version compatibility, privacy, gap-free `seq`,
   task references/transitions, independent ordered reviews, the §8 done gate, and specs behind assigned

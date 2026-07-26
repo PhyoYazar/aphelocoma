@@ -8,8 +8,13 @@ v0.3 is a breaking reset that makes Hamilton the complete Aphelocoma product.
 
 ### Added
 
-- A Python 3.9+ standard-library `aph` CLI with `deploy`, `undeploy`, `doctor`, `update`,
+- A Python 3.9+ standard-library `aph` CLI with `deploy`, `undeploy`, `doctor`, `status`, `update`,
   `uninstall`, `version`, and `help`.
+- `aph status [path] [--json]`: a read-only Hamilton progress board reporting project, phase,
+  schema/protocol version, visibility, done/total progress, every task with its status word, title and
+  owner, blocked tasks, the next actionable task, and the repository's branch, short HEAD, commits
+  since the run began, and working-tree cleanliness. It writes nothing under `.aphelocoma/`, uses no
+  colour, and degrades to a plain statement rather than guessing when Git details are unavailable.
 - Transactional installation and update with release verification, owned PATH blocks, rollback, and
   retained previous-tool recovery.
 - Manifest-owned Claude Code and Codex deployment, including exact digests, marker-delimited shared
@@ -37,7 +42,8 @@ v0.3 is a breaking reset that makes Hamilton the complete Aphelocoma product.
 ### Removed
 
 - The former second-brain/context runtime and its identity, knowledge, project-registry, journal,
-  capture, reflection, sync, status, and view surfaces.
+  capture, reflection, sync, second-brain dashboard, and view surfaces. The unrelated v0.3
+  `aph status` command reports Hamilton project progress only.
 - Cursor deployment and web-context export.
 - Automatic first-run context setup.
 

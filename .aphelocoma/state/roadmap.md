@@ -161,3 +161,19 @@ Dependencies: Milestones 1–4.
 - Cursor, Copilot, Windsurf, MCP, semantic search, journals, knowledge capture, cross-project context,
   and web-AI views are outside v0.3.
 - Third-party Python packages and a plugin system are deferred; the reset remains standard-library only.
+
+## Milestone 6 — Run visibility (post-v0.3 follow-up)
+
+The advisor cannot see a run's progress without asking for it, and the answer is rendered differently
+each time it is asked. Close the observability gap for run progress the way v0.3 closed it for install
+and deploy health.
+
+- Add a read-only `aph status` that renders one board: phase, done/total, every task with its status
+  and owner, blockers, the next actionable task, and the Git branch, HEAD, commits since kickoff, and
+  working-tree cleanliness.
+- Define that board's content and its trigger points in `PROTOCOL.md`, with orchestrator rendering as
+  the documented fallback so an older installed CLI degrades instead of breaking the run.
+- Print only. No board file is persisted and no ledger event is written for rendering one — `tasks.json`
+  stays the single source of truth.
+
+Dependencies: Milestones 1–5.

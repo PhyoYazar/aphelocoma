@@ -113,18 +113,27 @@ and tell the advisor to upgrade Aphelocoma. The validator also checks event refe
 reviewer independence/order, task IDs/specs, tracked transient data, and representative credentials.
 It mechanically enforces `state.schema.json`; schema documentation is never merely advisory.
 Report findings before continuing; fix ledger/state drift as new corrective events (never rewrite
-history — PROTOCOL §5). Then report the current `phase`, schema/protocol, visibility, and open tasks
-(anything not `done`) from `./.aphelocoma/state/tasks.json`, and continue per PROTOCOL §6.
+history — PROTOCOL §5). Then print the **progress board** (PROTOCOL §5.6) at the top of the resume —
+`aph status .` is the fast path; render it yourself if `aph` is unavailable or older than §5.6 — and
+continue per PROTOCOL §6. The board also appears after each `task_completed` commit, on `blocked`, and
+on `review_failed`.
 Hit a bug or want a change? Just say so — it becomes a tracked **fix task** routed to the owning role
 (PROTOCOL §6.5), not a side channel.
 
 ### `status`
-Print the current `phase` and the open/closed tasks from `./.aphelocoma/state/tasks.json`, the last few
-`./.aphelocoma/ledger/events.jsonl` entries, and the active crew's `role → model → effort → tools` table
-(from the generated agents / the applicable settings). Also run the integrity check
-(`python3 <skill>/references/validate.py .`, skip if no `python3`) and include its verdict plus the
-project's schema version, protocol version, and `tracked`/`local` visibility. Do not silently inspect
-unversioned or unsupported-future state; report the same migration/upgrade remediation as `resume`.
+**Fast path: `aph status .`** (add `--json` for the machine-readable form). It prints the PROTOCOL §5.6
+progress board: project, `phase`, schema/protocol version, `tracked`/`local` visibility, the done/total
+count, one line per task with its id, status **as a word**, title and owner, any blocked tasks, the
+next actionable task with its owner, and the repo line (branch, short HEAD, commits since the run
+began, working-tree cleanliness). Exit `1` means no `./.aphelocoma/` or an unsupported version, with
+the remediation printed. If `aph` is missing, fails, or is older than §5.6, render the same board
+yourself from `./.aphelocoma/` + `git` and name any field you could not determine.
+
+Then add what the board does not cover: the last few `./.aphelocoma/ledger/events.jsonl` entries and
+the active crew's `role → model → effort → tools` table (from the generated agents / the applicable
+settings). Also run the integrity check (`python3 <skill>/references/validate.py .`, skip if no
+`python3`) and include its verdict. Do not silently inspect unversioned or unsupported-future state;
+report the same migration/upgrade remediation as `resume`.
 Read-only — no state changes.
 
 ### `sync-agents`  (Claude Code only — per-project override)
