@@ -134,7 +134,9 @@ original state if migration fails.
 aph deploy <claude|codex>     Deploy Hamilton and record ownership.
 aph undeploy <claude|codex>   Remove clean manifest-owned deployment artifacts.
 aph doctor [--json]           Check health and print remediation.
-aph status [path] [--json]    Show the Hamilton progress board for a project.
+aph status [path] [--json] [--write]
+                              Show the Hamilton progress board for a project, and
+                              with --write regenerate .aphelocoma/STATUS.md.
 aph update                    Download, verify, and activate an update transactionally.
 aph uninstall                 Undeploy hosts and remove the owned installation.
 aph version                   Print the installed version.
@@ -146,30 +148,45 @@ unexpected internal failure.
 
 ## Progress board
 
-`aph status` prints one board for a Hamilton project, defaulting to the current directory:
+`aph status` prints where the project stands — the stage, and the tasks — for a Hamilton project,
+defaulting to the current directory:
 
 ```text
-Hamilton  aphelocoma-hamilton-reset, phase implementation
-State     schema 1, protocol 1.0.0, visibility tracked
-Progress  8 of 9 tasks done
+Hamilton  aphelocoma-hamilton-reset
+Phase     implementation
+Progress  9 of 11 tasks done
 
 Tasks
-  [done]      T1  Build the tested Python CLI and base doctor  (owner fullstack-developer#1)
-  [assigned]  T9  Show a progress board at every milestone  (owner fullstack-developer#1)
-
-Blocked   none
-Next      T9 Show a progress board at every milestone (owner fullstack-developer#1)
-Repo      branch develop at f5d2a14, 13 commits since kickoff, working tree clean.
+  [done]      T1   Build the tested Python CLI and base doctor
+  [blocked]   T10  Correct the v0.3 documentation assertions
+  [assigned]  T11  Reduce the board to stage and tasks
 ```
 
-The board is read-only: it writes nothing under `.aphelocoma/` and appends no ledger event. Hamilton
-prints it after each completed task, when work is blocked, when a review sends work back, and at the
-top of every resume. `--json` emits the same content machine-readably. A path with no `.aphelocoma/`,
-or state whose schema or protocol version is unsupported, exits `1` and names the remediation.
+Every task line carries its status as a word, so a blocked task says so in its own row, and the output
+uses no colour. Owners, dependencies, schema/protocol versions, visibility, the next actionable task,
+and the repository's branch, short HEAD, commits since the run began, and working-tree cleanliness stay
+in `--json` for tools that need them; facts Git cannot supply are reported there as unknown rather than
+guessed.
 
-Every task line carries its status as a word, and the output uses no colour. Facts Git cannot supply
-are stated plainly instead of guessed: a non-Git project, a detached HEAD, an unreadable worktree, or
-a commit count that cannot be derived are each reported as such.
+Without `--write`, the command writes nothing under `.aphelocoma/` and appends no ledger event. A path
+with no `.aphelocoma/`, or state whose schema or protocol version is unsupported, exits `1` and names
+the remediation.
+
+### `.aphelocoma/STATUS.md`
+
+`aph status --write` regenerates `.aphelocoma/STATUS.md`, the same board as Markdown you can open any
+time instead of scrolling back through a terminal. Hamilton writes it after each completed task, when
+work is blocked, when a review sends work back, and at the top of every resume.
+
+The file is regenerated **whole** on every write — never appended to, never patched — through a
+temporary file and an atomic replace, so it cannot accumulate drift and a failed write leaves the
+previous board intact. One stamp line names the UTC generation time and the ledger `seq` it came from,
+so you can tell whether it is current. It is a derived view: `.aphelocoma/state/tasks.json` stays the
+source of truth, and the Hamilton validator *warns* — never errors — when `STATUS.md` is missing or its
+stamped `seq` is behind the ledger, so a stale board never blocks a resume.
+
+Under `visibility: tracked` the file is committed with the project; under `visibility: local` it stays
+untracked along with the rest of `.aphelocoma/`.
 
 ## Ownership, drift, and recovery
 

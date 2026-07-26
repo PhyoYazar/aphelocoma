@@ -91,3 +91,12 @@
   scope: `docs/documentation-assertions-v0.3.md` DOC-002 now asserts a CLI surface without `status` and
   cites the very test T9 changed, and DOC-006's test-ID list is incomplete. Nothing machine-consumes that
   file, so no gate broke — but it is the v0.3 release-readiness audit and must be corrected before release.
+
+# T11 narrowed board — CP4
+
+- 2026-07-26T04:30:00Z — Reviewed T11 as an independent fresh-context subagent and passed it on all 13
+  criteria. Proved tests-first by restoring HEAD's modules under the new tests, confirmed the atomic
+  write leaves the previous file intact on failure, hit the staleness parser with 15 malformed inputs
+  without ever producing an error or blocking resume, and confirmed a plain `status` run leaves
+  `.aphelocoma/` byte-identical. Flagged that the deployed `validate.py` shim prefers the installed
+  runtime, so a "validator passes" claim proves nothing about new checks until the tool is reinstalled.

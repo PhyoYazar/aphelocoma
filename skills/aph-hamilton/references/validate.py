@@ -218,6 +218,8 @@ def main(argv=None) -> int:
                 print("        remediation: %s" % issue.remediation)
         for issue in report.warnings:
             print("  WARN  [%s] %s: %s" % (issue.code, issue.path, issue.message))
+            if issue.remediation:
+                print("        remediation: %s" % issue.remediation)
         if report.ok:
             print("  OK — no errors (%d warning(s))" % len(report.warnings))
         else:

@@ -222,70 +222,115 @@ class CliStatusBoardTests(AphRunner, unittest.TestCase):
         board["tasks"] = tasks
         path.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
 
-    def test_board_reports_project_versions_progress_and_repo(self):
+    def sample_tasks(self):
+        return [
+            {
+                "id": "T1",
+                "title": "Ship the base",
+                "owner": "fullstack-developer#2",
+                "status": "done",
+                "dependencies": [],
+            },
+            {
+                "id": "T2",
+                "title": "Unblock the pipeline",
+                "owner": "devops-engineer",
+                "status": "blocked",
+                "dependencies": [],
+            },
+            {
+                "id": "T3",
+                "title": "Wait on the pipeline",
+                "owner": "qa-engineer",
+                "status": "pending",
+                "dependencies": ["T2"],
+            },
+            {
+                "id": "T4",
+                "title": "Render the board",
+                "owner": "fullstack-developer#1",
+                "status": "assigned",
+                "dependencies": ["T1"],
+            },
+        ]
+
+    def test_board_reports_only_the_stage_and_the_task_list(self):
         completed, _ = self.run_aph("status", str(self.project))
 
         self.assertEqual(completed.returncode, 0, completed.stderr)
         board = completed.stdout
         self.assertIn("fixture-current", board)
-        self.assertIn("phase done", board)
-        self.assertIn("schema 1", board)
-        self.assertIn("protocol 1.0.0", board)
-        self.assertIn("visibility tracked", board)
+        self.assertRegex(board, r"(?m)^Phase\s+done\s*$")
         self.assertIn("1 of 1 tasks done", board)
-        self.assertIn("[done]", board)
-        self.assertIn("T1", board)
-        self.assertIn("Fixture task", board)
-        self.assertIn("fullstack-developer", board)
-        self.assertRegex(board, r"(?m)^Blocked\s+none")
-        self.assertRegex(board, r"(?m)^Next\s+")
-        self.assertRegex(board, r"(?m)^Repo\s+")
+        self.assertRegex(board, r"(?m)^\s+\[done\]\s+T1\s+Fixture task\s*$")
+        for removed in ("schema 1", "protocol 1.0.0", "visibility", "Repo"):
+            self.assertNotIn(removed, board)
+        self.assertNotRegex(board, r"(?m)^Blocked\b")
+        self.assertNotRegex(board, r"(?m)^Next\b")
 
-    def test_board_names_blocked_tasks_and_the_next_actionable_owner(self):
-        self.write_tasks(
-            [
-                {
-                    "id": "T1",
-                    "title": "Ship the base",
-                    "owner": "fullstack-developer#2",
-                    "status": "done",
-                    "dependencies": [],
-                },
-                {
-                    "id": "T2",
-                    "title": "Unblock the pipeline",
-                    "owner": "devops-engineer",
-                    "status": "blocked",
-                    "dependencies": [],
-                },
-                {
-                    "id": "T3",
-                    "title": "Wait on the pipeline",
-                    "owner": "qa-engineer",
-                    "status": "pending",
-                    "dependencies": ["T2"],
-                },
-                {
-                    "id": "T4",
-                    "title": "Render the board",
-                    "owner": "fullstack-developer#1",
-                    "status": "assigned",
-                    "dependencies": ["T1"],
-                },
-            ]
-        )
+    def test_blocked_task_still_reads_as_blocked_in_its_own_row(self):
+        self.write_tasks(self.sample_tasks())
 
         completed, _ = self.run_aph("status", str(self.project))
 
         self.assertEqual(completed.returncode, 0, completed.stderr)
         board = completed.stdout
         self.assertIn("1 of 4 tasks done", board)
-        self.assertRegex(board, r"(?m)^Blocked\s+T2\b")
-        self.assertRegex(board, r"(?m)^Next\s+T4\b")
-        self.assertRegex(board, r"(?m)^Next\s+.*fullstack-developer#1")
-        self.assertIn("[blocked]", board)
+        self.assertRegex(
+            board, r"(?m)^\s+\[blocked\]\s+T2\s+Unblock the pipeline\s*$"
+        )
         self.assertIn("[assigned]", board)
         self.assertIn("[pending]", board)
+        self.assertNotRegex(board, r"(?m)^Blocked\b")
+
+    def test_write_regenerates_the_status_file_and_names_it_on_stderr(self):
+        self.write_tasks(self.sample_tasks())
+        status_file = self.project / ".aphelocoma" / "STATUS.md"
+
+        printed, _ = self.run_aph("status", str(self.project))
+        written, _ = self.run_aph("status", str(self.project), "--write")
+
+        self.assertEqual(written.returncode, 0, written.stderr)
+        self.assertEqual(written.stdout, printed.stdout)
+        self.assertIn("STATUS.md", written.stderr)
+        self.assertTrue(status_file.is_file())
+        report = status_file.read_text(encoding="utf-8")
+        self.assertIn("1 of 4 tasks done", report)
+        for task in self.sample_tasks():
+            self.assertIn(task["title"], report)
+        self.assertRegex(report, r"(?m)^Generated \S+ from ledger seq 9\b")
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_written_status_file_is_committable_not_ignored(self):
+        subprocess.run(
+            ["git", "init", "-q", str(self.project)],
+            check=False,
+            capture_output=True,
+        )
+        self.run_aph("status", str(self.project), "--write")
+
+        ignored = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(self.project),
+                "check-ignore",
+                "-q",
+                ".aphelocoma/STATUS.md",
+            ],
+            check=False,
+            capture_output=True,
+        )
+
+        self.assertEqual(ignored.returncode, 1, "STATUS.md must stay committable")
+
+    def test_write_leaves_json_output_untouched(self):
+        plain, _ = self.run_aph("status", str(self.project), "--json")
+        written, _ = self.run_aph("status", str(self.project), "--json", "--write")
+
+        self.assertEqual(written.returncode, 0, written.stderr)
+        self.assertEqual(json.loads(written.stdout), json.loads(plain.stdout))
+        self.assertTrue((self.project / ".aphelocoma" / "STATUS.md").is_file())
 
     def test_json_output_follows_the_doctor_convention(self):
         completed, _ = self.run_aph("status", str(self.project), "--json")
@@ -329,12 +374,13 @@ class CliStatusBoardTests(AphRunner, unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("fixture-current", completed.stdout)
 
-    def test_status_never_writes_to_project_state(self):
+    def test_status_without_write_never_writes_to_project_state(self):
         subprocess.run(
             ["git", "init", "-q", str(self.project)],
             check=False,
             capture_output=True,
         )
+        self.run_aph("status", str(self.project), "--write")
         before = self.state_digests()
 
         self.run_aph("status", str(self.project))
@@ -343,6 +389,7 @@ class CliStatusBoardTests(AphRunner, unittest.TestCase):
 
         self.assertEqual(self.state_digests(), before)
         self.assertIn("ledger/events.jsonl", before)
+        self.assertIn("STATUS.md", before)
 
         self.write_metadata(schema_version=99)
         refused_before = self.state_digests()

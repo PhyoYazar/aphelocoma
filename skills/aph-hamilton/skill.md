@@ -113,21 +113,24 @@ and tell the advisor to upgrade Aphelocoma. The validator also checks event refe
 reviewer independence/order, task IDs/specs, tracked transient data, and representative credentials.
 It mechanically enforces `state.schema.json`; schema documentation is never merely advisory.
 Report findings before continuing; fix ledger/state drift as new corrective events (never rewrite
-history — PROTOCOL §5). Then print the **progress board** (PROTOCOL §5.6) at the top of the resume —
-`aph status .` is the fast path; render it yourself if `aph` is unavailable or older than §5.6 — and
-continue per PROTOCOL §6. The board also appears after each `task_completed` commit, on `blocked`, and
-on `review_failed`.
+history — PROTOCOL §5). Then print the **progress board** and write it to `.aphelocoma/STATUS.md`
+(PROTOCOL §5.6) at the top of the resume — `aph status . --write` is the fast path; render and write it
+yourself if `aph` is unavailable or older than §5.6 — and continue per PROTOCOL §6. The board is
+printed and written the same way after each `task_completed` commit, on `blocked`, and on
+`review_failed`.
 Hit a bug or want a change? Just say so — it becomes a tracked **fix task** routed to the owning role
 (PROTOCOL §6.5), not a side channel.
 
 ### `status`
-**Fast path: `aph status .`** (add `--json` for the machine-readable form). It prints the PROTOCOL §5.6
-progress board: project, `phase`, schema/protocol version, `tracked`/`local` visibility, the done/total
-count, one line per task with its id, status **as a word**, title and owner, any blocked tasks, the
-next actionable task with its owner, and the repo line (branch, short HEAD, commits since the run
-began, working-tree cleanliness). Exit `1` means no `./.aphelocoma/` or an unsupported version, with
-the remediation printed. If `aph` is missing, fails, or is older than §5.6, render the same board
-yourself from `./.aphelocoma/` + `git` and name any field you could not determine.
+**Fast path: `aph status .`** (add `--json` for the complete machine-readable form). It prints the
+PROTOCOL §5.6 progress board: the project name, the current `phase`, the done/total count, and one line
+per task with its id, status **as a word**, and title — so a `blocked` task reads as blocked in its own
+row. Owners, dependencies, versions, visibility, the next actionable task, and the repo situation stay
+in `--json`. `aph status . --write` additionally regenerates `.aphelocoma/STATUS.md`, the same board in
+a file the advisor can open any time. Exit `1` means no `./.aphelocoma/` or an unsupported version,
+with the remediation printed. If `aph` is missing, fails, or is older than §5.6, render the same board
+yourself from `./.aphelocoma/hamilton.json` + `./.aphelocoma/state/tasks.json` and name any field you
+could not determine.
 
 Then add what the board does not cover: the last few `./.aphelocoma/ledger/events.jsonl` entries and
 the active crew's `role → model → effort → tools` table (from the generated agents / the applicable

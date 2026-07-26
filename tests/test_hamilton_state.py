@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import patch
 from datetime import datetime
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +28,7 @@ from aphelocoma.hamilton_state import (  # noqa: E402
     schema_validation_errors,
     summarize_project,
     validate_project,
+    write_status_report,
 )
 
 
@@ -2142,6 +2144,198 @@ class StatusBoardTests(ProjectFixture):
         summary = summarize_project(self.project)
 
         self.assertIsNone(summary.visibility)
+
+
+class StatusReportFileTests(ProjectFixture):
+    """`.aphelocoma/STATUS.md` — the regenerated board file of PROTOCOL §5.6."""
+
+    def status_path(self):
+        return self.project / ".aphelocoma" / "STATUS.md"
+
+    def write_tasks(self, tasks):
+        path = self.project / ".aphelocoma" / "state" / "tasks.json"
+        board = json.loads(path.read_text(encoding="utf-8"))
+        board["tasks"] = tasks
+        path.write_text(json.dumps(board, indent=2) + "\n", encoding="utf-8")
+
+    def regenerate(self):
+        return write_status_report(self.project, summarize_project(self.project))
+
+    def sample_tasks(self):
+        return [
+            {
+                "id": "T1",
+                "title": "Ship the base",
+                "owner": "fullstack-developer#2",
+                "status": "done",
+                "dependencies": [],
+            },
+            {
+                "id": "T2",
+                "title": "Unblock the pipeline",
+                "owner": "devops-engineer",
+                "status": "blocked",
+                "dependencies": [],
+            },
+        ]
+
+    def test_report_names_the_stage_the_progress_and_every_task(self):
+        self.write_tasks(self.sample_tasks())
+
+        path = self.regenerate()
+
+        self.assertEqual(path, self.status_path().resolve())
+        text = path.read_text(encoding="utf-8")
+        self.assertIn("fixture-current", text)
+        self.assertIn("done", text)
+        self.assertIn("1 of 2 tasks done", text)
+        for task in self.sample_tasks():
+            self.assertIn(task["id"], text)
+            self.assertIn(task["title"], text)
+            self.assertIn(task["status"], text)
+
+    def test_every_write_regenerates_the_whole_file(self):
+        self.write_tasks(self.sample_tasks())
+        self.regenerate()
+        self.status_path().write_text(
+            self.status_path().read_text(encoding="utf-8") + "hand-edited drift\n",
+            encoding="utf-8",
+        )
+        self.write_tasks(self.sample_tasks()[:1])
+
+        text = self.regenerate().read_text(encoding="utf-8")
+
+        self.assertNotIn("hand-edited drift", text)
+        self.assertNotIn("Unblock the pipeline", text)
+        self.assertIn("Ship the base", text)
+        self.assertEqual(text.count("Ship the base"), 1)
+        self.assertIn("1 of 1 tasks done", text)
+
+    def test_stamp_names_the_utc_time_and_the_ledger_sequence(self):
+        text = self.regenerate().read_text(encoding="utf-8")
+
+        self.assertRegex(
+            text,
+            r"(?m)^Generated \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z "
+            r"from ledger seq 9\b",
+        )
+
+    def test_unreadable_ledger_stamps_an_unknown_sequence(self):
+        (self.project / ".aphelocoma" / "ledger" / "events.jsonl").unlink()
+
+        text = self.regenerate().read_text(encoding="utf-8")
+
+        self.assertIn("from ledger seq unknown", text)
+
+    def test_write_is_atomic_and_leaves_no_temporary_file_behind(self):
+        self.regenerate()
+
+        leftovers = [
+            path.name
+            for path in (self.project / ".aphelocoma").iterdir()
+            if path.name.endswith(".tmp")
+        ]
+
+        self.assertEqual(leftovers, [])
+
+    def test_table_syntax_in_a_title_cannot_break_the_row(self):
+        self.write_tasks(
+            [
+                {
+                    "id": "T1",
+                    "title": "Pipe | and\nnewline",
+                    "owner": "fullstack-developer",
+                    "status": "done",
+                    "dependencies": [],
+                }
+            ]
+        )
+
+        text = self.regenerate().read_text(encoding="utf-8")
+
+        row = next(
+            line
+            for line in text.splitlines()
+            if line.startswith("|") and "T1" in line
+        )
+        self.assertIn(r"Pipe \| and newline", row)
+        self.assertEqual(row.count("|") - row.count(r"\|"), 4)
+
+    @unittest.skipIf(
+        hasattr(os, "geteuid") and os.geteuid() == 0,
+        "root ignores directory permissions",
+    )
+    def test_unwritable_state_directory_is_an_actionable_status_error(self):
+        state = self.project / ".aphelocoma"
+        original = state.stat().st_mode
+        state.chmod(0o500)
+        try:
+            with self.assertRaises(StatusError) as raised:
+                self.regenerate()
+        finally:
+            state.chmod(original)
+
+        self.assertIn("STATUS.md", raised.exception.path)
+        self.assertTrue(raised.exception.remediation)
+
+
+class StatusReportStalenessTests(ProjectFixture):
+    """A stale board is a visibility miss: it warns, and never blocks resume."""
+
+    def status_path(self):
+        return self.project / ".aphelocoma" / "STATUS.md"
+
+    def status_warnings(self, report):
+        return [
+            issue
+            for issue in report.warnings
+            if issue.code.endswith("status_report")
+        ]
+
+    def test_missing_status_report_warns_without_erroring(self):
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        warnings = self.status_warnings(report)
+        self.assertEqual([issue.code for issue in warnings], ["missing_status_report"])
+        self.assertIn("STATUS.md", warnings[0].message)
+        self.assertIn("aph status --write", warnings[0].remediation)
+
+    def test_current_status_report_raises_no_warning(self):
+        write_status_report(self.project, summarize_project(self.project))
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        self.assertEqual(self.status_warnings(report), [])
+
+    def test_stale_status_report_names_how_far_behind_it_is(self):
+        write_status_report(self.project, summarize_project(self.project))
+        text = self.status_path().read_text(encoding="utf-8")
+        self.status_path().write_text(
+            re.sub(r"from ledger seq \d+", "from ledger seq 6", text),
+            encoding="utf-8",
+        )
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        warnings = self.status_warnings(report)
+        self.assertEqual([issue.code for issue in warnings], ["stale_status_report"])
+        self.assertIn("3 event", warnings[0].message)
+        self.assertIn("9", warnings[0].message)
+        self.assertIn("aph status --write", warnings[0].remediation)
+
+    def test_unstamped_status_report_is_not_trusted_as_current(self):
+        self.status_path().write_text("# Hand-written board\n", encoding="utf-8")
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        self.assertEqual(
+            [issue.code for issue in self.status_warnings(report)],
+            ["stale_status_report"],
+        )
 
 
 class UnversionedStatusBoardTests(ProjectFixture):

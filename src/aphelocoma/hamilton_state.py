@@ -117,6 +117,23 @@ STATUS_BOARD_REMEDIATION = (
     "Repair .aphelocoma/state/tasks.json, then rerun the Hamilton validator "
     "(`python3 <skill>/references/validate.py <project-dir>`)."
 )
+STATUS_REPORT_FILENAME = "STATUS.md"
+STATUS_WRITE_REMEDIATION = (
+    "Make .aphelocoma/ writable, then rerun `aph status --write <project-dir>`."
+)
+STATUS_REFRESH_REMEDIATION = (
+    "Run `aph status --write <project-dir>` to regenerate .aphelocoma/STATUS.md "
+    "from current state."
+)
+STATUS_REPORT_FOOTER = (
+    "This file is regenerated whole by `aph status --write`; edits to it are "
+    "overwritten. `.aphelocoma/state/tasks.json` stays the source of truth."
+)
+# The stamp is written for a reader and parsed for the staleness check, so the
+# writer below and this pattern must keep describing the same one line.
+STATUS_STAMP_PATTERN = re.compile(
+    r"(?m)^Generated (?P<generated>\S+) from ledger seq (?P<seq>\d+|unknown)\b"
+)
 REPO_ABSENT_SUMMARY = (
     "This project is not in a Git repository, so branch, commit, and "
     "working-tree details are unavailable."
@@ -1731,6 +1748,71 @@ def _validate_tracking(
             )
 
 
+def _validate_status_report(
+    aph: Path,
+    events: Sequence[Mapping[str, object]],
+    issues: _Issues,
+) -> None:
+    """Warn when the written board is missing or behind the ledger.
+
+    Every finding here is a warning: a board that has fallen behind is a
+    visibility miss, not corrupt state, and must never block a resume.
+    """
+
+    path = aph / STATUS_REPORT_FILENAME
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        issues.warning(
+            "missing_status_report",
+            STATUS_REPORT_FILENAME,
+            "STATUS.md is missing, so the progress board cannot be read "
+            "outside a terminal.",
+            STATUS_REFRESH_REMEDIATION,
+        )
+        return
+    except (OSError, UnicodeError) as error:
+        issues.warning(
+            "unreadable_status_report",
+            STATUS_REPORT_FILENAME,
+            "STATUS.md is unreadable: %s." % error,
+            STATUS_REFRESH_REMEDIATION,
+        )
+        return
+
+    match = STATUS_STAMP_PATTERN.search(text)
+    if match is None or match.group("seq") == "unknown":
+        issues.warning(
+            "stale_status_report",
+            STATUS_REPORT_FILENAME,
+            "STATUS.md carries no readable generated stamp, so it cannot be "
+            "told apart from a stale board.",
+            STATUS_REFRESH_REMEDIATION,
+        )
+        return
+
+    sequences = [
+        event["seq"]
+        for event in events
+        if isinstance(event.get("seq"), int)
+        and not isinstance(event.get("seq"), bool)
+    ]
+    if not sequences:
+        return
+    last_seq = max(sequences)
+    stamped_seq = int(match.group("seq"))
+    behind = last_seq - stamped_seq
+    if behind > 0:
+        issues.warning(
+            "stale_status_report",
+            STATUS_REPORT_FILENAME,
+            "STATUS.md was generated from ledger seq %d and is %d event(s) "
+            "behind the ledger's seq %d."
+            % (stamped_seq, behind, last_seq),
+            STATUS_REFRESH_REMEDIATION,
+        )
+
+
 def _scan_secrets(aph: Path, issues: _Issues) -> None:
     for path in aph.rglob("*"):
         if not path.is_file():
@@ -1828,6 +1910,7 @@ def validate_project(
         tracked_files,
         issues,
     )
+    _validate_status_report(aph, events, issues)
     _scan_secrets(aph, issues)
 
     project = metadata.get("project")
@@ -2196,6 +2279,118 @@ def summarize_project(project_root: Path) -> ProjectSummary:
         _next_actionable(tasks),
         _summarize_repo(resolved, _parse_timestamp(hamilton.get("created"))),
     )
+
+
+def _markdown_cell(value: object) -> str:
+    """Keep one board value inside one table cell, whatever the source text is."""
+
+    return " ".join(str(value).split()).replace("|", r"\|")
+
+
+def _status_stamp(generated: datetime, ledger_seq: Optional[int]) -> str:
+    """The one line a reader (and the validator) use to date the board."""
+
+    return "Generated %s from ledger seq %s." % (
+        generated.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "unknown" if ledger_seq is None else ledger_seq,
+    )
+
+
+def _last_ledger_seq(aph: Path) -> Optional[int]:
+    """The ledger's last ``seq``; ``None`` when it cannot be read truthfully."""
+
+    try:
+        lines = (
+            (aph / "ledger" / "events.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+        )
+    except (OSError, UnicodeError):
+        return None
+    for line in reversed(lines):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(event, dict):
+            return None
+        sequence = event.get("seq")
+        if isinstance(sequence, bool) or not isinstance(sequence, int):
+            return None
+        return sequence
+    return None
+
+
+def render_status_markdown(
+    summary: ProjectSummary,
+    generated: datetime,
+    ledger_seq: Optional[int],
+) -> str:
+    """Render the §5.6 board as Markdown: the stage, and the task list.
+
+    The same narrowed facts the terminal board prints, in the form the advisor
+    can open later. Nothing is derived that ``tasks.json`` does not already say.
+    """
+
+    lines = [
+        "# Hamilton progress — %s" % _markdown_cell(summary.project),
+        "",
+        "- Phase: %s" % _markdown_cell(summary.phase),
+        "- Progress: %d of %d tasks done"
+        % (summary.done_count, summary.total_count),
+        "",
+    ]
+    if summary.tasks:
+        lines.append("| Task | Status | Title |")
+        lines.append("| --- | --- | --- |")
+        for task in summary.tasks:
+            lines.append(
+                "| %s | %s | %s |"
+                % (
+                    _markdown_cell(task.id),
+                    _markdown_cell(task.status),
+                    _markdown_cell(task.title),
+                )
+            )
+    else:
+        lines.append("No tasks on the board yet.")
+    lines.extend(
+        ["", _status_stamp(generated, ledger_seq), "", STATUS_REPORT_FOOTER]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def write_status_report(
+    project_root: Path,
+    summary: ProjectSummary,
+) -> Path:
+    """Regenerate ``.aphelocoma/STATUS.md`` whole and return its path.
+
+    The file is never appended to and never patched in place, so it cannot
+    accumulate drift: it is only ever as stale as its last write, and the stamp
+    says when that was. The replace is atomic, so a failed write leaves the
+    previous board intact rather than a half-rendered one.
+    """
+
+    aph = Path(project_root).resolve() / ".aphelocoma"
+    target = aph / STATUS_REPORT_FILENAME
+    content = render_status_markdown(
+        summary,
+        datetime.now(timezone.utc),
+        _last_ledger_seq(aph),
+    )
+    try:
+        atomic_write_text(target, content)
+    except OSError as error:
+        raise StatusError(
+            ".aphelocoma/%s" % STATUS_REPORT_FILENAME,
+            "The Hamilton progress board could not be written to %s: %s."
+            % (target, error),
+            STATUS_WRITE_REMEDIATION,
+        ) from error
+    return target
 
 
 def _migration_kind(project_root: Path) -> str:

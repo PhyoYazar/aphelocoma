@@ -122,3 +122,38 @@
 - 2026-07-26T03:35:00Z — Correction to the entry above: the task added 28 new tests, not 26. The suite
   total of 205 was reported correctly. Recorded as an appended correction rather than an edit, per
   PROTOCOL §5.
+
+- 2026-07-26T04:05:00Z — `work_started` — T11: narrow the §5.6 board to the stage and the task list,
+  and keep the same board in `.aphelocoma/STATUS.md`. Read the spec, `conventions.md`, `CRAFT.md`, and
+  my own T9 code before touching anything. Confirmed the deliberate reduction: the repo line, the
+  blocked section, the next-actionable line, and the schema/protocol/visibility line leave the human
+  view but stay in `--json`, so `RepoSummary` and `_next_actionable()` keep earning their place.
+- 2026-07-26T04:15:00Z — `artifact_written` — TDD, tests first: 14 new tests (11 in
+  `tests/test_hamilton_state.py`, 3 in `tests/test_cli.py`) plus 3 rewritten T9 tests, all verified
+  failing before the implementation. `src/aphelocoma/hamilton_state.py` gained
+  `render_status_markdown()`, `write_status_report()` (temporary file + atomic replace, `StatusError`
+  with a named artifact when the write fails), `_last_ledger_seq()`, and `_validate_status_report()`
+  wired into `validate_project()`. `src/aphelocoma/cli.py` narrowed `render_status_board()` to project,
+  phase, done/total, and one row per task carrying its status as a word, and added `--write`; the
+  confirmation goes to stderr so stdout stays exactly the board, or exactly one JSON document.
+- 2026-07-26T04:15:30Z — `assumption_logged` — Three judgement calls the spec left open. (1) The task
+  row drops `owner`: the acceptance criterion enumerates "id, status as a word, and title" and says
+  "exactly"; `owner` stays in `--json`. (2) `--json --write` is allowed and leaves the JSON
+  byte-identical — the file is written, and nothing is added to the report, because `--json` must stay
+  unchanged. (3) The `/aph-hamilton status` skill command stays read-only (print, no write): the four
+  §5.6 trigger points are out of scope for this task and an explicit look should not mutate a file.
+- 2026-07-26T04:16:00Z — `artifact_written` — The staleness warning needed one shim line:
+  `references/validate.py` printed remediation for errors but dropped it for warnings, so the human
+  output could not have named `aph status --write` as the fix. It now prints warning remediation the
+  same way it prints error remediation. Documented the narrowed board, the four print-and-write
+  moments, `tasks.json` as authoritative on disagreement, whole-file regeneration, the stamp, and the
+  warns-never-errors rule in `PROTOCOL.md` §5.6 (and §6's resume line), `skill.md`, `README.md`, and
+  the unreleased 0.3.0 `CHANGELOG.md` entry. Recorded that under `visibility: local` `STATUS.md` stays
+  untracked with the rest of `.aphelocoma/`, so the tracked-state privacy rule keeps holding.
+- 2026-07-26T04:16:30Z — `handoff` — T11 ready for independent CP4 review. Full standard-library suite:
+  219 passing (was 205). Validator on this project: 0 errors, 0 warnings when `STATUS.md` is current;
+  `missing_status_report` when absent and `stale_status_report` naming the exact gap when its stamped
+  `seq` is behind, both exit `0` and never an error. `aph doctor` healthy. Real runs of `aph status .`,
+  `aph status . --json`, and `aph status . --write` against this repository; the written
+  `.aphelocoma/STATUS.md` task list matches `state/tasks.json` row for row (11 of 11) and
+  `git check-ignore` confirms it is committable.

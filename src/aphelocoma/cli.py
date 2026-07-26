@@ -91,6 +91,12 @@ def build_parser() -> AphArgumentParser:
         dest="json_output",
         help="Emit stable machine-readable JSON.",
     )
+    status.add_argument(
+        "--write",
+        action="store_true",
+        dest="write_report",
+        help="Also regenerate .aphelocoma/STATUS.md from current state.",
+    )
 
     subparsers.add_parser("update", help="Update Aphelocoma transactionally.")
     subparsers.add_parser(
@@ -161,39 +167,17 @@ def _field(label: str, value: str) -> str:
     return f"{label.ljust(STATUS_LABEL_WIDTH)} {value}"
 
 
-def _describe_task(task: object) -> str:
-    owner = getattr(task, "owner", None) or "unassigned"
-    return f"{task.id} {task.title} (owner {owner})"
-
-
-def _next_action(summary: object) -> str:
-    if summary.next_task is not None:
-        return _describe_task(summary.next_task)
-    open_tasks = summary.total_count - summary.done_count
-    if open_tasks == 0:
-        return "nothing open; every task is done"
-    return (
-        f"no actionable task; {open_tasks} open task(s) are blocked or waiting "
-        "on dependencies"
-    )
-
-
 def render_status_board(summary: object) -> List[str]:
-    """Render the PROTOCOL §5.6 board as plain text.
+    """Render the PROTOCOL §5.6 board as plain text: the stage and the tasks.
 
     No colour and no glyphs: every task line carries its status as a word, so the
-    board reads identically in a pipe, a log, and a screen reader.
+    board reads identically in a pipe, a log, and a screen reader — a `blocked`
+    task says so in its own row.
     """
 
-    schema = "unknown" if summary.schema_version is None else summary.schema_version
-    protocol = summary.protocol_version or "unknown"
-    visibility = summary.visibility or "unknown"
     lines = [
-        _field("Hamilton", f"{summary.project}, phase {summary.phase}"),
-        _field(
-            "State",
-            f"schema {schema}, protocol {protocol}, visibility {visibility}",
-        ),
+        _field("Hamilton", summary.project),
+        _field("Phase", summary.phase),
         _field(
             "Progress",
             f"{summary.done_count} of {summary.total_count} tasks done",
@@ -203,39 +187,30 @@ def render_status_board(summary: object) -> List[str]:
     ]
     if not summary.tasks:
         lines.append("  no tasks on the board yet")
-    else:
-        status_width = max(len(task.status) for task in summary.tasks) + 2
-        id_width = max(len(task.id) for task in summary.tasks)
-        for task in summary.tasks:
-            owner = task.owner or "unassigned"
-            status = f"[{task.status}]".ljust(status_width)
-            lines.append(
-                f"  {status}  {task.id.ljust(id_width)}  {task.title}  "
-                f"(owner {owner})"
-            )
-    lines.append("")
-    blocked = (
-        "; ".join(_describe_task(task) for task in summary.blocked)
-        if summary.blocked
-        else "none"
-    )
-    lines.append(_field("Blocked", blocked))
-    lines.append(_field("Next", _next_action(summary)))
-    lines.append(_field("Repo", summary.repo.summary))
+        return lines
+    status_width = max(len(task.status) for task in summary.tasks) + 2
+    id_width = max(len(task.id) for task in summary.tasks)
+    for task in summary.tasks:
+        status = f"[{task.status}]".ljust(status_width)
+        lines.append(f"  {status}  {task.id.ljust(id_width)}  {task.title}")
     return lines
 
 
-def _status(path: str, *, json_output: bool) -> int:
+def _status(path: str, *, json_output: bool, write_report: bool) -> int:
     # Imported lazily so a damaged Hamilton runtime still leaves `aph doctor`
     # and `aph version` able to report it.
     from .hamilton_state import (
         STATUS_REPORT_SCHEMA_VERSION,
         StatusError,
         summarize_project,
+        write_status_report,
     )
 
+    written: Optional[Path] = None
     try:
         summary = summarize_project(Path(path))
+        if write_report:
+            written = write_status_report(Path(path), summary)
     except StatusError as error:
         if json_output:
             print(
@@ -261,6 +236,9 @@ def _status(path: str, *, json_output: bool) -> int:
     else:
         for line in render_status_board(summary):
             print(line)
+    if written is not None:
+        # Stdout stays exactly the board, or exactly one JSON document.
+        print(f"Wrote the Hamilton progress board to {written}", file=sys.stderr)
     return 0
 
 
@@ -323,7 +301,11 @@ def _dispatch(
     if command == "doctor":
         return _doctor(paths, json_output=arguments.json_output)
     if command == "status":
-        return _status(arguments.path, json_output=arguments.json_output)
+        return _status(
+            arguments.path,
+            json_output=arguments.json_output,
+            write_report=arguments.write_report,
+        )
     if command == "version":
         return _version(paths)
     if command == "deploy":

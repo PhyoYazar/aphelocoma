@@ -10,11 +10,19 @@ v0.3 is a breaking reset that makes Hamilton the complete Aphelocoma product.
 
 - A Python 3.9+ standard-library `aph` CLI with `deploy`, `undeploy`, `doctor`, `status`, `update`,
   `uninstall`, `version`, and `help`.
-- `aph status [path] [--json]`: a read-only Hamilton progress board reporting project, phase,
-  schema/protocol version, visibility, done/total progress, every task with its status word, title and
-  owner, blocked tasks, the next actionable task, and the repository's branch, short HEAD, commits
-  since the run began, and working-tree cleanliness. It writes nothing under `.aphelocoma/`, uses no
-  colour, and degrades to a plain statement rather than guessing when Git details are unavailable.
+- `aph status [path] [--json] [--write]`: a Hamilton progress board reporting the project name, the
+  current phase, done/total progress, and one line per task with its id, status as a word, and title —
+  so a blocked task reads as blocked in its own row. `--json` additionally carries owners,
+  dependencies, schema/protocol version, visibility, blocked tasks, the next actionable task, and the
+  repository's branch, short HEAD, commits since the run began, and working-tree cleanliness, degrading
+  to a plain statement rather than guessing when Git details are unavailable. The board uses no colour,
+  and without `--write` it writes nothing under `.aphelocoma/`.
+- `.aphelocoma/STATUS.md`: the same board as a committed Markdown file, regenerated whole by
+  `aph status --write` at each of the four board moments — never appended to and never patched in
+  place, so it cannot accumulate drift. It is written through a temporary file and an atomic replace,
+  and stamped with the UTC generation time and the ledger `seq` it came from. The Hamilton validator
+  warns, and never errors, when it is missing or behind the ledger, so a stale board never blocks a
+  resume; `.aphelocoma/state/tasks.json` remains the source of truth.
 - Transactional installation and update with release verification, owned PATH blocks, rollback, and
   retained previous-tool recovery.
 - Manifest-owned Claude Code and Codex deployment, including exact digests, marker-delimited shared

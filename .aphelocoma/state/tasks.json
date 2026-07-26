@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "implementation",
-  "updated": "2026-07-26T03:45:00Z",
+  "phase": "review",
+  "updated": "2026-07-26T04:30:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -202,6 +202,29 @@
       "spec": ".aphelocoma/specs/T10.md",
       "artifacts": [],
       "updated": "2026-07-26T03:40:00Z"
+    },
+    {
+      "id": "T11",
+      "title": "Reduce the board to stage and tasks, and keep it in a file",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [
+        "T9"
+      ],
+      "spec": ".aphelocoma/specs/T11.md",
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "src/aphelocoma/cli.py",
+        "skills/aph-hamilton/references/validate.py",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/skill.md",
+        "README.md",
+        "CHANGELOG.md",
+        "tests/test_cli.py",
+        "tests/test_hamilton_state.py",
+        ".aphelocoma/STATUS.md"
+      ],
+      "updated": "2026-07-26T04:30:00Z"
     }
   ]
 }

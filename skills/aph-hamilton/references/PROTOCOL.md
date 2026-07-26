@@ -275,49 +275,62 @@ The **advisor owns branches and pushing; the crew owns commits.** Rules:
 
 ## 5.6 Progress board — visibility without asking
 
-The advisor must never have to ask "where are we?". The orchestrator prints one **progress board** —
-a rendered snapshot, never a file — at **four moments**:
+The advisor must never have to ask "where are we?". The orchestrator **prints the progress board and
+writes it to `.aphelocoma/STATUS.md`** at **four moments**:
 
 1. **After each `task_completed` commit** (§5.5) — a task reached `done` and was committed.
 2. **On `blocked`** — a worker could not finish.
 3. **On `review_failed`** — a CP4 verdict bounced work back (§2 Phase 5).
 4. **At the top of every `resume`** — after the §6 version + integrity check, before continuing.
 
-The board MUST report, for the project at hand:
+The board reports the stage and the tasks, and nothing else:
 
-- the project name, the current `phase`, `schema_version` / `protocol_version`, and the
-  `tracked` / `local` visibility;
+- the project name and the current `phase`;
 - a done/total progress count;
-- one line per task carrying its id, **status as a word**, title, and owner;
-- any `blocked` tasks called out separately;
-- the **next actionable** task — the first open task that is not `blocked` and whose dependencies are
-  all `done` — with its owner;
-- the repo situation: current branch, short HEAD, the number of commits recorded since the run began
-  (`hamilton.json.created`), and whether the working tree is clean or has uncommitted files.
+- one line per task carrying its id, **status as a word**, and title. A `blocked` task therefore reads
+  as blocked in its own row; there is no separate blocked section.
 
-**Looking is not acting.** Rendering the board writes nothing under `.aphelocoma/` and appends no
-ledger event. `tasks.json` remains the single source of truth (§5); no derived board file is stored.
+`schema_version` / `protocol_version`, visibility, owners, dependencies, the next actionable task, and
+the repo situation stay in the machine-readable `--json` form for tools that need them. They are not
+printed, because the advisor asked for the stage and the task list.
 
-**Rendering.** `aph status [path]` prints it, and `aph status [path] --json` emits the same content
-machine-readably. Exit `0` on success; exit `1`, with the artifact named and remediation printed, when
-the path holds no `.aphelocoma/` or its version is unsupported — the same stop `resume` reports (§6).
+**Looking is not acting.** Printing the board appends no ledger event and changes no state.
+`STATUS.md` is a **derived view**, not durable state: it has no schema entry, and if it ever disagrees
+with `.aphelocoma/state/tasks.json`, `tasks.json` is authoritative (§5) and the board is stale.
+
+**The written board.** `.aphelocoma/STATUS.md` is Markdown, regenerated **whole** from
+`hamilton.json` and `state/tasks.json` on every write — never appended to, never patched in place, so
+it cannot accumulate drift. It is written through a temporary file and an atomic replace, and it is
+committed with the project under `visibility: tracked` (under `visibility: local` it stays untracked
+with the rest of `.aphelocoma/`, §5). It carries one stamp line naming the UTC generation time and the
+ledger `seq` it was generated from, so a reader can tell whether it is current.
+
+**Staleness is a warning, never a stop.** `validate.py` warns when `STATUS.md` is missing or its
+stamped `seq` is behind the ledger's last `seq`, names how far behind it is, and points at
+`aph status --write`. A stale board is a visibility miss, not corrupt state: it never blocks `resume`.
+
+**Rendering.** `aph status [path]` prints the board, `aph status [path] --json` emits the complete
+machine-readable form, and `aph status [path] --write` regenerates `.aphelocoma/STATUS.md` alongside
+either. Exit `0` on success; exit `1`, with the artifact named and remediation printed, when the path
+holds no `.aphelocoma/`, its version is unsupported, or the file cannot be written — the same stop
+`resume` reports (§6).
 
 **Version skew — degrade, never break.** When `aph status` is missing, fails, or predates this
-section, the orchestrator renders the same board itself from `.aphelocoma/hamilton.json`,
-`.aphelocoma/settings.yaml`, `.aphelocoma/state/tasks.json`, and `git`, and names any field it could
-not determine. A missing or older CLI degrades the board's presentation; it never blocks the run.
+section, the orchestrator renders and writes the same board itself from `.aphelocoma/hamilton.json`
+and `.aphelocoma/state/tasks.json`, and names any field it could not determine. A missing or older CLI
+degrades the board's presentation; it never blocks the run.
 
-**Honesty over completeness.** A non-Git project, a detached HEAD, or an unreadable worktree replaces
-the repo line with a plain statement of what is known. Never claim a branch, commit, count, or
-cleanliness that could not be read — an undeterminable commit count is reported as unknown, not `0`.
+**Honesty over completeness.** Never claim a fact that could not be read — an unreadable ledger `seq`
+is stamped `unknown`, not `0`, and the `--json` repo fields report a non-Git project, a detached HEAD,
+or an unreadable worktree as exactly that.
 
 ## 6. Resumability
 
 On start, read `.aphelocoma/state/brief.md`:
 - If it is the stub / `status: no-active-project` → fresh start; go to Phase 0.
-- If it is populated → a project is in progress. Print the §5.6 **progress board** — `aph status .` is
-  the fast path, otherwise render it yourself — then **continue** from there. Do not restart or
-  rebuild completed work.
+- If it is populated → a project is in progress. Print and write the §5.6 **progress board** —
+  `aph status . --write` is the fast path, otherwise render and write it yourself — then **continue**
+  from there. Do not restart or rebuild completed work.
 - **Version + integrity check (when `python3` exists):** run `validate.py` (a sibling of this file)
   against the project before continuing. It verifies version compatibility, privacy, gap-free `seq`,
   task references/transitions, independent ordered reviews, the §8 done gate, and specs behind assigned
