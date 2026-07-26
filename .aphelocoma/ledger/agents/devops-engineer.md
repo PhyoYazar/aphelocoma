@@ -5,3 +5,9 @@
 - 2026-07-24T06:42:00Z — artifact_written: Added release smoke coverage, an omission-sensitive readiness matrix, Ubuntu/macOS CI, and a pre-bump readiness report after 156 regression tests plus 11 release integration tests passed.
 - 2026-07-24T06:50:00Z — artifact_written: Bumped VERSION to 0.3.0 only after pre-bump evidence, then recorded the final 168-test CI-equivalent discovery pass and installed aph 0.3.0 smoke.
 - 2026-07-24T06:50:00Z — handoff: T6 is ready for independent QA review; hosted Ubuntu/macOS execution remains explicitly pending the first CI run.
+
+# Board deployment
+
+- 2026-07-26T05:50:00Z — Installed 0.3.0 from the checkout and redeployed Hamilton to Claude and Codex.
+  Confirmed the deployed validator now executes the staleness check that the pre-board runtime silently
+  skipped, which is what made earlier "validator passes" claims unprovable.
