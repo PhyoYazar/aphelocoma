@@ -151,9 +151,9 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    and **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
    (§5; tier recorded). Pass → status `done`, log `review_passed`, log `task_completed`, regenerate and
    write the progress board (§5.6), then commit the task (§5.5). Serious
-   findings → log `review_failed`, set status to `assigned`, attach the findings, and send **one**
-   bounce-back to the owner. Canonical replay: `review_failed` → `assigned`; a subsequent
-   `work_started` → `in_progress`. **No task
+   findings → log `review_failed`, set status to `assigned`, refresh the progress board (§5.6), attach
+   the findings, and send **one** bounce-back to the owner. Canonical replay: `review_failed` →
+   `assigned`; a subsequent `work_started` → `in_progress`. **No task
    moves to `done` until both its `critique` and `review_passed` events are in the ledger** (in `solo`
    without subagents, a persona review under a role distinct from the builder is the acknowledged
    floor; on Claude Code prefer `host_tool`). End at **Checkpoint 4**: the advisor accepts, or says
@@ -267,12 +267,14 @@ The **advisor owns branches and pushing; the crew owns commits.** Rules:
   - after bootstrap — the `.aphelocoma/` skeleton + brief (`hamilton: kickoff <project>`);
   - after each checkpoint's state artifacts — brief at CP1, roadmap at CP2 (`hamilton: <artifact> (CP<n>)`);
   - **one commit per task reaching `done`** — i.e. after its `critique` + `review_passed` are in the
-    ledger, and after the board is regenerated (§5.6) — `hamilton(<task-id>): <task title> —
-    <owner-role>`. The task id in that subject line is the cross-reference, in both directions: it finds
-    the commit from a task id in the ledger, and it finds the ledger's events for a commit found in git
-    history. No ledger event records the commit SHA — every event a task needs to reach `done`
-    (`critique`, `review_passed`, `task_completed`) is written before that task's commit exists, so none
-    of them could ever carry it.
+    ledger, its `task_completed` is logged, and the board is regenerated (§5.6) — `hamilton(<task-id>):
+    <task title> — <owner-role>`. The gate to `done` itself is `critique` + `review_passed` (§8);
+    `task_completed` follows `done` rather than producing it. The task id in the commit subject line is
+    the cross-reference, in both directions: it finds the commit from a task id in the ledger, and it
+    finds the ledger's events for a commit found in git history. No event a task needs before its own
+    commit — `critique`, `review_passed`, or `task_completed` — can carry that commit's SHA, because the
+    commit does not exist until after all three are appended. Any event appended after the commit
+    exists may legitimately name it.
 - **Dirty start:** if at start/resume the repo has uncommitted changes that are not Hamilton's, STOP
   and ask the advisor before the first crew commit — never fold the advisor's work-in-progress into a
   crew commit.
@@ -312,11 +314,10 @@ committed with the project under `visibility: tracked` (under `visibility: local
 with the rest of `.aphelocoma/`, §5). It carries one stamp line naming the UTC generation time and the
 ledger `seq` it was generated from, so a reader can tell whether it is current.
 
-**Write it before the commit.** Regenerate `STATUS.md` *before* running the task's commit (§5.5), never
-after. The board then lands in the same commit as the `tasks.json` and ledger state it describes, so a
-**committed board is never stale by construction**, and the working tree is not left carrying an
-uncommitted board after every task. The other three moments make no commit; they refresh the board in
-place.
+**Why the board rides in the task's commit.** The board lands in the same commit as the `tasks.json` and
+ledger state it describes, so a **committed board is never stale by construction**, and the working tree
+is not left carrying an uncommitted board after every task. The other three moments make no commit; they
+refresh the board in place.
 
 **Staleness is a warning, never a stop.** `validate.py` warns when `STATUS.md` is missing or unreadable;
 when it carries no stamp, or a stamp naming no `seq` (`unknown`), so its currency cannot be established;

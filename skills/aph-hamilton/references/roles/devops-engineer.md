@@ -31,4 +31,6 @@ Make the product buildable, testable, and deployable — connect code to product
 - The product builds and integrates cleanly per the roadmap's integration goals.
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed, blocked
+- Log these events: role_activated, work_started, artifact_written, blocked
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.

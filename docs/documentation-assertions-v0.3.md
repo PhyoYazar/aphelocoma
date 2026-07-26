@@ -208,10 +208,13 @@ the Hamilton validator run against the repository bundle, and a local-link/test-
   The four advisor checkpoints are an explicit workflow support policy defined by
   `skills/aph-hamilton/references/PROTOCOL.md`.
 - [x] **DOC-037 — Git commit boundary.** The orchestrator is the only committer, commits each task
-  once it reaches `done` after its critique, review pass, and regenerated progress board (§5.6) are in
-  place, uses the currently checked-out branch, and never creates, switches, deletes, or pushes a
-  branch. No ledger event records the commit SHA — the `hamilton(<task-id>): ...` subject line is the
-  cross-reference in both directions instead. This is an explicit workflow support policy defined by
+  after it reaches `done` (`critique` + review pass) and after its `task_completed` and regenerated
+  progress board (§5.6) are in place, uses the currently checked-out branch, and never creates,
+  switches, deletes, or pushes a branch. No event a task needs before its own commit — `critique`,
+  `review_passed`, or `task_completed` — can carry that commit's SHA, since the commit does not exist
+  until after all three are appended; the `hamilton(<task-id>): ...` subject line is the cross-reference
+  in both directions instead. Any event appended after the commit exists may still legitimately name its
+  SHA. This is an explicit workflow support policy defined by
   `skills/aph-hamilton/references/PROTOCOL.md` §5.5, “Git — commits.”
 - [x] **DOC-038 — Mechanical lifecycle and result contracts.** Resume/status validation enforces
   state schema, task/dependency references, live status against ordered lifecycle history, reviewer

@@ -30,4 +30,6 @@ Build the UI — components, screens, and client-side logic users interact with.
 - The task's acceptance criteria are met; artifacts written and logged.
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed, blocked, assumption_logged
+- Log these events: role_activated, work_started, artifact_written, blocked, assumption_logged
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.

@@ -30,4 +30,6 @@ Build the data pipelines and warehouse that move and store the product's data.
 - Pipelines produce the datasets the spec requires; artifacts logged.
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed, blocked, assumption_logged
+- Log these events: role_activated, work_started, artifact_written, blocked, assumption_logged
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.

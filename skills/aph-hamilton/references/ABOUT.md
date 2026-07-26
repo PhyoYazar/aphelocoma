@@ -24,6 +24,11 @@ The two durable records have distinct jobs:
 The orchestrator is the sole writer of the shared board and event ledger, including during parallel
 implementation.
 
+`aph status` renders the stage and the task list from `hamilton.json` and `state/tasks.json`, and `aph
+status --write` regenerates `.aphelocoma/STATUS.md`, a whole-file Markdown copy of that same progress
+board. `STATUS.md` is a **derived view**, never durable state itself: `state/tasks.json` stays the source
+of truth, and a stale or missing board only ever warns — it never blocks a resume.
+
 ## Advisor flow
 
 Start with the guided skill:
@@ -149,6 +154,7 @@ references/                 # shared, installed Hamilton definition
 ├── state/                  # brief, roadmap, conventions, tasks
 ├── specs/                  # one acceptance contract per task
 ├── ledger/                 # append-only events and per-role logs
+├── STATUS.md               # regenerated progress board (derived view, not source of truth)
 └── dispatch/               # transient worker scratch; never commit
 ```
 

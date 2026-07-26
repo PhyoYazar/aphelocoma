@@ -65,9 +65,13 @@ The crew stores compact project state in `.aphelocoma/` beside the product it is
 │   ├── settings.yaml          # privacy visibility and optional dispatch settings
 │   ├── state/                 # brief, roadmap, conventions, live task board
 │   ├── specs/                 # one acceptance contract per task
-│   └── ledger/                # append-only events and per-role logs
+│   ├── ledger/                # append-only events and per-role logs
+│   └── STATUS.md              # regenerated progress board (derived view, not source of truth)
 └── ...                        # the product itself
 ```
+
+The tree above is not exhaustive — `.aphelocoma/dispatch/` also exists for transient worker scratch, and
+is never committed (see Project-state privacy below).
 
 Every task is committed by the orchestrator on the current branch only after an independent
 task-specific critique passes. Hamilton does not create a branch or push.

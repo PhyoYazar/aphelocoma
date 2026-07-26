@@ -253,13 +253,31 @@
       "id": "T13",
       "title": "Close the residual documentation inconsistencies",
       "owner": "technical-writer",
-      "status": "assigned",
+      "status": "done",
       "dependencies": [
         "T10"
       ],
       "spec": ".aphelocoma/specs/T13.md",
-      "artifacts": [],
-      "updated": "2026-07-26T05:35:00Z"
+      "artifacts": [
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/references/ABOUT.md",
+        "skills/aph-hamilton/references/roles/automation-test-engineer.md",
+        "skills/aph-hamilton/references/roles/backend-developer.md",
+        "skills/aph-hamilton/references/roles/cloud-engineer.md",
+        "skills/aph-hamilton/references/roles/data-engineer.md",
+        "skills/aph-hamilton/references/roles/data-scientist.md",
+        "skills/aph-hamilton/references/roles/dba.md",
+        "skills/aph-hamilton/references/roles/devops-engineer.md",
+        "skills/aph-hamilton/references/roles/frontend-developer.md",
+        "skills/aph-hamilton/references/roles/fullstack-developer.md",
+        "skills/aph-hamilton/references/roles/ml-engineer.md",
+        "skills/aph-hamilton/references/roles/mobile-developer.md",
+        "skills/aph-hamilton/references/roles/sre.md",
+        "skills/aph-hamilton/references/roles/technical-writer.md",
+        "README.md",
+        "docs/documentation-assertions-v0.3.md"
+      ],
+      "updated": "2026-07-26T07:15:00Z"
     }
   ]
 }
