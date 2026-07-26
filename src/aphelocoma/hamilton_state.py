@@ -1748,15 +1748,15 @@ def _validate_tracking(
             )
 
 
-def _validate_status_report(
-    aph: Path,
-    events: Sequence[Mapping[str, object]],
-    issues: _Issues,
-) -> None:
-    """Warn when the written board is missing or behind the ledger.
+def _validate_status_report(aph: Path, issues: _Issues) -> None:
+    """Warn when the written board is missing, unstamped, or off the ledger.
 
     Every finding here is a warning: a board that has fallen behind is a
     visibility miss, not corrupt state, and must never block a resume.
+
+    The ledger's last ``seq`` is read through ``_last_ledger_seq`` — the same
+    function the writer stamps with — so the writer and this check cannot
+    disagree about what "last" means on a ledger that is not gap-free.
     """
 
     path = aph / STATUS_REPORT_FILENAME
@@ -1781,7 +1781,7 @@ def _validate_status_report(
         return
 
     match = STATUS_STAMP_PATTERN.search(text)
-    if match is None or match.group("seq") == "unknown":
+    if match is None:
         issues.warning(
             "stale_status_report",
             STATUS_REPORT_FILENAME,
@@ -1790,16 +1790,23 @@ def _validate_status_report(
             STATUS_REFRESH_REMEDIATION,
         )
         return
-
-    sequences = [
-        event["seq"]
-        for event in events
-        if isinstance(event.get("seq"), int)
-        and not isinstance(event.get("seq"), bool)
-    ]
-    if not sequences:
+    if match.group("seq") == "unknown":
+        # The stamp is there and readable; it just admits that the ledger could
+        # not be read when the board was written, so there is nothing to compare.
+        issues.warning(
+            "unsequenced_status_report",
+            STATUS_REPORT_FILENAME,
+            "STATUS.md was generated with no ledger seq, so how current it is "
+            "cannot be established.",
+            STATUS_REFRESH_REMEDIATION,
+        )
         return
-    last_seq = max(sequences)
+
+    last_seq = _last_ledger_seq(aph)
+    if last_seq is None:
+        # An unreadable ledger is already reported against the ledger itself;
+        # do not repeat it as a second finding against the board.
+        return
     stamped_seq = int(match.group("seq"))
     behind = last_seq - stamped_seq
     if behind > 0:
@@ -1809,6 +1816,18 @@ def _validate_status_report(
             "STATUS.md was generated from ledger seq %d and is %d event(s) "
             "behind the ledger's seq %d."
             % (stamped_seq, behind, last_seq),
+            STATUS_REFRESH_REMEDIATION,
+        )
+    elif behind < 0:
+        # A board ahead of the ledger cannot have come from it: the ledger was
+        # truncated or rolled back under it. Trusting the stamp here would
+        # disable the staleness check for every event that follows.
+        issues.warning(
+            "inconsistent_status_report",
+            STATUS_REPORT_FILENAME,
+            "STATUS.md was generated from ledger seq %d, which is ahead of the "
+            "ledger's last seq %d, so it does not describe this ledger."
+            % (stamped_seq, last_seq),
             STATUS_REFRESH_REMEDIATION,
         )
 
@@ -1910,7 +1929,7 @@ def validate_project(
         tracked_files,
         issues,
     )
-    _validate_status_report(aph, events, issues)
+    _validate_status_report(aph, issues)
     _scan_secrets(aph, issues)
 
     project = metadata.get("project")
@@ -2297,7 +2316,13 @@ def _status_stamp(generated: datetime, ledger_seq: Optional[int]) -> str:
 
 
 def _last_ledger_seq(aph: Path) -> Optional[int]:
-    """The ledger's last ``seq``; ``None`` when it cannot be read truthfully."""
+    """The ledger's last ``seq``; ``None`` when it cannot be read truthfully.
+
+    The single definition of "the ledger's last seq": the writer stamps what
+    this returns and ``_validate_status_report`` compares against what this
+    returns. Two definitions would let a ledger that is not gap-free make a
+    freshly written board look stale.
+    """
 
     try:
         lines = (

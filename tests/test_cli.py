@@ -300,15 +300,19 @@ class CliStatusBoardTests(AphRunner, unittest.TestCase):
             self.assertIn(task["title"], report)
         self.assertRegex(report, r"(?m)^Generated \S+ from ledger seq 9\b")
 
-    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
-    def test_written_status_file_is_committable_not_ignored(self):
-        subprocess.run(
-            ["git", "init", "-q", str(self.project)],
-            check=False,
-            capture_output=True,
-        )
-        self.run_aph("status", str(self.project), "--write")
+    def assert_status_file_is_committable(self):
+        """The board must exist as a file and must not be ignored by Git.
 
+        `git check-ignore` answers about a pathname, not about a file, so it
+        exits 1 just the same when nothing was ever written. The existence
+        check is what makes the ignore check mean anything.
+        """
+
+        status_file = self.project / ".aphelocoma" / "STATUS.md"
+        self.assertTrue(
+            status_file.is_file(),
+            f"--write must have produced {status_file} to commit",
+        )
         ignored = subprocess.run(
             [
                 "git",
@@ -321,8 +325,72 @@ class CliStatusBoardTests(AphRunner, unittest.TestCase):
             check=False,
             capture_output=True,
         )
-
         self.assertEqual(ignored.returncode, 1, "STATUS.md must stay committable")
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_written_status_file_is_committable_not_ignored(self):
+        subprocess.run(
+            ["git", "init", "-q", str(self.project)],
+            check=False,
+            capture_output=True,
+        )
+        self.run_aph("status", str(self.project), "--write")
+
+        self.assert_status_file_is_committable()
+
+    @unittest.skipUnless(shutil.which("git"), "Git is required for this behavior")
+    def test_committable_check_fails_when_no_board_was_written(self):
+        subprocess.run(
+            ["git", "init", "-q", str(self.project)],
+            check=False,
+            capture_output=True,
+        )
+        self.run_aph("status", str(self.project))
+
+        with self.assertRaises(AssertionError):
+            self.assert_status_file_is_committable()
+
+    def unwritable_state(self):
+        """Make `.aphelocoma/` readable but not writable for one run."""
+
+        state = self.project / ".aphelocoma"
+        original = state.stat().st_mode
+        state.chmod(0o500)
+        self.addCleanup(state.chmod, original)
+        return state
+
+    @unittest.skipIf(
+        hasattr(os, "geteuid") and os.geteuid() == 0,
+        "root ignores directory permissions",
+    )
+    def test_failed_write_still_prints_the_board(self):
+        self.write_tasks(self.sample_tasks())
+        printed, _ = self.run_aph("status", str(self.project))
+        state = self.unwritable_state()
+
+        failed, _ = self.run_aph("status", str(self.project), "--write")
+
+        self.assertEqual(failed.returncode, 1)
+        self.assertEqual(failed.stdout, printed.stdout)
+        self.assertIn("1 of 4 tasks done", failed.stdout)
+        self.assertIn("STATUS.md", failed.stderr)
+        self.assertIn("Fix:", failed.stderr)
+        self.assertFalse((state / "STATUS.md").exists())
+
+    @unittest.skipIf(
+        hasattr(os, "geteuid") and os.geteuid() == 0,
+        "root ignores directory permissions",
+    )
+    def test_failed_write_leaves_stdout_one_parseable_json_document(self):
+        plain, _ = self.run_aph("status", str(self.project), "--json")
+        self.unwritable_state()
+
+        failed, _ = self.run_aph("status", str(self.project), "--json", "--write")
+
+        self.assertEqual(failed.returncode, 1)
+        self.assertEqual(json.loads(failed.stdout), json.loads(plain.stdout))
+        self.assertIn("STATUS.md", failed.stderr)
+        self.assertIn("Fix:", failed.stderr)
 
     def test_write_leaves_json_output_untouched(self):
         plain, _ = self.run_aph("status", str(self.project), "--json")

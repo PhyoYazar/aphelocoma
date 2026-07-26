@@ -278,7 +278,8 @@ The **advisor owns branches and pushing; the crew owns commits.** Rules:
 The advisor must never have to ask "where are we?". The orchestrator **prints the progress board and
 writes it to `.aphelocoma/STATUS.md`** at **four moments**:
 
-1. **After each `task_completed` commit** (§5.5) — a task reached `done` and was committed.
+1. **With each `task_completed`** (§5.5) — regenerated **before** the task's commit is made, so the
+   board is committed together with the state it describes.
 2. **On `blocked`** — a worker could not finish.
 3. **On `review_failed`** — a CP4 verdict bounced work back (§2 Phase 5).
 4. **At the top of every `resume`** — after the §6 version + integrity check, before continuing.
@@ -305,15 +306,28 @@ committed with the project under `visibility: tracked` (under `visibility: local
 with the rest of `.aphelocoma/`, §5). It carries one stamp line naming the UTC generation time and the
 ledger `seq` it was generated from, so a reader can tell whether it is current.
 
-**Staleness is a warning, never a stop.** `validate.py` warns when `STATUS.md` is missing or its
-stamped `seq` is behind the ledger's last `seq`, names how far behind it is, and points at
-`aph status --write`. A stale board is a visibility miss, not corrupt state: it never blocks `resume`.
+**Write it before the commit.** Regenerate `STATUS.md` *before* running the task's commit (§5.5), never
+after. The board then lands in the same commit as the `tasks.json` and ledger state it describes, so a
+**committed board is never stale by construction**, and the working tree is not left carrying an
+uncommitted board after every task. The other three moments make no commit; they refresh the board in
+place.
+
+**Staleness is a warning, never a stop.** `validate.py` warns when `STATUS.md` is missing or unreadable;
+when it carries no stamp, or a stamp naming no `seq` (`unknown`), so its currency cannot be established;
+when its stamped `seq` is **behind** the ledger's last `seq`, naming how far behind; and when its stamped
+`seq` is **ahead** of the ledger's last `seq` — a board that cannot have come from this ledger, because
+the ledger was truncated or rolled back under it, and that must be regenerated rather than trusted. Every
+one of these points at `aph status --write`. The writer and the validator read the ledger's last `seq`
+through the same reader, so a freshly written board never reads as stale. A stale board is a visibility
+miss, not corrupt state: it never blocks `resume`.
 
 **Rendering.** `aph status [path]` prints the board, `aph status [path] --json` emits the complete
 machine-readable form, and `aph status [path] --write` regenerates `.aphelocoma/STATUS.md` alongside
 either. Exit `0` on success; exit `1`, with the artifact named and remediation printed, when the path
 holds no `.aphelocoma/`, its version is unsupported, or the file cannot be written — the same stop
-`resume` reports (§6).
+`resume` reports (§6). **A failed `--write` still prints the board:** the board goes to stdout first, the
+write failure is named on stderr, and the exit code carries the failure — a permissions problem costs the
+file, never the answer. Under `--json`, stdout stays exactly one parseable document.
 
 **Version skew — degrade, never break.** When `aph status` is missing, fails, or predates this
 section, the orchestrator renders and writes the same board itself from `.aphelocoma/hamilton.json`

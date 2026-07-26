@@ -2337,6 +2337,65 @@ class StatusReportStalenessTests(ProjectFixture):
             ["stale_status_report"],
         )
 
+    def restamp(self, sequence):
+        """Rewrite only the stamp's ``seq``, leaving the rest of the board."""
+
+        text = self.status_path().read_text(encoding="utf-8")
+        self.status_path().write_text(
+            re.sub(r"from ledger seq \d+", "from ledger seq %s" % sequence, text),
+            encoding="utf-8",
+        )
+
+    def test_stamp_ahead_of_the_ledger_warns_instead_of_being_trusted(self):
+        write_status_report(self.project, summarize_project(self.project))
+        self.restamp(42)
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        warnings = self.status_warnings(report)
+        self.assertEqual(
+            [issue.code for issue in warnings], ["inconsistent_status_report"]
+        )
+        self.assertIn("42", warnings[0].message)
+        self.assertIn("9", warnings[0].message)
+        self.assertIn("ahead", warnings[0].message)
+        self.assertIn("aph status --write", warnings[0].remediation)
+
+    def test_stamp_naming_no_sequence_says_so_rather_than_missing(self):
+        write_status_report(self.project, summarize_project(self.project))
+        self.restamp("unknown")
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        warnings = self.status_warnings(report)
+        self.assertEqual(
+            [issue.code for issue in warnings], ["unsequenced_status_report"]
+        )
+        self.assertIn("no ledger seq", warnings[0].message)
+        self.assertNotIn("no readable generated stamp", warnings[0].message)
+        self.assertIn("aph status --write", warnings[0].remediation)
+
+    def test_writer_and_validator_read_the_same_last_seq(self):
+        # A rolled-back tail: the last line's seq is 5 while the file's highest
+        # seq is 9, so a writer and a validator that disagree about "last" also
+        # disagree about whether this board is current.
+        events = self.read_events()
+        events.append(dict(events[-1], seq=5))
+        self.write_events(events)
+
+        write_status_report(self.project, summarize_project(self.project))
+
+        self.assertRegex(
+            self.status_path().read_text(encoding="utf-8"),
+            r"(?m)^Generated \S+ from ledger seq 5\b",
+        )
+        report = validate_project(self.project, tracked_files=[])
+        # The ledger itself is not gap-free, which is a separate error; the
+        # board written from that same ledger must still read as current.
+        self.assertEqual(self.status_warnings(report), [])
+
 
 class UnversionedStatusBoardTests(ProjectFixture):
     fixture_name = "unversioned-v02"

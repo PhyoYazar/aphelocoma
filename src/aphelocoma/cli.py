@@ -206,12 +206,11 @@ def _status(path: str, *, json_output: bool, write_report: bool) -> int:
         write_status_report,
     )
 
-    written: Optional[Path] = None
     try:
         summary = summarize_project(Path(path))
-        if write_report:
-            written = write_status_report(Path(path), summary)
     except StatusError as error:
+        # Nothing could be read, so there is no board to show: the whole
+        # command failed, and the failure is the output.
         if json_output:
             print(
                 json.dumps(
@@ -231,14 +230,27 @@ def _status(path: str, *, json_output: bool, write_report: bool) -> int:
             print(f"Error: {error}", file=sys.stderr)
             print(f"  Fix: {error.remediation}", file=sys.stderr)
         return 1
+
+    # The board is printed before it is written, so a write that fails costs
+    # the reader the file and not the answer.
     if json_output:
         print(json.dumps(summary.as_dict(), indent=2))
     else:
         for line in render_status_board(summary):
             print(line)
-    if written is not None:
-        # Stdout stays exactly the board, or exactly one JSON document.
-        print(f"Wrote the Hamilton progress board to {written}", file=sys.stderr)
+    if not write_report:
+        return 0
+
+    # Stdout stays exactly the board, or exactly one JSON document: the write's
+    # outcome — success or failure — is reported on stderr either way, and a
+    # failure is still signalled by the exit code.
+    try:
+        written = write_status_report(Path(path), summary)
+    except StatusError as error:
+        print(f"Error: {error}", file=sys.stderr)
+        print(f"  Fix: {error.remediation}", file=sys.stderr)
+        return 1
+    print(f"Wrote the Hamilton progress board to {written}", file=sys.stderr)
     return 0
 
 

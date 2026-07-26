@@ -2,7 +2,7 @@
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
   "phase": "review",
-  "updated": "2026-07-26T04:30:00Z",
+  "updated": "2026-07-26T05:00:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -225,6 +225,24 @@
         ".aphelocoma/STATUS.md"
       ],
       "updated": "2026-07-26T04:30:00Z"
+    },
+    {
+      "id": "T12",
+      "title": "Close the holes the T11 review found in the staleness check",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [
+        "T11"
+      ],
+      "spec": ".aphelocoma/specs/T12.md",
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "src/aphelocoma/cli.py",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "tests/test_hamilton_state.py",
+        "tests/test_cli.py"
+      ],
+      "updated": "2026-07-26T05:00:00Z"
     }
   ]
 }

@@ -157,3 +157,57 @@
   `aph status . --json`, and `aph status . --write` against this repository; the written
   `.aphelocoma/STATUS.md` task list matches `state/tasks.json` row for row (11 of 11) and
   `git check-ignore` confirms it is committable.
+
+## T12 — close the T11 review's staleness holes
+
+- 2026-07-26T05:05:00Z — `work_started` — Took T12: the five non-blocking defects the independent T11
+  review raised in the `STATUS.md` staleness check. Read the spec, `conventions.md`, `brief.md` (TDD
+  on), and my own T11 code before touching anything.
+- 2026-07-26T05:20:00Z — `artifact_written` — Six failing tests first, then the fixes. In
+  `hamilton_state.py`, `_validate_status_report()` no longer takes the parsed events: it reads the
+  ledger's last `seq` through `_last_ledger_seq()`, the same function the writer stamps with, so the
+  two can no longer disagree about what "last" means on a ledger that is not gap-free. A stamp *ahead*
+  of the ledger now warns `inconsistent_status_report` ("does not describe this ledger") instead of
+  being trusted forever, and a stamp reading `seq unknown` warns `unsequenced_status_report` ("was
+  generated with no ledger seq") instead of falsely claiming the file carries no stamp. The
+  no-stamp-at-all branch keeps `stale_status_report` unchanged. An unreadable ledger still adds no
+  second finding, because the ledger is already errored against itself. Every path is a warning: exit
+  stays `0` and `resume` is never blocked.
+- 2026-07-26T05:25:00Z — `artifact_written` — `cli.py` `_status()` now prints the board *before* it
+  writes it, and the write sits in its own `try`. A permissions problem costs the file, not the answer:
+  stdout carries the board (or exactly one parseable JSON document), the failure is named on stderr
+  with its remediation, and the exit code still reports it.
+- 2026-07-26T05:30:00Z — `artifact_written` — `tests/test_cli.py`'s committable check was vacuous:
+  `git check-ignore` answers about a pathname, so it passed against a tree where `--write` never ran.
+  The assertion moved into `assert_status_file_is_committable()`, which now asserts the file exists
+  first, and a new test runs `aph status` *without* `--write` and proves the helper then raises.
+- 2026-07-26T05:35:00Z — `artifact_written` — `PROTOCOL.md` §5.6, three edits. Trigger 1 now says the
+  board is regenerated **before** the task's commit, so `STATUS.md` lands in the same commit as the
+  state it describes and a committed board is never stale by construction; the four trigger moments
+  themselves are unchanged. The staleness paragraph now lists all five warned conditions, including
+  ahead-of-ledger and no-`seq`, and records the single shared reader. The rendering paragraph records
+  that a failed `--write` still prints the board.
+- 2026-07-26T05:40:00Z — `assumption_logged` — Kept `stale_status_report` for a board with no stamp at
+  all: that message ("cannot be told apart from a stale board") was never the inaccurate one, and its
+  T11 test stays green as a regression pin. The two genuinely new conditions got their own codes, both
+  ending in `_status_report` so existing filters still catch them.
+- 2026-07-26T05:45:00Z — `handoff` — T12 ready for CP4. Full suite 225 passing, up from 219; all six
+  new tests proven red first by running them against `HEAD`'s `cli.py` and `hamilton_state.py` in a
+  scratch copy (and the anti-vacuity test against the old assertion body). The validator was forced
+  onto the **repository bundle** with `APHELOCOMA_ROOT` pointed at a nonexistent directory, which makes
+  `validate.py`'s `_installed_source()` return `None`; the same project run against the installed
+  0.3.0 runtime reports `0 warnings` for a missing `STATUS.md`, which is what makes an unforced
+  "validator passes" claim worthless here. Forced, on a scratch copy of this project's state, each
+  warning path was exercised for real: `missing_status_report`, `stale_status_report` (seq 251 of 260),
+  `unsequenced_status_report` (`seq unknown`), and `inconsistent_status_report` (seq 999 ahead of 260)
+  — every one exit `0`. A rolled-back ledger tail (last line `seq` 251, highest `seq` 260) produced a
+  board stamped 251 and **no** staleness warning, proving writer and validator agree. The forced run
+  against this repository reports 0 errors and one truthful `stale_status_report` (seq 256 of 260) —
+  the committed board predates the orchestrator's last four events and clears on the next regeneration.
+  `aph doctor` healthy. Out of scope, for the technical writer: `README.md:185` and `skills/aph-hamilton/skill.md:119`
+  still state the old "missing or behind" and after-the-commit claims.
+- 2026-07-26T05:47:00Z — `assumption_logged` — One reading a reviewer may query: under `--json` with a
+  failed `--write`, stdout carries the ok report (`"status": "ok"`) while the exit code is `1`. That is
+  deliberate and is what the criterion requires — the board *was* read successfully, the file was not,
+  and stdout must stay exactly one parseable document, so the write failure is reported on stderr and
+  in the exit code rather than by a second JSON document or by relabelling a report that is true.
