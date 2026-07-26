@@ -1,6 +1,6 @@
 # Hamilton progress — aphelocoma-hamilton-reset
 
-- Phase: implementation
+- Phase: done
 - Progress: 14 of 14 tasks done
 
 | Task | Status | Title |
@@ -20,6 +20,6 @@
 | T13 | done | Close the residual documentation inconsistencies |
 | T14 | done | Cover the last board warning branch and correct the record |
 
-Generated 2026-07-26T08:03:03Z from ledger seq 306.
+Generated 2026-07-26T08:03:36Z from ledger seq 307.
 
 This file is regenerated whole by `aph status --write`; edits to it are overwritten. `.aphelocoma/state/tasks.json` stays the source of truth.
