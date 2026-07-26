@@ -6,7 +6,7 @@ This is the source-of-truth checklist for behavioral claims in `README.md`,
 test below or is labeled as an explicit support policy. Test IDs use
 `module.Class.test_method`.
 
-Checked items were reverified on 2026-07-26 against the full 225-test suite, CLI help, doctor JSON,
+Checked items were reverified on 2026-07-26 against the full 226-test suite, CLI help, doctor JSON,
 the Hamilton validator run against the repository bundle, and a local-link/test-ID audit.
 
 ## Product and command surface
@@ -264,8 +264,9 @@ the Hamilton validator run against the repository bundle, and a local-link/test-
   `test_hamilton_state.StatusReportStalenessTests.test_unstamped_status_report_is_not_trusted_as_current`,
   `test_hamilton_state.StatusReportStalenessTests.test_stamp_ahead_of_the_ledger_warns_instead_of_being_trusted`,
   `test_hamilton_state.StatusReportStalenessTests.test_stamp_naming_no_sequence_says_so_rather_than_missing`.
-  A `STATUS.md` that exists but fails to read (a permissions or encoding error, not exercised by any
-  current test) is warned identically by `_validate_status_report`'s `unreadable_status_report` code
-  path in `src/aphelocoma/hamilton_state.py`; that specific branch is an explicit support policy
-  defined by `skills/aph-hamilton/references/PROTOCOL.md` §5.6, not yet backed by a dedicated test —
-  flagged as a coverage gap, not asserted as tested here.
+  A `STATUS.md` that exists but fails to read (a permissions or encoding error) is warned identically by
+  `_validate_status_report`'s `unreadable_status_report` code path in
+  `src/aphelocoma/hamilton_state.py`, asserted by
+  `test_hamilton_state.StatusReportStalenessTests.test_unreadable_status_report_warns_rather_than_erroring`,
+  which reaches the branch through invalid UTF-8 rather than a permissions change so that it behaves the
+  same for every user and filesystem. All six warning branches are now covered.

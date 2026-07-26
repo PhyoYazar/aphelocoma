@@ -2377,6 +2377,22 @@ class StatusReportStalenessTests(ProjectFixture):
         self.assertNotIn("no readable generated stamp", warnings[0].message)
         self.assertIn("aph status --write", warnings[0].remediation)
 
+    def test_unreadable_status_report_warns_rather_than_erroring(self):
+        # Bytes that are not valid UTF-8 take the same branch a permissions
+        # error does, and unlike a chmod they behave the same for every user
+        # and on every filesystem the suite runs on.
+        self.status_path().write_bytes(b"# Board \xff\xfe not utf-8\n")
+
+        report = validate_project(self.project, tracked_files=[])
+
+        self.assertTrue(report.ok, [issue.message for issue in report.errors])
+        warnings = self.status_warnings(report)
+        self.assertEqual(
+            [issue.code for issue in warnings], ["unreadable_status_report"]
+        )
+        self.assertIn("unreadable", warnings[0].message)
+        self.assertIn("aph status --write", warnings[0].remediation)
+
     def test_writer_and_validator_read_the_same_last_seq(self):
         # A rolled-back tail: the last line's seq is 5 while the file's highest
         # seq is 9, so a writer and a validator that disagree about "last" also
