@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "done",
-  "updated": "2026-07-26T08:55:00Z",
+  "phase": "implementation",
+  "updated": "2026-07-26T09:10:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -293,6 +293,23 @@
         "docs/documentation-assertions-v0.3.md"
       ],
       "updated": "2026-07-26T08:45:00Z"
+    },
+    {
+      "id": "T15",
+      "title": "Prepare the v0.3.0 release",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T14"
+      ],
+      "spec": ".aphelocoma/specs/T15.md",
+      "artifacts": [
+        "CHANGELOG.md",
+        "docs/release-readiness-v0.3.md",
+        "docs/migration-v0.3.md",
+        "docs/release-v0.3.0.md"
+      ],
+      "updated": "2026-07-26T10:10:00Z"
     }
   ]
 }

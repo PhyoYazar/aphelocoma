@@ -2,7 +2,7 @@
 
 All notable changes to Aphelocoma are recorded here.
 
-## [0.3.0] — Unreleased
+## [0.3.0]
 
 v0.3 is a breaking reset that makes Hamilton the complete Aphelocoma product.
 

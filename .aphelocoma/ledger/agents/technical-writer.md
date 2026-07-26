@@ -170,3 +170,93 @@
   Ordering re-checked across `skill.md` (unedited, still consistent), §2 Phase 5, §5.5, §5.6, and a role
   file: all four agree on critique → review_passed (`done`) → `task_completed` → board → commit, with
   `done` now stated only via the gate, never via `task_completed`. Ready for qa-engineer re-review.
+- 2026-07-26T09:19:51Z — role_activated — Picked up T15: prepare v0.3.0 release paperwork
+  (`CHANGELOG.md`, `docs/release-readiness-v0.3.md`, `docs/migration-v0.3.md`, new
+  `docs/release-v0.3.0.md`) without pushing, merging, or tagging.
+- 2026-07-26T09:19:51Z — work_started — Read `.aphelocoma/specs/T15.md` and re-verified its factual
+  claims against the repo rather than trusting them: `git log origin/develop..develop` — 23 unpushed
+  commits, last push `2026-07-04`; `.github/workflows/ci.yml` — ubuntu-latest/macos-latest ×
+  Python 3.9/3.x, confirmed via `python3 -m unittest discover` (226 tests, macOS, Python 3.14.4 —
+  matches); `docs/release-readiness-v0.3.md` git-blamed to `88d0e92` (2026-07-24, T6), confirmed it
+  predates T7–T14 and never mentions the board or `STATUS.md`.
+- 2026-07-26T09:19:51Z — work_started — Verified the old-install-command claim by running it, not
+  reading it: built an isolated fake origin repo (v0.2.0 tag with a stub `bin/aph`, v0.3.0 tag with
+  this repo's real `bin/aph`/`src`), copied `v0.2.0`'s actual published `install.sh` text, and ran it
+  against three simulated machine states. Found the spec's single-outcome claim ("clones whatever main
+  points at ... runs `aph setup`, fails") was incomplete: (1) fresh machine — clone, `checkout_latest_tag`
+  lands on `v0.3.0` (not "main" — the script checks out the newest Git *tag*, confirmed separately by
+  cloning a repo whose `main` had unmerged and merged-but-untagged v0.3-like commits: the old script
+  still resolved to the last tag both times), no `data/core`, runs `aph setup` → `Error: Unknown
+  command 'setup'`, exit 1 — this is the one case the spec actually verified; (2) v0.3 already
+  installed (`~/.aphelocoma/tool` exists, confirmed on this machine to have no `.git`) → `git fetch
+  --tags` fails outright → `Error: git fetch failed...`, exit 1; (3) a returning v0.2 user with a real
+  git-cloned `tool/` and existing `data/core` (also confirmed present on this machine) → the script
+  silently checks out `v0.3.0`, prints "Existing data found — preserved" and "Installation complete!",
+  exits 0 — no error at all — leaving an unmanaged tool tree that `aph doctor` then catches as
+  `[error] Installed tool exists without an ownership manifest`. Also confirmed merging to `main` is
+  *not* the breaking moment: pushing the `v0.3.0` tag is — `checkout_latest_tag` still resolves to
+  `v0.2.0` after a merge until that tag exists.
+- 2026-07-26T09:19:51Z — artifact_written — `CHANGELOG.md`: `## [0.3.0] — Unreleased` → `## [0.3.0]`,
+  matching the dateless `## [0.2.0]` heading style; no release date invented.
+- 2026-07-26T09:19:51Z — artifact_written — `docs/migration-v0.3.md`: added "If you have the old
+  install command saved" describing all three verified machine states above (who hits each, the exact
+  output, exit code, and the doctor remediation for the silent case), and a closing note that the tag
+  push — not the merge — is what triggers the change, correcting the framing in the outer task brief.
+- 2026-07-26T09:19:51Z — artifact_written — `docs/release-readiness-v0.3.md`: refreshed rather than
+  rewritten. Kept the T6 (2026-07-24) pre-bump/post-bump evidence as a labeled historical record; added
+  "What changed since the T6 assessment" naming T7 (deployed-runtime fix), T8 (real-world v0.2
+  migration), and T9–T14 (progress board, `.aphelocoma/STATUS.md`, non-blocking staleness warnings);
+  added "Current local verification (2026-07-26)" with today's actual numbers (226 full-suite,
+  210 T1–T5-style regression, 11 release-matrix, 8 package-inventory, validator/doctor/`git diff
+  --check` output). Changed `Status: READY` to `Status: READY FOR CI — NOT YET READY TO RELEASE` and
+  named Linux and Python 3.9 explicitly as pending CI everywhere the doc discusses status — while
+  keeping `Status: READY`, `` Release version: `0.3.0` ``, and the unwrapped
+  `Hosted runner execution: pending first CI run` as literal, unbroken substrings, because
+  `tests.test_release_smoke.ReleaseContractTests.test_release_metadata_and_report_are_final` asserts
+  all three with `assertIn`; reran that test by name and the full suite after editing to confirm both
+  still pass (226 total, no test or code file touched).
+- 2026-07-26T09:19:51Z — artifact_written — `docs/release-v0.3.0.md` (new): draft user-facing GitHub
+  release notes, plus the advisor's 8-step checklist (push `develop` → watch CI → fix red legs on
+  `develop`, never route around them → second pass on the readiness doc as its own numbered step, with
+  an explicit warning that rewording the three asserted substrings above requires updating
+  `test_release_metadata_and_report_are_final` as a separate deliberate task, not a silent edit →
+  merge to `main` (verified not yet breaking) → tag `v0.3.0` (verified this is the actual breaking
+  moment) → publish the release → end-to-end verify from a clean `$HOME`). No push/merge/tag/publish
+  command was run by this task.
+- 2026-07-26T09:19:51Z — handoff — Verified before returning: `python3 -m unittest discover -s tests
+  -q` — 226 passed. `python3 bin/aph doctor` — healthy, exit 0. `python3
+  skills/aph-hamilton/references/validate.py .` — 311 events, 15 tasks (14 done), 0 errors, 1
+  pre-existing `stale_status_report` warning (STATUS.md 4 events behind ledger seq 311 — the designed
+  non-blocking behavior; `.aphelocoma/STATUS.md` is not this task's file and was left alone).
+  `git status --porcelain` shows only `CHANGELOG.md`, `docs/migration-v0.3.md`,
+  `docs/release-readiness-v0.3.md` modified and `docs/release-v0.3.0.md` untracked from this turn;
+  `.aphelocoma/hamilton.json`, `.aphelocoma/ledger/events.jsonl`, `.aphelocoma/state/tasks.json`
+  (modified) and `.aphelocoma/specs/T15.md` (untracked) are pre-existing orchestrator-owned dirt from
+  before this task started, not touched here. No spec claim was propagated uncorrected — the two
+  corrections above (the old-install failure has three outcomes, not one; the tag push, not the merge,
+  is the breaking moment) are written into the shipped docs themselves, not just this ledger. Ready for
+  qa-engineer review.
+- 2026-07-26T09:34:13Z — artifact_written — CP4 correction pass on three review findings, all closed.
+  (1, should-fix) `docs/migration-v0.3.md`: the "git fetch failed" case's remediation sentence claimed
+  re-running the old script "only reproduces the first case above" — wrong on a machine with v0.3
+  installed *and* surviving `~/.aphelocoma/data/core` (a properly-upgraded v0.2 user), which lands in
+  the silent third case instead. Reworded to "reproduces the first case above, or the third if you
+  still have `~/.aphelocoma/data/core`", matching the reviewer's suggested fix; the advice that follows
+  (use the current install command) needed no change since it holds either way. (2, nit)
+  `docs/migration-v0.3.md`: softened "this command always ends up running v0.3 code" — confirmed via
+  `git show v0.2.0:install.sh` that a fourth branch, `if [ -L "$TOOL_DIR" ]` (the local-dev symlink
+  case), skips clone/fetch/checkout entirely; scoped the claim to "an ordinary install" and named the
+  symlink exception explicitly, noting no ordinary v0.2 user is in that state. (3, nit)
+  `docs/release-v0.3.0.md` step 2: added the workflow's fifth CI action, "smoke-tests an isolated
+  installation," which the checklist omitted while `docs/release-readiness-v0.3.md`'s CI-inspection
+  section already listed it — the two documents now agree. Left `docs/documentation-assertions-v0.3.md`
+  untouched per the coordinator's note; it's outside T15's file scope. Re-verified after all three
+  edits: `python3 -m unittest discover -s tests -q` — 226 passed. `tests.test_release_smoke
+  .ReleaseContractTests.test_release_metadata_and_report_are_final` run individually — passed. `aph
+  doctor` — healthy, exit 0. Hamilton validator against the repository — 0 errors, 1 pre-existing
+  non-blocking `stale_status_report` warning (STATUS.md now 7 events behind ledger seq 314, up from 4
+  behind seq 311 earlier in this task — the gap widened only because the orchestrator's ledger kept
+  advancing concurrently; `.aphelocoma/STATUS.md` was not touched by this task). `git status
+  --porcelain` — only `CHANGELOG.md`, `docs/migration-v0.3.md`, `docs/release-readiness-v0.3.md`
+  modified, `docs/release-v0.3.0.md` untracked, plus this ledger; pre-existing orchestrator-owned dirt
+  in `.aphelocoma/` untouched. No new command touched state-changing git.

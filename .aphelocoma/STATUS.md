@@ -1,7 +1,7 @@
 # Hamilton progress — aphelocoma-hamilton-reset
 
-- Phase: done
-- Progress: 14 of 14 tasks done
+- Phase: implementation
+- Progress: 15 of 15 tasks done
 
 | Task | Status | Title |
 | --- | --- | --- |
@@ -19,7 +19,8 @@
 | T12 | done | Close the holes the T11 review found in the staleness check |
 | T13 | done | Close the residual documentation inconsistencies |
 | T14 | done | Cover the last board warning branch and correct the record |
+| T15 | done | Prepare the v0.3.0 release |
 
-Generated 2026-07-26T08:03:36Z from ledger seq 307.
+Generated 2026-07-26T09:37:17Z from ledger seq 318.
 
 This file is regenerated whole by `aph status --write`; edits to it are overwritten. `.aphelocoma/state/tasks.json` stays the source of truth.

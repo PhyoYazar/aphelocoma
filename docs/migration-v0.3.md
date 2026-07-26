@@ -3,6 +3,64 @@
 Aphelocoma v0.3 is a breaking, Hamilton-only reset. Read this guide before replacing a v0.2
 installation.
 
+## If you have the old install command saved
+
+If your notes or scripts still say
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.2.0/install.sh | bash
+```
+
+retire it once `v0.3.0` is tagged and use the [current install command](#install-and-deploy-v03) below
+instead. The `v0.2.0` tag pins only the installer *script*; the script itself clones the live
+repository into `~/.aphelocoma/tool` — the same directory the v0.3 transactional installer manages —
+and then checks out the highest-versioned Git tag it finds there. Once `v0.3.0` is tagged, that is what
+it checks out, so for an ordinary install this command ends up running v0.3 code once v0.3.0 exists,
+however it is packaged on your machine. (The one exception is a local-dev symlink at `~/.aphelocoma/tool`,
+which the script skips clone/fetch/checkout for entirely — no ordinary v0.2 user is in that state.) What
+you see depends on what was already there. All three cases below were run, not inferred.
+
+- **Nothing at `~/.aphelocoma` yet.** The script clones, checks out `v0.3.0`, finds no
+  `~/.aphelocoma/data/core`, and runs `"$TOOL_DIR/bin/aph" setup` — a command v0.3 does not have:
+
+  ```text
+  Error: Unknown command 'setup'. Run 'aph help' for the supported commands.
+  ```
+
+  Exit code `1`.
+
+- **v0.3 is already installed on this machine.** v0.3's own installer copies release files into
+  `~/.aphelocoma/tool` without making it a Git repository, so the old script's `git fetch --tags`
+  fails immediately:
+
+  ```text
+  Error: git fetch failed. Try: rm -rf ~/.aphelocoma/tool && re-run installer.
+  ```
+
+  Exit code `1`. Following that literal remediation (`rm -rf ~/.aphelocoma/tool`) and re-running the
+  *old* script only reproduces the first case above, or the third if you still have
+  `~/.aphelocoma/data/core` — use the current install command instead.
+
+- **A returning v0.2 user: `~/.aphelocoma/tool` is a real v0.2 Git clone and `~/.aphelocoma/data/core`
+  exists.** This is the case an upgrading user is most likely to be in, and it prints no error at all.
+  `git fetch --tags` succeeds, the script checks out `v0.3.0`, and — because `data/core` already
+  exists — it skips the setup step, prints `Existing data found ... — preserved.` and
+  `Installation complete!`, and exits `0`. The `aph` now on your `PATH` reports `0.3.0`, but
+  `~/.aphelocoma/tool` was updated by a plain `git checkout`, not by v0.3's transactional installer, so
+  no install manifest was ever written for it. `aph doctor` catches the gap:
+
+  ```text
+  [error] Installed tool exists without an ownership manifest: ~/.aphelocoma/tool.
+    Fix: Restore the manifest-owned tool and PATH block, or reinstall Aphelocoma.
+  ```
+
+  Run the current install command to replace this unmanaged tree with a manifest-owned one.
+
+Before `v0.3.0` is tagged, none of this happens — `checkout_latest_tag` still resolves to `v0.2.0`, so
+merging v0.3 to `main` alone does not trigger it; pushing the `v0.3.0` tag does. The `v0.2.0` tag is
+immutable, so no code change reaches anyone who still has the old command saved; this note is the only
+mitigation.
+
 ## What changed
 
 The v0.3 runtime contains the `aph` lifecycle CLI, the Hamilton skill, its shared definition, and
