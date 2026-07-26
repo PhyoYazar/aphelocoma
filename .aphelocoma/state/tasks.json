@@ -2,7 +2,7 @@
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
   "phase": "review",
-  "updated": "2026-07-26T05:00:00Z",
+  "updated": "2026-07-26T05:35:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -193,15 +193,20 @@
     },
     {
       "id": "T10",
-      "title": "Correct the v0.3 documentation assertions for the status board",
+      "title": "Make the board documentation true everywhere",
       "owner": "technical-writer",
-      "status": "assigned",
+      "status": "done",
       "dependencies": [
         "T9"
       ],
       "spec": ".aphelocoma/specs/T10.md",
-      "artifacts": [],
-      "updated": "2026-07-26T03:40:00Z"
+      "artifacts": [
+        "skills/aph-hamilton/skill.md",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "README.md",
+        "docs/documentation-assertions-v0.3.md"
+      ],
+      "updated": "2026-07-26T05:35:00Z"
     },
     {
       "id": "T11",
@@ -243,6 +248,18 @@
         "tests/test_cli.py"
       ],
       "updated": "2026-07-26T05:00:00Z"
+    },
+    {
+      "id": "T13",
+      "title": "Close the residual documentation inconsistencies",
+      "owner": "technical-writer",
+      "status": "assigned",
+      "dependencies": [
+        "T10"
+      ],
+      "spec": ".aphelocoma/specs/T13.md",
+      "artifacts": [],
+      "updated": "2026-07-26T05:35:00Z"
     }
   ]
 }

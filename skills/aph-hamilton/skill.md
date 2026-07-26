@@ -116,7 +116,9 @@ Report findings before continuing; fix ledger/state drift as new corrective even
 history — PROTOCOL §5). Then print the **progress board** and write it to `.aphelocoma/STATUS.md`
 (PROTOCOL §5.6) at the top of the resume — `aph status . --write` is the fast path; render and write it
 yourself if `aph` is unavailable or older than §5.6 — and continue per PROTOCOL §6. The board is
-printed and written the same way after each `task_completed` commit, on `blocked`, and on
+printed and written the same way at the other three §5.6 moments: regenerated **after** the
+`task_completed` event is appended and **before** that task's commit (§5.5) — so the committed board
+never disagrees with the state it describes — and, with no commit attached, on `blocked` and on
 `review_failed`.
 Hit a bug or want a change? Just say so — it becomes a tracked **fix task** routed to the owning role
 (PROTOCOL §6.5), not a side channel.

@@ -1,7 +1,7 @@
 # Hamilton progress — aphelocoma-hamilton-reset
 
 - Phase: review
-- Progress: 11 of 12 tasks done
+- Progress: 12 of 13 tasks done
 
 | Task | Status | Title |
 | --- | --- | --- |
@@ -14,10 +14,11 @@
 | T7 | done | Make deployed state tools locate the installed runtime |
 | T8 | done | Migrate real-world v0.2 Hamilton state |
 | T9 | done | Show a progress board at every milestone |
-| T10 | assigned | Correct the v0.3 documentation assertions for the status board |
+| T10 | done | Make the board documentation true everywhere |
 | T11 | done | Reduce the board to stage and tasks, and keep it in a file |
 | T12 | done | Close the holes the T11 review found in the staleness check |
+| T13 | assigned | Close the residual documentation inconsistencies |
 
-Generated 2026-07-26T05:02:26Z from ledger seq 267.
+Generated 2026-07-26T05:32:12Z from ledger seq 277.
 
 This file is regenerated whole by `aph status --write`; edits to it are overwritten. `.aphelocoma/state/tasks.json` stays the source of truth.

@@ -182,8 +182,13 @@ The file is regenerated **whole** on every write — never appended to, never pa
 temporary file and an atomic replace, so it cannot accumulate drift and a failed write leaves the
 previous board intact. One stamp line names the UTC generation time and the ledger `seq` it came from,
 so you can tell whether it is current. It is a derived view: `.aphelocoma/state/tasks.json` stays the
-source of truth, and the Hamilton validator *warns* — never errors — when `STATUS.md` is missing or its
-stamped `seq` is behind the ledger, so a stale board never blocks a resume.
+source of truth, and the Hamilton validator *warns* — never errors — when `STATUS.md` is missing,
+unreadable, carries no readable generation stamp, or carries a stamp that names no ledger `seq`
+(`unknown`, so currency cannot be established); when its stamped `seq` is **behind** the ledger's last
+`seq` (naming how far behind); and when its stamped `seq` is **ahead** of the ledger's last `seq` (a
+board that cannot have come from this ledger, because the ledger was truncated or rolled back under
+it). Every one of these is a warning, never a stop: a stale, unreadable, or missing board never blocks
+a resume.
 
 Under `visibility: tracked` the file is committed with the project; under `visibility: local` it stays
 untracked along with the rest of `.aphelocoma/`.

@@ -6,8 +6,8 @@ This is the source-of-truth checklist for behavioral claims in `README.md`,
 test below or is labeled as an explicit support policy. Test IDs use
 `module.Class.test_method`.
 
-Checked items were reverified on 2026-07-24 against the full 177-test suite, CLI help, doctor JSON,
-the Hamilton validator, and a local-link/test-ID audit.
+Checked items were reverified on 2026-07-26 against the full 225-test suite, CLI help, doctor JSON,
+the Hamilton validator run against the repository bundle, and a local-link/test-ID audit.
 
 ## Product and command surface
 
@@ -20,8 +20,9 @@ the Hamilton validator, and a local-link/test-ID audit.
   `test_package_inventory.HamiltonPackageInventoryTests.test_context_runtime_and_private_exports_are_not_packaged`,
   `test_generators.GeneratorTests.test_claude_generator_writes_all_27_agents`,
   `test_generators.GeneratorTests.test_codex_generator_writes_parseable_named_roles_and_preserves_config`.
-- [x] **DOC-002 — Supported commands.** The public CLI is `deploy`, `undeploy`, `doctor`, `update`,
-  `uninstall`, `version`, and `help`; unsupported or incomplete commands fail with remediation.
+- [x] **DOC-002 — Supported commands.** The public CLI is `deploy`, `undeploy`, `doctor`, `status`,
+  `update`, `uninstall`, `version`, and `help`; unsupported or incomplete commands fail with
+  remediation.
   Tests: `test_cli.CliSubprocessTests.test_help_exposes_only_hamilton_commands`,
   `test_cli.CliSubprocessTests.test_unknown_and_incomplete_commands_are_actionable_failures`,
   `test_cli.CliSubprocessTests.test_lifecycle_commands_are_implemented_not_placeholders`.
@@ -40,9 +41,10 @@ the Hamilton validator, and a local-link/test-ID audit.
   download-based installer. This is an explicit v0.3 support policy; Python enforcement is covered by
   `test_doctor.DoctorChecksTests.test_current_checkout_passes_all_base_checks` and installer
   requirements are declared by `install.sh`.
-- [x] **DOC-006 — CLI exit-status contract.** Supported help, version, healthy doctor, and successful
-  lifecycle operations return `0`; actionable usage or health failures return `1`; an unexpected
-  internal failure returns `2` with remediation and no traceback.
+- [x] **DOC-006 — CLI exit-status contract.** Supported help, version, healthy doctor, successful
+  `status`, and successful lifecycle operations return `0`; actionable usage or health failures
+  (including a missing or unsupported-version `status` target) return `1`; an unexpected internal
+  failure returns `2` with remediation and no traceback.
   Tests: `test_cli.CliSubprocessTests.test_empty_command_and_help_option_show_help`,
   `test_cli.CliSubprocessTests.test_version_uses_the_checked_out_version_file`,
   `test_cli.CliSubprocessTests.test_healthy_doctor_has_human_and_json_contracts`,
@@ -50,13 +52,17 @@ the Hamilton validator, and a local-link/test-ID audit.
   `test_cli.CliSubprocessTests.test_lifecycle_commands_are_implemented_not_placeholders`,
   `test_cli.CliSubprocessTests.test_unknown_and_incomplete_commands_are_actionable_failures`,
   `test_cli.CliSubprocessTests.test_doctor_json_is_machine_readable_and_reports_missing_git`,
-  `test_cli.CliInternalFailureTests.test_unexpected_failure_returns_two_without_traceback`.
+  `test_cli.CliStatusBoardTests.test_missing_project_state_is_an_actionable_failure`,
+  `test_cli.CliStatusBoardTests.test_unsupported_version_refuses_in_both_output_forms`,
+  `test_cli.CliInternalFailureTests.test_unexpected_failure_returns_two_without_traceback`,
+  `test_cli.CliInternalFailureTests.test_status_internal_failure_returns_two_without_traceback`.
 - [x] **DOC-007 — Hamilton skill command behavior.** Guided start asks whether the project is new or
   existing and what to build; the explicit `start` form is the fast path; `resume` validates and
-  continues durable state; `status` validates and reports without writing; and `sync-agents` is the
+  continues durable state, printing and writing the progress board at the top; `status` validates and
+  reports, writing `.aphelocoma/STATUS.md` only when `--write` is passed; and `sync-agents` is the
   Claude-only per-project crew override that requires a session restart after regeneration. These are
   explicit workflow support policies defined by the corresponding `(no arguments)`, `start`,
-  `resume`, `status`, and `sync-agents` sections of `skills/aph-hamilton/SKILL.md`.
+  `resume`, `status`, and `sync-agents` sections of `skills/aph-hamilton/skill.md`.
 - [x] **DOC-008 — Project records and single-writer boundary.** The shared Hamilton definition is
   installed read-only, product files live beside project-local `.aphelocoma/` state, the task board
   records current state, the event ledger is append-only history, and the orchestrator is the sole
@@ -202,9 +208,11 @@ the Hamilton validator, and a local-link/test-ID audit.
   The four advisor checkpoints are an explicit workflow support policy defined by
   `skills/aph-hamilton/references/PROTOCOL.md`.
 - [x] **DOC-037 — Git commit boundary.** The orchestrator is the only committer, commits each task
-  once it reaches `done` after its critique and review pass, uses the currently checked-out branch,
-  and never creates, switches, deletes, or pushes a branch. This is an explicit workflow support
-  policy defined by `skills/aph-hamilton/references/PROTOCOL.md` §5.5, “Git — commits.”
+  once it reaches `done` after its critique, review pass, and regenerated progress board (§5.6) are in
+  place, uses the currently checked-out branch, and never creates, switches, deletes, or pushes a
+  branch. No ledger event records the commit SHA — the `hamilton(<task-id>): ...` subject line is the
+  cross-reference in both directions instead. This is an explicit workflow support policy defined by
+  `skills/aph-hamilton/references/PROTOCOL.md` §5.5, “Git — commits.”
 - [x] **DOC-038 — Mechanical lifecycle and result contracts.** Resume/status validation enforces
   state schema, task/dependency references, live status against ordered lifecycle history, reviewer
   independence/order, and privacy. Implementer and reviewer payload schemas reject contradictory
@@ -227,3 +235,34 @@ the Hamilton validator, and a local-link/test-ID audit.
   `test_hamilton_state.MigrationTests.test_history_baseline_cannot_be_self_declared_or_advanced`,
   `test_hamilton_state.MigrationTests.test_history_baseline_rejects_task_snapshot_tampering`,
   `test_hamilton_state.MigrationTests.test_conflicting_legacy_and_current_dependencies_roll_back`.
+
+## Progress board
+
+- [x] **DOC-040 — Progress board and `STATUS.md`.** `aph status [path]` prints the project name, phase,
+  done/total count, and one line per task (id, status as a word, title); `--json` adds
+  schema/protocol versions, visibility, owners, dependencies, the next actionable task, and repo state;
+  `--write` additionally regenerates `.aphelocoma/STATUS.md` whole, atomically, carrying a stamp naming
+  the UTC generation time and the ledger `seq` it was generated from. The Hamilton validator warns —
+  never errors, never blocks `resume` — when `STATUS.md` is missing, carries no readable stamp, carries
+  a stamp naming no `seq` (`unknown`), is behind the ledger's last `seq` (naming how far behind), or is
+  ahead of it (naming both values).
+  Tests: `test_cli.CliStatusBoardTests.test_board_reports_only_the_stage_and_the_task_list`,
+  `test_cli.CliStatusBoardTests.test_blocked_task_still_reads_as_blocked_in_its_own_row`,
+  `test_cli.CliStatusBoardTests.test_write_regenerates_the_status_file_and_names_it_on_stderr`,
+  `test_cli.CliStatusBoardTests.test_written_status_file_is_committable_not_ignored`,
+  `test_cli.CliStatusBoardTests.test_status_without_write_never_writes_to_project_state`,
+  `test_cli.CliStatusBoardTests.test_json_output_follows_the_doctor_convention`,
+  `test_hamilton_state.StatusReportFileTests.test_stamp_names_the_utc_time_and_the_ledger_sequence`,
+  `test_hamilton_state.StatusReportFileTests.test_every_write_regenerates_the_whole_file`,
+  `test_hamilton_state.StatusReportFileTests.test_write_is_atomic_and_leaves_no_temporary_file_behind`,
+  `test_hamilton_state.StatusReportStalenessTests.test_missing_status_report_warns_without_erroring`,
+  `test_hamilton_state.StatusReportStalenessTests.test_current_status_report_raises_no_warning`,
+  `test_hamilton_state.StatusReportStalenessTests.test_stale_status_report_names_how_far_behind_it_is`,
+  `test_hamilton_state.StatusReportStalenessTests.test_unstamped_status_report_is_not_trusted_as_current`,
+  `test_hamilton_state.StatusReportStalenessTests.test_stamp_ahead_of_the_ledger_warns_instead_of_being_trusted`,
+  `test_hamilton_state.StatusReportStalenessTests.test_stamp_naming_no_sequence_says_so_rather_than_missing`.
+  A `STATUS.md` that exists but fails to read (a permissions or encoding error, not exercised by any
+  current test) is warned identically by `_validate_status_report`'s `unreadable_status_report` code
+  path in `src/aphelocoma/hamilton_state.py`; that specific branch is an explicit support policy
+  defined by `skills/aph-hamilton/references/PROTOCOL.md` §5.6, not yet backed by a dedicated test —
+  flagged as a coverage gap, not asserted as tested here.

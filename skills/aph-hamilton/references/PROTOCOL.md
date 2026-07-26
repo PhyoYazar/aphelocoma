@@ -149,7 +149,8 @@ Canonical `phase` values, one per step below: `kickoff`, `discovery`, `planning`
    `CRITIQUE.md`'s CP4 lens:
    **(a)** its acceptance criteria (incl. tests-first when TDD is on), **(b)** the craft bar (`CRAFT.md`),
    and **(c)** the code lens (logic/edge/contract/security, reusing `reviewer.md`). Log a `critique` event
-   (§5; tier recorded). Pass → status `done`, log `review_passed`, commit the task (§5.5). Serious
+   (§5; tier recorded). Pass → status `done`, log `review_passed`, log `task_completed`, regenerate and
+   write the progress board (§5.6), then commit the task (§5.5). Serious
    findings → log `review_failed`, set status to `assigned`, attach the findings, and send **one**
    bounce-back to the owner. Canonical replay: `review_failed` → `assigned`; a subsequent
    `work_started` → `in_progress`. **No task
@@ -266,8 +267,12 @@ The **advisor owns branches and pushing; the crew owns commits.** Rules:
   - after bootstrap — the `.aphelocoma/` skeleton + brief (`hamilton: kickoff <project>`);
   - after each checkpoint's state artifacts — brief at CP1, roadmap at CP2 (`hamilton: <artifact> (CP<n>)`);
   - **one commit per task reaching `done`** — i.e. after its `critique` + `review_passed` are in the
-    ledger: `hamilton(<task-id>): <task title> — <owner-role>`. Record the commit SHA in the
-    `review_passed` note so the ledger and git history cross-reference.
+    ledger, and after the board is regenerated (§5.6) — `hamilton(<task-id>): <task title> —
+    <owner-role>`. The task id in that subject line is the cross-reference, in both directions: it finds
+    the commit from a task id in the ledger, and it finds the ledger's events for a commit found in git
+    history. No ledger event records the commit SHA — every event a task needs to reach `done`
+    (`critique`, `review_passed`, `task_completed`) is written before that task's commit exists, so none
+    of them could ever carry it.
 - **Dirty start:** if at start/resume the repo has uncommitted changes that are not Hamilton's, STOP
   and ask the advisor before the first crew commit — never fold the advisor's work-in-progress into a
   crew commit.
@@ -278,8 +283,9 @@ The **advisor owns branches and pushing; the crew owns commits.** Rules:
 The advisor must never have to ask "where are we?". The orchestrator **prints the progress board and
 writes it to `.aphelocoma/STATUS.md`** at **four moments**:
 
-1. **With each `task_completed`** (§5.5) — regenerated **before** the task's commit is made, so the
-   board is committed together with the state it describes.
+1. **With each `task_completed`** (§5.5) — regenerated **after** the `task_completed` event is
+   appended and **before** the task's commit is made, so the board is committed together with the
+   state it describes.
 2. **On `blocked`** — a worker could not finish.
 3. **On `review_failed`** — a CP4 verdict bounced work back (§2 Phase 5).
 4. **At the top of every `resume`** — after the §6 version + integrity check, before continuing.
