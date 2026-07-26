@@ -1,6 +1,6 @@
 # Hamilton progress — aphelocoma-hamilton-reset
 
-- Phase: implementation
+- Phase: done
 - Progress: 16 of 16 tasks done
 
 | Task | Status | Title |
@@ -22,6 +22,6 @@
 | T15 | done | Prepare the v0.3.0 release |
 | T16 | done | Record the green CI run in the readiness report |
 
-Generated 2026-07-26T10:39:38Z from ledger seq 330.
+Generated 2026-07-26T10:40:25Z from ledger seq 331.
 
 This file is regenerated whole by `aph status --write`; edits to it are overwritten. `.aphelocoma/state/tasks.json` stays the source of truth.
