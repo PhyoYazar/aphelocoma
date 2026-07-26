@@ -1,91 +1,176 @@
-# Hamilton — a portable, file-based crew of role-agents
+# Hamilton — the Aphelocoma agent crew
 
-**Hamilton** turns **any coding agent** (Claude Code, Codex, or others) into a small
-software organization. You give it a brief like *"build a furniture ecommerce"*; leadership
-roles brainstorm → plan → roadmap → assign; implementer roles build the product; and every
-action is recorded so you can review **who did what** later.
+Hamilton is a file-based software crew that discovers, plans, implements, and independently reviews a
+project in Claude Code or Codex while a human advisor makes the key decisions.
 
-It is **portable**: roles are just markdown files, coordination is a written protocol, and
-history is plain files. Nothing depends on a specific tool's features.
+## Definition and project state
 
-## Two layers
+Hamilton separates its shared operating definition from each project's writable state:
 
-- **Definition (read-only, installed once)** — this `references/` directory: `PROTOCOL.md`,
-  `roles/`, `sizes.yaml`, `roles.index.md`, `PARALLEL.md`, `agent-template.md`. Shared by every project; never copied
-  into them.
-- **Per-project state** — a `.aphelocoma/` folder in the project being built:
-  `hamilton.json`, `state/`, `ledger/`, `specs/`. Plus the **product** itself in the project (at the
-  repo root, beside `.aphelocoma/`).
+- **Shared definition (read-only)** — this `references/` directory contains `PROTOCOL.md`, role
+  definitions, crew sizes, parallel-dispatch rules, state/result schemas, validation, and migration.
+  Aphelocoma installs it once with the skill.
+- **Per-project state (read/write)** — `.aphelocoma/` in the project contains the brief, roadmap,
+  conventions, task contracts, live board, and append-only ledger.
+- **Product** — the software being built stays at the project root beside `.aphelocoma/`; Hamilton
+  does not force it into a wrapper directory.
 
-## How it works (30-second version)
+The two durable records have distinct jobs:
 
-The running agent **adopts one role at a time** (see `roles/`), reads the current task
-state, does that role's work, writes the product into the project, and appends to the audit
-ledger. Full rules: **`PROTOCOL.md`**.
+- `.aphelocoma/state/tasks.json` is the current task board;
+- `.aphelocoma/ledger/events.jsonl` is gap-free, append-only history;
+- `.aphelocoma/ledger/agents/<role>.md` is the human-readable record for each role.
 
-## Start a project
+The orchestrator is the sole writer of the shared board and event ledger, including during parallel
+implementation.
 
-Just run the **`/aph-hamilton`** skill (no arguments). It asks what you want, then the leadership core
-brainstorms it **with you**. You're the **advisor**: you decide the direction, plan, build style, and
-review at four checkpoints (PROTOCOL §1.5); the crew builds it. Fast path if you know the brief:
+`aph status` renders the stage and the task list from `hamilton.json` and `state/tasks.json`, and `aph
+status --write` regenerates `.aphelocoma/STATUS.md`, a whole-file Markdown copy of that same progress
+board. `STATUS.md` is a **derived view**, never durable state itself: `state/tasks.json` stays the source
+of truth, and a stale or missing board only ever warns — it never blocks a resume.
 
-    /aph-hamilton start "Build an ecommerce site for furniture" startup
+## Advisor flow
 
-(The size is a *proposal* the crew confirms with you after Discovery.) See `START.reference.md`.
+Start with the guided skill:
 
-## Crew sizes
+```text
+/aph-hamilton
+```
 
-Chosen **after Discovery** (the leadership core recommends, you pick — see `sizes.yaml`):
+Hamilton asks whether the project is new or existing and what you want to build. When the brief is
+already clear, use the fast path:
 
-- **solo** (~2) — one generalist; fastest, smallest loop.
-- **startup** (~6) — CTO, architect, 2 full-stack devs, QA, DevOps. Proves the full loop.
-- **mid** (~12) — leads + devs, product, design, QA/automation, DevOps, data.
-- **big** (~25) — the full org chart, end to end.
-- **custom** — pass your own role list (overrides the preset).
+```text
+/aph-hamilton start "build a furniture store" startup
+```
 
-Only the selected roles activate; the rest stay dormant in `roles/`.
+The initial size is a proposal. Leadership first surveys the project and runs the Foundations pass,
+then the advisor chooses the direction and crew. Available crew shapes are `solo`, `startup`, `mid`,
+`big`, and `custom:[role,…]`.
 
-## Resume a project
+The crew pauses at four advisor checkpoints:
 
-Run `/aph-hamilton resume`. Hamilton reads `.aphelocoma/state/brief.md` +
-`.aphelocoma/state/tasks.json`, reports the current phase and open tasks, and continues —
-projects don't need to finish in one session.
+1. direction and crew size after Discovery;
+2. roadmap and task breakdown;
+3. parallel or sequential build style;
+4. final review and acceptance.
 
-## Review who did what (history)
+Independent critique runs before checkpoints 1, 2, and 4. Every implementation task also needs its
+own fresh critique and review pass before it can be marked `done`. The orchestrator commits each
+finished task on the current branch; it does not branch or push.
 
-- **`.aphelocoma/ledger/events.jsonl`** — append-only, one event per line (assignments,
-  work, reviews, decisions). Machine-readable; each line has a `seq`, `ts`, `actor`, `event`.
-- **`.aphelocoma/ledger/agents/<role>.md`** — the same history per role, human-readable.
-- **`.aphelocoma/state/tasks.json`** — the *current* board (who owns what, status). Live
-  state, not history — see `PROTOCOL.md` §5.
+Resume or inspect a run with:
 
-## Directory map
+```text
+/aph-hamilton resume
+/aph-hamilton status
+```
 
-    references/             <- the Hamilton definition (read-only, installed once)
-      PROTOCOL.md           <- the operating rules (read this to run)
-      ABOUT.md              <- you are here
-      START.reference.md    <- the kickoff reference + crew-size menu
-      roles.index.md        <- the role catalog
-      sizes.yaml            <- crew-size presets
-      settings.example.yaml <- optional config example
-      roles/                <- one markdown file per role (the "job descriptions")
+Both use the project state at `.aphelocoma/`; resume validates integrity before continuing and status
+is read-only.
 
-    <project>/.aphelocoma/  <- per-project state (created by `start`)
-      hamilton.json         <- project, size, roles, phase
-      state/                <- tasks.json (live board), roadmap.md, brief.md
-      specs/                <- one spec per task (handoff contracts w/ acceptance criteria)
-      ledger/               <- events.jsonl + agents/<role>.md (append-only history)
-    <project>/              <- the product itself (at the repo root, beside .aphelocoma/)
+## Claude Code and Codex
 
-## Optional settings
+Claude Code and Codex are the two first-class Hamilton hosts in Aphelocoma v0.3.
 
-`.aphelocoma/settings.yaml` is optional — Hamilton runs without it. It can set a role→model mapping
-(used when generating native agents). The product always builds at the project root, and the build
-style is chosen by the advisor at the Implementation checkpoint. See `settings.example.yaml`.
+| Host | Minimum CLI | Tested CLI | Parallel implementation |
+| --- | ---: | ---: | --- |
+| Claude Code | 2.1.0 | 2.1.217 | Native `hamilton-<role>` crew agents |
+| Codex | 0.145.0 | 0.145.0 | Background `codex exec` role workers |
 
-## Example run
+Parallel implementation is the default only when the host backend is available, its role definition
+is reachable, and at least two dependency-ready tasks declare disjoint file scopes. Otherwise
+Hamilton runs one role at a time in the sequential workflow. The advisor can also select sequential
+execution at checkpoint 3.
 
-`examples/todo-solo/` is a **real, executed reference run** — a fresh agent was handed only
-the kickoff `/aph-hamilton start "a simple todo list app" solo` and ran it unaided. Browse it
-to see exactly what gets written under `.aphelocoma/` and where the product lands. It ships
-with the skill as a reference and is not part of any live project.
+On Claude Code, `aph deploy claude` installs the skill and global named crew. A project can override
+role model/effort settings with `.aphelocoma/settings.yaml`; after changing those settings, run:
+
+```text
+/aph-hamilton sync-agents
+```
+
+Restart the Claude session after a per-project crew regeneration.
+
+On Codex, `aph deploy codex` installs the skill, named role configuration, and generated agent files.
+Headless `codex exec` workers are the default dispatch path. The experimental collaboration backend is
+used only when explicitly selected or when automatic exec preflight falls back to it; a failed
+preflight ultimately falls back to sequential execution. See `DISPATCH-CODEX.md`.
+
+## Privacy modes
+
+Every `.aphelocoma/settings.yaml` declares:
+
+```yaml
+visibility: tracked  # or: local
+redact_sensitive: true
+```
+
+- `tracked` allows compact, redacted plans, specs, task state, and ledger entries in version control.
+- `local` requires all `.aphelocoma/` paths to remain untracked.
+
+Raw prompts, results, worker logs, temporary files, and backups are transient in both modes. Put
+dispatch scratch under `.aphelocoma/dispatch/`; it is not durable state and must not be tracked.
+Durable notes contain summaries rather than raw worker content or credentials.
+
+The validator checks visibility against Git's tracked state and fails closed if it cannot determine
+that state.
+
+## Versioned state and migration
+
+Current project state declares schema `1` and protocol `1.0.0`. Resume and status validate those
+versions, the mechanically loaded state schema, lifecycle/review ordering, task dependencies, and
+privacy.
+
+Unversioned v0.2 project state uses the explicit migration commands from the project root (shown for
+the default install location):
+
+```bash
+python3 ~/.aphelocoma/tool/skills/aph-hamilton/references/migrate.py check .
+python3 ~/.aphelocoma/tool/skills/aph-hamilton/references/migrate.py apply .
+```
+
+For a custom `APHELOCOMA_ROOT`, replace `~/.aphelocoma` with that root. `check` is read-only. `apply`
+validates staged state before replacement, retains a byte-for-byte backup, and restores the original
+state if migration fails. Unsupported future state requires an Aphelocoma upgrade.
+
+## Project layout
+
+```text
+references/                 # shared, installed Hamilton definition
+├── PROTOCOL.md             # workflow and lifecycle rules
+├── PARALLEL.md             # eligibility, single-writer contract, serialization
+├── DISPATCH-CODEX.md       # Codex backend selection and worker mechanics
+├── state.schema.json       # durable state contract
+├── result.*.schema.json    # strict implementer/reviewer result contracts
+├── validate.py             # project-state integrity checker
+├── migrate.py              # backed-up state migration
+├── sizes.yaml              # crew presets
+└── roles/                  # 27 role definitions
+
+<project>/.aphelocoma/
+├── hamilton.json           # schema, protocol, project, crew, phase
+├── settings.yaml           # visibility and optional dispatch/model settings
+├── state/                  # brief, roadmap, conventions, tasks
+├── specs/                  # one acceptance contract per task
+├── ledger/                 # append-only events and per-role logs
+├── STATUS.md               # regenerated progress board (derived view, not source of truth)
+└── dispatch/               # transient worker scratch; never commit
+```
+
+`examples/todo-solo/` is a bundled reference run. It is documentation, not live project state.
+
+## Deployment and recovery
+
+Use `aph deploy <claude|codex>` and `aph undeploy <claude|codex>` to manage host integration.
+Deployment manifests record exact paths, digests, managed blocks, and collision backups. Undeploy
+removes only clean manifest-owned content and restores verified collision backups. Modified generated
+files or blocks are preserved and reported as drift.
+
+`aph update` verifies the current installation, rolls back the previous tool and manifest on failure,
+and records a recoverable previous tool on success. `aph uninstall` first undeploys both hosts and
+stops before tool removal if deployment or PATH drift remains. Recovery backups are retained.
+
+`aph doctor` reports installation, deployment, backup, host-version, legacy-artifact, state-version,
+and privacy health with remediation; `aph doctor --json` provides the same checks in a stable
+machine-readable shape.

@@ -1,5 +1,7 @@
 {
   "project": "<project-slug>",
+  "schema_version": 1,
+  "protocol_version": "1.0.0",
   "size": "<solo|startup|mid|big|custom>",
   "roles": ["<role-id>"],
   "created": "<iso-8601 timestamp>",

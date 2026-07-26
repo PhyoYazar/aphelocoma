@@ -1,3 +1,0 @@
-name: project-context
-description: Silently loads project context (architecture, tasks, decisions, recent work) when working in a known project directory.
-type: background

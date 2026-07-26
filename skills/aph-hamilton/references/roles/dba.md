@@ -30,4 +30,6 @@ Own the data layer: schema design, performance, backup, and security.
 - A schema with backup/migration/access approach exists and is handed off.
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed, assumption_logged
+- Log these events: role_activated, work_started, artifact_written, assumption_logged
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.

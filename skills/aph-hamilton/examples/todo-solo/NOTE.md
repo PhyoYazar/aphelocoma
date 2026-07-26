@@ -18,10 +18,11 @@ protocol loop (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign �
 ## Layout (the two layers)
 
 - `.aphelocoma/` — the per-project state Hamilton creates in the project:
-  - `hamilton.json` — project, size, active roles, phase.
-  - `state/` — `tasks.json` (live board), `roadmap.md`, `brief.md`.
+  - `hamilton.json` — project, schema/protocol versions, size, active roles, phase.
+  - `settings.yaml` — explicit tracked visibility and sensitive-data redaction policy.
+  - `state/` — `tasks.json` (live board), `roadmap.md`, `brief.md`, and binding `conventions.md`.
   - `specs/T1.md` — the handoff contract (goal, scope, files, acceptance criteria).
-  - `ledger/events.jsonl` — append-only history (24 events, `seq` 1..24, schema per PROTOCOL §5).
+  - `ledger/events.jsonl` — append-only history (25 events, `seq` 1..25, schema per PROTOCOL §5).
   - `ledger/agents/{cto,fullstack-developer}.md` — the same history per role, human-readable.
 - `todo.html` — the actual product, built **in the project** (not inside `.aphelocoma/`).
 
@@ -29,16 +30,11 @@ protocol loop (Kickoff → Discovery → Plan & Roadmap → Breakdown & Assign �
 
 - **§7 role coverage.** `solo` activates only `cto` + `fullstack-developer`, so the `cto` covers the
   missing roles and says so: software-architect + engineering-manager during breakdown (seq 12–13), QA
-  at review (`review_passed`, seq 19), and DevOps at integration (seq 21).
-- **Honest disclosure (§5).** Seq 24 is an `assumption_logged` event in which the `cto` flags that the
-  integration check at seq 21 reused the `artifact_written` event type (the vocabulary has no
+  at review (`critique` + `review_passed`, seq 19–20), and DevOps at integration (seq 22).
+- **Honest disclosure (§5).** Seq 25 is an `assumption_logged` event in which the `cto` flags that the
+  integration check at seq 22 reused the `artifact_written` event type (the vocabulary has no
   dedicated integration/readiness type) — the check was real; only the label is approximate.
 
-> One cosmetic edit was made to the shipped copy: the agent-written `brief.md` heading "Company size"
-> was corrected to "Crew size" to match Hamilton's current vocabulary. Everything else is exactly as
-> the run produced it.
-
-> **Historical:** this run predates the critique gate (2026-06-26), the conventions layer, and the
-> integrity checker, so `references/validate.py` flags T1 as `done` without a `critique` event and
-> warns about the missing `conventions.md`. That is the validator working as intended on a pre-gate
-> ledger — the run is kept verbatim as a dated record, not updated.
+> The shipped copy is normalized to current state schema 1 / protocol 1.0.0: explicit privacy settings
+> and dependency fields were added, and the CTO's recorded independent QA pass is represented by the
+> required `critique` event before `review_passed`. The original product artifact is unchanged.

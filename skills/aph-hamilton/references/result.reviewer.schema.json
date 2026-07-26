@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aphelocoma.dev/schemas/hamilton-reviewer-result-v1.json",
+  "title": "Hamilton reviewer result",
+  "description": "The exact JSON a read-only reviewer worker returns as its final message (agent-template.md REVIEWER body; CRITIQUE.md CP4). Passed to `codex exec --output-schema` so the CLI enforces the contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["task", "role", "verdict", "tier", "findings", "summary"],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "pass"
+          }
+        },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "items": {
+              "properties": {
+                "severity": {
+                  "enum": ["should-fix", "nit"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "fail"
+          }
+        },
+        "required": ["verdict"]
+      },
+      "then": {
+        "properties": {
+          "findings": {
+            "contains": {
+              "type": "object",
+              "properties": {
+                "severity": {
+                  "const": "blocking"
+                }
+              },
+              "required": ["severity"]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "properties": {
+    "task": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z][A-Za-z0-9._-]*$", "description": "The <task-id> under review." },
+    "role": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9-]*(?:#[1-9][0-9]*)?$", "description": "The exact reviewing role/instance id, which must differ from the task builder." },
+    "verdict": { "type": "string", "enum": ["pass", "fail"], "description": "fail when any blocking finding exists." },
+    "tier": { "type": "string", "enum": ["subagent"], "description": "A dispatched fresh-context worker is always the subagent tier (PROTOCOL §5)." },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "note"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocking", "should-fix", "nit"] },
+          "note": { "type": "string", "minLength": 1 }
+        }
+      },
+      "description": "Empty when clear."
+    },
+    "summary": { "type": "string", "minLength": 1, "description": "One redacted line; never include raw prompts or credentials." }
+  }
+}

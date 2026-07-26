@@ -1,3 +1,0 @@
-name: knowledge-lookup
-description: Silently surfaces relevant knowledge base entries when the user asks about topics that match stored expertise.
-type: background

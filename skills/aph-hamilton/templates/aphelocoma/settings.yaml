@@ -1,7 +1,12 @@
-# Optional model settings for this project's Hamilton crew. Hamilton runs fine without this file; it
-# OVERRIDES the global default crew (crew = your best model; technical-writer = sonnet) for THIS project
-# only. After editing, run `/aph-hamilton sync-agents` then restart the session (Claude Code loads agent
-# files only at session start). Safe to edit/delete.
+# Hamilton state privacy is explicit. `tracked` keeps compact plans, specs, and the redacted ledger in
+# version control; `local` keeps all of .aphelocoma/ out of version control. Dispatch prompts, worker
+# results, temporary files, backups, and logs are transient in BOTH modes and are never durable state.
+visibility: tracked
+redact_sensitive: true
+
+# Optional model settings for this project's Hamilton crew. These override the global default crew for
+# THIS project. After editing model settings on Claude Code, run `/aph-hamilton sync-agents` and restart
+# the session so it reloads agent files.
 #
 # Any role NOT listed below uses your current session's model — i.e. your best model (opus today,
 # fable later) automatically, with nothing to change when the best model changes. List a role only to
@@ -21,3 +26,13 @@ models:
 #   qa-engineer: xhigh
 #   software-architect: xhigh
 #   technical-writer: medium
+
+# On Codex, `models:` values are Codex model names (they feed `codex exec -m`) and effort maps to
+# `-c model_reasoning_effort=...` — see the definition's DISPATCH-CODEX.md. No sync-agents/restart
+# needed there; these are read at dispatch time.
+
+# Parallel dispatch overrides (optional — PARALLEL.md defaults are right for most projects).
+# On Codex, `auto` = codex-exec fan-out (the stable default); `collab` opts in to the experimental
+# spawn_agent tools (also used automatically if exec preflight fails — DISPATCH-CODEX.md):
+# dispatch: auto        # auto (default) | exec | collab | sequential
+# max_parallel: 4       # Codex codex-exec backend: max concurrent workers per batch

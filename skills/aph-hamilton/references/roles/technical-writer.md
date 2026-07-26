@@ -30,4 +30,6 @@ Document the product so others can use, deploy, and maintain it.
 - The shipped scope has accurate user/API/deploy documentation.
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed
+- Log these events: role_activated, work_started, artifact_written
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.

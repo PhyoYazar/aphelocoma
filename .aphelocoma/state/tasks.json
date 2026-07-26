@@ -1,0 +1,330 @@
+{
+  "project": "aphelocoma-hamilton-reset",
+  "size": "custom",
+  "phase": "done",
+  "updated": "2026-07-26T11:50:00Z",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Build the tested Python CLI and base doctor",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [],
+      "artifacts": [
+        "bin/aph",
+        "src/aphelocoma/__init__.py",
+        "src/aphelocoma/cli.py",
+        "src/aphelocoma/paths.py",
+        "src/aphelocoma/io.py",
+        "src/aphelocoma/doctor.py",
+        "tests/__init__.py",
+        "tests/test_cli.py",
+        "tests/test_paths.py",
+        "tests/test_doctor.py"
+      ],
+      "updated": "2026-07-23T09:25:00Z"
+    },
+    {
+      "id": "T2",
+      "title": "Version and harden Hamilton project state",
+      "owner": "fullstack-developer#2",
+      "status": "done",
+      "dependencies": [],
+      "artifacts": [
+        "skills/aph-hamilton/skill.md",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/references/PARALLEL.md",
+        "skills/aph-hamilton/references/DISPATCH-CODEX.md",
+        "skills/aph-hamilton/references/ABOUT.md",
+        "skills/aph-hamilton/references/validate.py",
+        "skills/aph-hamilton/references/migrate.py",
+        "skills/aph-hamilton/references/state.schema.json",
+        "skills/aph-hamilton/references/result.implementer.schema.json",
+        "skills/aph-hamilton/references/result.reviewer.schema.json",
+        "skills/aph-hamilton/references/settings.example.yaml",
+        "skills/aph-hamilton/templates/aphelocoma",
+        "skills/aph-hamilton/examples/todo-solo/NOTE.md",
+        "skills/aph-hamilton/examples/todo-solo/.aphelocoma",
+        "src/aphelocoma/hamilton_state.py",
+        "tests/test_hamilton_state.py",
+        "tests/fixtures/hamilton"
+      ],
+      "updated": "2026-07-23T12:05:00Z"
+    },
+    {
+      "id": "T3",
+      "title": "Implement transactional lifecycle and deployment",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [
+        "T1",
+        "T2"
+      ],
+      "artifacts": [
+        "install.sh",
+        "src/aphelocoma/cli.py",
+        "src/aphelocoma/lifecycle.py",
+        "src/aphelocoma/deploy.py",
+        "src/aphelocoma/manifest.py",
+        "src/aphelocoma/legacy.py",
+        "src/aphelocoma/doctor.py",
+        "adapters/claude-code/scripts/gen-hamilton-crew.py",
+        "adapters/codex/scripts/gen-hamilton-crew-codex.py",
+        "tests/test_lifecycle.py",
+        "tests/test_deploy.py",
+        "tests/test_legacy.py",
+        "tests/test_generators.py",
+        "tests/test_cli.py"
+      ],
+      "updated": "2026-07-23T14:28:00Z"
+    },
+    {
+      "id": "T4",
+      "title": "Remove the legacy context product",
+      "owner": "fullstack-developer#2",
+      "status": "done",
+      "dependencies": [
+        "T3"
+      ],
+      "artifacts": [
+        ".gitignore",
+        "CLAUDE.md",
+        "skills",
+        "skills/aph-hamilton/HANDOFF.md",
+        "adapters",
+        "src/aphelocoma/lifecycle.py",
+        "tests/test_package_inventory.py",
+        "tests/test_legacy.py",
+        "tests/test_lifecycle.py",
+        "tests/fixtures/legacy"
+      ],
+      "updated": "2026-07-23T15:35:00Z"
+    },
+    {
+      "id": "T5",
+      "title": "Reposition and document Aphelocoma",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T3",
+        "T4"
+      ],
+      "artifacts": [
+        "README.md",
+        "CHANGELOG.md",
+        "docs/migration-v0.3.md",
+        "docs/documentation-assertions-v0.3.md",
+        "skills/aph-hamilton/references/ABOUT.md"
+      ],
+      "updated": "2026-07-24T06:50:00Z"
+    },
+    {
+      "id": "T6",
+      "title": "Add cross-platform CI and verify v0.3 readiness",
+      "owner": "devops-engineer",
+      "status": "done",
+      "dependencies": [
+        "T1",
+        "T2",
+        "T3",
+        "T4",
+        "T5"
+      ],
+      "artifacts": [
+        ".github/workflows/ci.yml",
+        "tests/test_release_smoke.py",
+        "tests/fixtures/release/readiness-matrix.json",
+        "docs/release-readiness-v0.3.md",
+        "VERSION"
+      ],
+      "updated": "2026-07-24T07:05:00Z"
+    },
+    {
+      "id": "T7",
+      "title": "Make deployed state tools locate the installed runtime",
+      "owner": "fullstack-developer#2",
+      "status": "done",
+      "dependencies": [
+        "T6"
+      ],
+      "artifacts": [
+        "skills/aph-hamilton/references/validate.py",
+        "skills/aph-hamilton/references/migrate.py",
+        "tests/test_release_smoke.py"
+      ],
+      "updated": "2026-07-24T09:50:00Z"
+    },
+    {
+      "id": "T8",
+      "title": "Migrate real-world v0.2 Hamilton state",
+      "owner": "fullstack-developer#2",
+      "status": "done",
+      "dependencies": [
+        "T7"
+      ],
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "skills/aph-hamilton/references/state.schema.json",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "docs/migration-v0.3.md",
+        "docs/documentation-assertions-v0.3.md",
+        "tests/test_hamilton_state.py"
+      ],
+      "updated": "2026-07-24T10:45:00Z"
+    },
+    {
+      "id": "T9",
+      "title": "Show a progress board at every milestone",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [],
+      "spec": ".aphelocoma/specs/T9.md",
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "src/aphelocoma/cli.py",
+        "tests/test_hamilton_state.py",
+        "tests/test_cli.py",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/skill.md",
+        "README.md",
+        "CHANGELOG.md"
+      ],
+      "updated": "2026-07-26T03:35:00Z"
+    },
+    {
+      "id": "T10",
+      "title": "Make the board documentation true everywhere",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T9"
+      ],
+      "spec": ".aphelocoma/specs/T10.md",
+      "artifacts": [
+        "skills/aph-hamilton/skill.md",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "README.md",
+        "docs/documentation-assertions-v0.3.md"
+      ],
+      "updated": "2026-07-26T05:35:00Z"
+    },
+    {
+      "id": "T11",
+      "title": "Reduce the board to stage and tasks, and keep it in a file",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [
+        "T9"
+      ],
+      "spec": ".aphelocoma/specs/T11.md",
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "src/aphelocoma/cli.py",
+        "skills/aph-hamilton/references/validate.py",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/skill.md",
+        "README.md",
+        "CHANGELOG.md",
+        "tests/test_cli.py",
+        "tests/test_hamilton_state.py",
+        ".aphelocoma/STATUS.md"
+      ],
+      "updated": "2026-07-26T04:30:00Z"
+    },
+    {
+      "id": "T12",
+      "title": "Close the holes the T11 review found in the staleness check",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [
+        "T11"
+      ],
+      "spec": ".aphelocoma/specs/T12.md",
+      "artifacts": [
+        "src/aphelocoma/hamilton_state.py",
+        "src/aphelocoma/cli.py",
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "tests/test_hamilton_state.py",
+        "tests/test_cli.py"
+      ],
+      "updated": "2026-07-26T05:00:00Z"
+    },
+    {
+      "id": "T13",
+      "title": "Close the residual documentation inconsistencies",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T10"
+      ],
+      "spec": ".aphelocoma/specs/T13.md",
+      "artifacts": [
+        "skills/aph-hamilton/references/PROTOCOL.md",
+        "skills/aph-hamilton/references/ABOUT.md",
+        "skills/aph-hamilton/references/roles/automation-test-engineer.md",
+        "skills/aph-hamilton/references/roles/backend-developer.md",
+        "skills/aph-hamilton/references/roles/cloud-engineer.md",
+        "skills/aph-hamilton/references/roles/data-engineer.md",
+        "skills/aph-hamilton/references/roles/data-scientist.md",
+        "skills/aph-hamilton/references/roles/dba.md",
+        "skills/aph-hamilton/references/roles/devops-engineer.md",
+        "skills/aph-hamilton/references/roles/frontend-developer.md",
+        "skills/aph-hamilton/references/roles/fullstack-developer.md",
+        "skills/aph-hamilton/references/roles/ml-engineer.md",
+        "skills/aph-hamilton/references/roles/mobile-developer.md",
+        "skills/aph-hamilton/references/roles/sre.md",
+        "skills/aph-hamilton/references/roles/technical-writer.md",
+        "README.md",
+        "docs/documentation-assertions-v0.3.md"
+      ],
+      "updated": "2026-07-26T07:15:00Z"
+    },
+    {
+      "id": "T14",
+      "title": "Cover the last board warning branch and correct the record",
+      "owner": "fullstack-developer#1",
+      "status": "done",
+      "dependencies": [
+        "T13"
+      ],
+      "spec": ".aphelocoma/specs/T14.md",
+      "artifacts": [
+        "tests/test_hamilton_state.py",
+        "docs/documentation-assertions-v0.3.md"
+      ],
+      "updated": "2026-07-26T08:45:00Z"
+    },
+    {
+      "id": "T15",
+      "title": "Prepare the v0.3.0 release",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T14"
+      ],
+      "spec": ".aphelocoma/specs/T15.md",
+      "artifacts": [
+        "CHANGELOG.md",
+        "docs/release-readiness-v0.3.md",
+        "docs/migration-v0.3.md",
+        "docs/release-v0.3.0.md"
+      ],
+      "updated": "2026-07-26T10:10:00Z"
+    },
+    {
+      "id": "T16",
+      "title": "Record the green CI run in the readiness report",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T15"
+      ],
+      "spec": ".aphelocoma/specs/T16.md",
+      "artifacts": [
+        "docs/release-readiness-v0.3.md",
+        "tests/test_release_smoke.py"
+      ],
+      "updated": "2026-07-26T11:40:00Z"
+    }
+  ]
+}

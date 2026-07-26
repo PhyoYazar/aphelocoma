@@ -1,222 +1,249 @@
 # Aphelocoma
 
-A universal personal context layer for AI tools.
+Aphelocoma installs and operates Hamilton, a file-based agent crew for building software with Claude Code or Codex.
 
-Named after the [scrub-jay genus](https://en.wikipedia.org/wiki/Aphelocoma) — birds with remarkable episodic memory (they remember what they cached, where, and when).
-
----
-
-## Why?
-
-AI tools don't share context. Claude Code doesn't know what you told Cursor. ChatGPT doesn't know your project architecture. Every tool starts from zero.
-
-Aphelocoma is your **single source of truth** — who you are, what you're working on, what you know — delivered to any AI tool.
-
-**No vendor lock-in.** If any AI tool disappears tomorrow, your context stays.
-
----
-
-## Quick Start
+## First run
 
 ### 1. Install
 
+Python 3.9 or newer and Git are required.
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/v0.2.0/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PhyoYazar/aphelocoma/main/install.sh | bash
 ```
 
-This installs the tool to `~/.aphelocoma/tool/`, adds `aph` to your PATH, and runs first-time setup automatically.
+The installer activates a verified release at `~/.aphelocoma/tool`. It adds one managed PATH block to
+the first existing `.zshrc`, `.bashrc`, or `.bash_profile`; otherwise it prints the directory to add
+manually. Open a new shell after the install if your shell file changed.
 
-### 2. Setup
+### 2. Deploy Hamilton
 
-```bash
-aph setup
-```
-
-This creates your private data directory at `~/.aphelocoma/data/` with:
-- `core/identity/profile.md` — edit this with your role and expertise
-- `core/identity/preferences.md` — how you want AI to behave
-- `core/knowledge/` — your domain expertise (grows over time)
-- `core/projects/` — your project records
-- `core/journal/` — your work session logs
-
-### 3. Edit your profile
+Choose one first-class host:
 
 ```bash
-# Use any editor
-nano ~/.aphelocoma/data/core/identity/profile.md
-```
-
-### 4. Add a project
-
-```bash
-cd ~/your-project
-aph add
-```
-
-### 5. Deploy to your AI tool
-
-```bash
-# For Claude Code
 aph deploy claude
-
-# For Codex
+# or
 aph deploy codex
-
-# For Cursor (run inside a project directory)
-cd ~/your-project
-aph deploy cursor
 ```
 
-### 6. Start working
+Deployment installs the Hamilton skill and its 27 named crew roles. It preserves existing host
+configuration and records the exact generated files, digests, managed blocks, and collision backups in
+an ownership manifest.
 
-Open your AI tool in the project. It now knows who you are, what you're working on, and your preferences.
+### 3. Start a build
 
-In Claude Code or Codex, use `/sync` to keep aphelocoma updated as you work. Context syncs automatically via background skills (`auto-sync`, `session-end`).
+Open the selected host in the project you want Hamilton to build, then run:
 
----
-
-## How It Works
-
-```
-~/.aphelocoma/
-├── tool/              ← this repo (public, installable)
-│   ├── bin/aph        # CLI
-│   ├── skills/        # 18 built-in skills
-│   └── adapters/      # Claude Code, Codex, Cursor generators
-│
-└── data/              ← your private data (never shared)
-    └── core/
-        ├── identity/  # who you are
-        ├── knowledge/ # what you know
-        ├── projects/  # what you're working on
-        └── journal/   # what you've done
+```text
+/aph-hamilton
 ```
 
-**The learning loop:**
-```
-Work on a project
-  → /journal captures the session
-  → /reflect proposes what's worth keeping
-  → /capture distills insights into knowledge
-  → Next session: AI knows your full context
+The guided start asks whether this is a new or existing project and what you want to build. A fast path
+is available when the brief is already clear:
+
+```text
+/aph-hamilton start "build a furniture store" startup
 ```
 
----
+## How Hamilton works
 
-## Hamilton — an AI crew that builds your project
+Hamilton organizes an agent session as a software crew: leadership discovers and plans the work, task
+owners implement it, and independent reviewers check it. You remain the advisor and decide at four
+checkpoints:
 
-*New in v0.1.0.* Hamilton turns any coding agent into a small software org — CTO, architect, developers, QA, DevOps — that **brainstorms → plans → builds** software for a project, logging who-did-what to a file ledger. It's portable (just markdown + a written protocol, no dependencies), and **you stay in control** as the advisor.
+1. product direction and crew size;
+2. roadmap and task scope;
+3. parallel or sequential implementation;
+4. final acceptance.
 
-It ships as a skill, so `aph deploy claude` / `aph deploy codex` installs it with the rest.
+The crew stores compact project state in `.aphelocoma/` beside the product it is building:
 
-### Use it
+```text
+<project>/
+├── .aphelocoma/
+│   ├── hamilton.json          # project, schema, protocol, phase
+│   ├── settings.yaml          # privacy visibility and optional dispatch settings
+│   ├── state/                 # brief, roadmap, conventions, live task board
+│   ├── specs/                 # one acceptance contract per task
+│   ├── ledger/                # append-only events and per-role logs
+│   └── STATUS.md              # regenerated progress board (derived view, not source of truth)
+└── ...                        # the product itself
+```
 
-Run it inside the project you want to build in (new or existing code):
+The tree above is not exhaustive — `.aphelocoma/dispatch/` also exists for transient worker scratch, and
+is never committed (see Project-state privacy below).
+
+Every task is committed by the orchestrator on the current branch only after an independent
+task-specific critique passes. Hamilton does not create a branch or push.
+
+Useful skill commands:
+
+```text
+/aph-hamilton resume       # validate and continue an existing run
+/aph-hamilton status       # show phase, tasks, crew settings, and integrity
+/aph-hamilton sync-agents  # Claude-only per-project crew override
+```
+
+## Execution and host support
+
+Claude Code and Codex are the only first-class v0.3 deployment targets.
+
+| Host | Minimum CLI | Tested CLI | Parallel backend |
+| --- | ---: | ---: | --- |
+| Claude Code | 2.1.0 | 2.1.217 | Native Hamilton crew agents |
+| Codex | 0.145.0 | 0.145.0 | Headless `codex exec` workers |
+
+Parallel implementation is selected when a usable host backend and its role definitions are available
+and Hamilton has at least two dependency-ready tasks with disjoint file scopes. The advisor can choose
+sequential work instead. When a host CLI or dispatch backend is unavailable, the same role workflow
+runs sequentially.
+
+`aph doctor` reports installed host versions and remediation. A detected host below its minimum is a
+health failure; no detected host is not a failure because sequential execution remains available.
+
+The supported installation platforms are current macOS and GNU/Linux with Bash. Python 3.9 or newer is
+required for the CLI, and Git is required when the installer or updater downloads the repository.
+
+## Project-state privacy
+
+Each Hamilton project explicitly chooses one durable-state mode in `.aphelocoma/settings.yaml`:
+
+- `visibility: tracked` permits compact, redacted plans, specs, task state, and ledger entries in
+  version control.
+- `visibility: local` requires every `.aphelocoma/` path to remain untracked.
+
+Both modes require `redact_sensitive: true`. Raw worker prompts, results, and logs belong under
+`.aphelocoma/dispatch/`; project-local temporary and backup files are transient too. None of these are
+durable project history, and they must not be tracked.
+
+Hamilton state declares schema `1` and protocol `1.0.0`. Run validation before resuming:
 
 ```bash
-/aph-hamilton                                          # guided start — it asks what to build
-/aph-hamilton start "build a furniture store" startup  # fast path if you know the brief
-/aph-hamilton resume                                   # continue where you left off
-/aph-hamilton status                                   # phase + open tasks (read-only)
+python3 ~/.aphelocoma/tool/skills/aph-hamilton/references/validate.py .
 ```
 
-You're the **advisor**: the crew pauses at **4 checkpoints** for your call — direction + crew size, the plan, the build style, and review — and works on its own in between. Before checkpoints 1, 2, and 4 — and on **every task before it's marked done** — an independent reviewer (never the builder) double-checks the work and records its verdict to the ledger.
-
-Runs are auditable end-to-end: the orchestrator **commits each finished task to git** (on your current branch — it never branches or pushes; that stays yours), the crew writes a per-project **`conventions.md`** all code must match, and a bundled **integrity checker** (`validate.py`) mechanically verifies the ledger and review gates on every `resume` / `status`.
-
-**Crew sizes** (chosen with you after Discovery): `solo` · `startup` · `mid` · `big` · `custom:[role,…]`.
-
-Everything Hamilton tracks lives in your project under `.aphelocoma/` — the task board, the append-only history ledger, and one spec per task. The software itself is built at the project root.
-
-### Parallel builds + per-role tuning (Claude Code)
-
-`aph deploy claude` generates the **crew agents** (`~/.claude/agents/hamilton-<role>`), so on Claude Code the crew builds **in parallel by default** — independent tasks run at once, with the manager as the **single writer** of the board + ledger so concurrent work never corrupts history. The fleet view shows real role names (`hamilton-fullstack-developer`, …), and each role carries its own model, effort, and tool scope. Sequential is the automatic fallback and the only mode on other tools — parallel is the default where available, never required.
-
-Defaults: the crew follows your **session model** (so it always uses your best, and upgrades itself when a better model ships); the technical-writer uses `sonnet`. Override per project in `.aphelocoma/settings.yaml`:
-- **model** — map a role to a model (cheap ↔ smart); unlisted roles follow your session.
-- **effort** — map a role to a reasoning level (`low`…`max`); unlisted roles follow your `/effort`.
-- the reviewer runs **look-only** (no edit tools) by design.
-
-Changed a project's models/effort? Re-run `/aph-hamilton sync-agents`, then **restart the session** so the new crew loads (Claude Code loads agents at startup). `/aph-hamilton status` prints the role → model → effort → tools table.
-
----
-
-## CLI Reference
+For unversioned v0.2 project state, use the explicit, backed-up migration:
 
 ```bash
-aph setup                    # First-time setup
-aph add [path]               # Add a project (default: current dir)
-aph deploy claude            # Deploy to Claude Code
-aph deploy codex             # Deploy to Codex
-aph deploy cursor            # Deploy to Cursor (in project dir)
-aph sync [path]              # Sync project context from git history
-aph update                   # Update tool (data untouched)
-aph status                   # Dashboard of your second brain
-aph view full                # Generate context for web AI (Claude.ai, ChatGPT)
-aph view brief               # Short version
-aph projects                 # List registered projects
-aph skills                   # List all skills
+python3 ~/.aphelocoma/tool/skills/aph-hamilton/references/migrate.py check .
+python3 ~/.aphelocoma/tool/skills/aph-hamilton/references/migrate.py apply .
 ```
 
----
+`check` is read-only. `apply` validates staged state, retains a byte-for-byte backup, and restores the
+original state if migration fails.
 
-## Multi-Tool Support
+## CLI
 
-| Tool | Command | What it does |
-|------|---------|-------------|
-| **Claude Code** | `aph deploy claude` | Deploys skills to `~/.claude/skills/`, CLAUDE.md, and agents |
-| **Codex** | `aph deploy codex` | Deploys skills to `~/.codex/skills/`, AGENTS.md, and hooks |
-| **Cursor** | `aph deploy cursor` | Generates `.cursor/rules/*.mdc` with your context |
-| **Web AI** | `aph view full` | Generates a pasteable context summary for Claude.ai, ChatGPT, Gemini |
-
----
-
-## Skills (in AI tools)
-
-These skills are available inside AI tools after deploying:
-
-| Skill | What it does |
-|-------|-------------|
-| `/aph-hamilton` | Spin up an AI crew (CTO, devs, QA…) that builds software for a project — see **Hamilton** above |
-| `/sync` | Sync current project with aphelocoma |
-| `/aph-status` | Dashboard of projects, knowledge, journal |
-| `/journal` | Capture end-of-session work entry |
-| `/reflect` | Propose knowledge captures from recent work |
-| `/capture [topic]` | Distill insights into knowledge files |
-| `/project-init <name>` | Bootstrap a new project record (alternative to `aph add`) |
-| `/adr <project> <title>` | Create an Architecture Decision Record |
-| `/deploy [tool]` | Deploy from inside an AI tool |
-| `/generate-view [type]` | Generate context summary for web AI |
-
----
-
-## Custom Skills
-
-Create your own skills in `~/.aphelocoma/data/skills/`:
-
-```
-~/.aphelocoma/data/skills/my-skill/
-├── skill.md           # Instructions
-└── metadata.yaml      # name, description, type
+```text
+aph deploy <claude|codex>     Deploy Hamilton and record ownership.
+aph undeploy <claude|codex>   Remove clean manifest-owned deployment artifacts.
+aph doctor [--json]           Check health and print remediation.
+aph status [path] [--json] [--write]
+                              Show the Hamilton progress board for a project, and
+                              with --write regenerate .aphelocoma/STATUS.md.
+aph update                    Download, verify, and activate an update transactionally.
+aph uninstall                 Undeploy hosts and remove the owned installation.
+aph version                   Print the installed version.
+aph help [command]            Show supported commands.
 ```
 
-Custom skills with the same name as a built-in skill will override it.
+Commands return `0` on success, `1` for an actionable health or usage failure, and `2` for an
+unexpected internal failure.
 
----
+## Progress board
 
-## Update
+`aph status` prints where the project stands — the stage, and the tasks — for a Hamilton project,
+defaulting to the current directory:
+
+```text
+Hamilton  aphelocoma-hamilton-reset
+Phase     implementation
+Progress  9 of 11 tasks done
+
+Tasks
+  [done]      T1   Build the tested Python CLI and base doctor
+  [blocked]   T10  Correct the v0.3 documentation assertions
+  [assigned]  T11  Reduce the board to stage and tasks
+```
+
+Every task line carries its status as a word, so a blocked task says so in its own row, and the output
+uses no colour. Owners, dependencies, schema/protocol versions, visibility, the next actionable task,
+and the repository's branch, short HEAD, commits since the run began, and working-tree cleanliness stay
+in `--json` for tools that need them; facts Git cannot supply are reported there as unknown rather than
+guessed.
+
+Without `--write`, the command writes nothing under `.aphelocoma/` and appends no ledger event. A path
+with no `.aphelocoma/`, or state whose schema or protocol version is unsupported, exits `1` and names
+the remediation.
+
+### `.aphelocoma/STATUS.md`
+
+`aph status --write` regenerates `.aphelocoma/STATUS.md`, the same board as Markdown you can open any
+time instead of scrolling back through a terminal. Hamilton writes it after each completed task, when
+work is blocked, when a review sends work back, and at the top of every resume.
+
+The file is regenerated **whole** on every write — never appended to, never patched — through a
+temporary file and an atomic replace, so it cannot accumulate drift and a failed write leaves the
+previous board intact. One stamp line names the UTC generation time and the ledger `seq` it came from,
+so you can tell whether it is current. It is a derived view: `.aphelocoma/state/tasks.json` stays the
+source of truth, and the Hamilton validator *warns* — never errors — when `STATUS.md` is missing,
+unreadable, carries no readable generation stamp, or carries a stamp that names no ledger `seq`
+(`unknown`, so currency cannot be established); when its stamped `seq` is **behind** the ledger's last
+`seq` (naming how far behind); and when its stamped `seq` is **ahead** of the ledger's last `seq` (a
+board that cannot have come from this ledger, because the ledger was truncated or rolled back under
+it). Every one of these is a warning, never a stop: a stale, unreadable, or missing board never blocks
+a resume.
+
+Under `visibility: tracked` the file is committed with the project; under `visibility: local` it stays
+untracked along with the rest of `.aphelocoma/`.
+
+## Ownership, drift, and recovery
+
+Aphelocoma treats its manifests as deletion authority:
+
+- `deploy` generates into staging, backs up collisions under the active Aphelocoma root, then writes
+  the host and ownership manifest as one transaction. A failed deploy rolls back host changes.
+- `undeploy` removes a generated artifact only when its current digest still matches the manifest. It
+  restores a recorded collision backup after clean removal.
+- Modified generated files or managed blocks are preserved and reported as drift. The manifest remains
+  so you can move or reconcile the edit and retry.
+- `update` verifies the current installation before replacement. Failure restores the previous tool
+  and manifest byte-for-byte; success records the previous tool under
+  `~/.aphelocoma/backups/install/`.
+- `uninstall` first undeploys Claude and Codex. Any unresolved deployment or PATH drift stops removal
+  of the tool. Recovery backups remain available after uninstall.
+
+Use `aph doctor` before recovery work. It checks the install manifest and digest, owned PATH block,
+deployment inventories and backups, host versions, legacy artifacts, Hamilton state versions, and
+project privacy.
+
+## Breaking v0.3 transition
+
+v0.3 is a breaking reset to Hamilton only. The former second-brain/context commands, Cursor target,
+sync and journaling skills, registry, and generated context views are not part of the v0.3 runtime.
+
+Legacy data is protected:
+
+- the default legacy directory `~/.aphelocoma/data` is not read, modified, or deleted;
+- a custom legacy path supplied through the retired `APHELOCOMA_HOME` variable is also not read,
+  modified, or deleted;
+- `APHELOCOMA_HOME` is ignored for active storage; use `APHELOCOMA_ROOT` to relocate the v0.3
+  installation.
+
+Install, update, and uninstall can clean up only exact or proven-owned legacy global artifacts from
+earlier releases. Modified or unrelated Claude/Codex configuration is preserved and reported for
+manual review.
+
+See [the v0.3 migration guide](docs/migration-v0.3.md) before upgrading.
+
+## Development
+
+Run the standard-library test suite and Hamilton validator:
 
 ```bash
-aph update
+python3 -m unittest discover -s tests -v
+python3 skills/aph-hamilton/references/validate.py .
 ```
 
-Updates the tool only. Your data is never touched.
-
----
-
-## Uninstall
-
-```bash
-aph uninstall
-# Your data at ~/.aphelocoma/data/ is preserved unless you delete it
-```
+Public behavior in this README is indexed in
+[the v0.3 documentation assertions](docs/documentation-assertions-v0.3.md).

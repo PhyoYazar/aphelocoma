@@ -30,4 +30,6 @@ Encode QA's checks as automated tests that run on every change.
 - The specified cases are automated and passing (or failures are reported).
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed, blocked
+- Log these events: role_activated, work_started, artifact_written, blocked
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.

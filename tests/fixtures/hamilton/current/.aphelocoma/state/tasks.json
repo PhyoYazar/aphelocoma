@@ -1,0 +1,17 @@
+{
+  "project": "fixture-current",
+  "size": "solo",
+  "phase": "done",
+  "updated": "2026-07-23T00:00:08Z",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Fixture task",
+      "owner": "fullstack-developer",
+      "status": "done",
+      "dependencies": [],
+      "artifacts": ["artifact.txt"],
+      "updated": "2026-07-23T00:00:08Z"
+    }
+  ]
+}

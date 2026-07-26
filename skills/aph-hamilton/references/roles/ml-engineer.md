@@ -30,4 +30,6 @@ Put models into production as reliable services/APIs.
 - The model is served per the spec's interface and acceptance criteria.
 
 ## Ledger rule
-- Log these events: role_activated, work_started, artifact_written, task_completed, blocked, assumption_logged
+- Log these events: role_activated, work_started, artifact_written, blocked, assumption_logged
+- `task_completed` is the orchestrator's own event, logged only after `review_passed` once the task is
+  already `done` (PROTOCOL §2 Phase 5, §8); a builder does not log it.
