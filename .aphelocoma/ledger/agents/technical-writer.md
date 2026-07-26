@@ -260,3 +260,102 @@
   --porcelain` — only `CHANGELOG.md`, `docs/migration-v0.3.md`, `docs/release-readiness-v0.3.md`
   modified, `docs/release-v0.3.0.md` untracked, plus this ledger; pre-existing orchestrator-owned dirt
   in `.aphelocoma/` untouched. No new command touched state-changing git.
+- 2026-07-26T10:45:00Z — role_activated — Picked up T16: record CI #1's green hosted run (all four
+  matrix jobs, ~1 minute, four harmless Node.js deprecation warnings) in
+  `docs/release-readiness-v0.3.md`, written at T15 while CI was still pending.
+- 2026-07-26T10:45:00Z — work_started — Read `.aphelocoma/specs/T16.md` and conventions. Verified the
+  cited commit `e8d87de15ef793d4ebe02f0d86b4bf0b34cdde2c` is real and is `develop`'s current tip
+  (`git log`, `git merge-base --is-ancestor` — confirmed ancestor of HEAD). Cross-checked the run's four
+  job names and five CI steps against `.github/workflows/ci.yml` directly rather than trusting the spec.
+  Grepped the whole report for `pending|not yet|untested|unverified|never|gap|blocked|remain|3\.9|linux
+  |ubuntu|hosted` before and after editing (not just the two lines the spec named) to find every stale
+  claim, including two the first narrow grep missed: line 21's "do not tag or publish... until" gate and
+  line 119's "that gap is exactly what CI is for" close-out line.
+- 2026-07-26T10:45:00Z — artifact_written — `docs/release-readiness-v0.3.md`: status line now
+  `READY TO RELEASE — CI GREEN ON ALL FOUR LEGS, NOT YET TAGGED OR PUBLISHED` (still forecloses
+  overclaiming merge/tag/publish, which stay the advisor's). Decision section names the run, commit,
+  and four jobs and drops the "CI has never run" framing. Environment section's Python-3.9 sentence
+  changed from "has not yet run" to "exercised... in CI #1... where it passed." Current-local-
+  verification's closing line changed from "that gap is exactly what CI is for" to naming CI #1 as the
+  coverage source. CI inspection section replaces the `Hosted runner execution: pending first CI run`
+  placeholder with the run reference, commit, and four job names, plus a paragraph recording the four
+  Node.js deprecation warnings (`actions/checkout@v4`/`actions/setup-python@v5` on Node 20, GitHub
+  migrating to Node 24) as non-failing and explicitly out of scope to fix here. "What remains before
+  release" marks steps 1–3 done/N-A with pointers to the new evidence, leaving only step 4
+  (merge/tag/publish, still non-scope). Did not touch `CHANGELOG.md`, `docs/release-v0.3.0.md`,
+  `docs/migration-v0.3.md`, or `VERSION`, and did not bump the two Actions versions (real fix, but
+  would invalidate the run being recorded).
+- 2026-07-26T10:45:00Z — artifact_written — `tests/test_release_smoke.py`:
+  `test_release_metadata_and_report_are_final`'s single `Hosted runner execution: pending first CI run`
+  literal replaced with a 7-item `subTest` loop asserting the run reference, commit SHA, and all four
+  bare job strings (`ubuntu-latest / Python 3.9`, `ubuntu-latest / Python 3.x`, `macos-latest / Python
+  3.9`, `macos-latest / Python 3.x`) individually — strictly more assertions than before, each pinned to
+  content that only exists because CI actually ran — plus a status-line tightening
+  (`assertIn("Status: READY TO RELEASE", ...)`, not just the old prefix-matching `"Status: READY"`) and
+  an `assertNotIn` drift guard.
+- 2026-07-26T10:45:00Z — artifact_written — Second pass on the same test after self-review found two
+  weaknesses in the first cut: (1) the drift guard originally targeted the literal
+  `"pending first CI run"`, which the report's own "What remains before release" section legitimately
+  quotes when recording that step 3 is done — a future reflow of that paragraph could wrap the phrase
+  across a line and produce a false failure pointing at correct prose; retargeted to
+  `assertNotIn("Hosted runner execution: pending", report)`, which still catches the retired claim but
+  can't collide with a historical quote or a line-wrap accident. (2) `assertIn("Status: READY", ...)`
+  is a prefix of the retired `Status: READY FOR CI — NOT YET READY TO RELEASE`, so it would have passed
+  against a reverted status line as long as the run evidence stayed; tightened to the full
+  `"Status: READY TO RELEASE"`.
+- 2026-07-26T10:45:00Z — handoff — Proved the stronger assertion both directions against the final test
+  text above, not just reasoned about it, using a scratchpad backup + `cp` restore (never `git
+  checkout`, since the edits were uncommitted; md5 `17b59bd3...` confirmed identical before and after
+  every restore). Break A (evidence removed): deleted *both* copies of the CI evidence — the Decision
+  section's Run/Commit/Result/Jobs bullets and the CI-inspection paragraph — and reran: FAILED, all 7
+  `subTest`s (`Hosted runner execution: CI #1`, the run URL, the commit SHA, and all four job strings)
+  reported `not found in ...`; restored, reran clean. Break B (claim reverted): with the real evidence
+  left in place, re-inserted the exact retired line `Hosted runner execution: pending first CI run`
+  alongside it — FAILED, `AssertionError: 'Hosted runner execution: pending' unexpectedly found in ...`;
+  restored, reran clean. Then ran, and report here: `python3 -m unittest tests.test_release_smoke -v` —
+  16 passed. `python3 -m unittest discover -s tests -q` — 226 passed. `aph doctor` and `python3 bin/aph
+  doctor` — both `Aphelocoma doctor: healthy`, exit 0. `bash -n install.sh` — exit 0. `git diff --check`
+  — clean, no whitespace errors (the report's own claim to that effect still holds after ~40 added
+  lines). `python3 skills/aph-hamilton/references/validate.py .` — 323 events, 16 tasks (15 done), 0
+  errors, 1 non-blocking `stale_status_report` warning (STATUS.md 4 events behind the orchestrator's own
+  concurrently-advancing ledger; not this task's file, left untouched). `git status --porcelain` — only
+  `docs/release-readiness-v0.3.md` and `tests/test_release_smoke.py` modified from this turn (plus this
+  ledger); `.aphelocoma/hamilton.json`/`ledger/events.jsonl`/`state/tasks.json` (modified, T16 already
+  "assigned" in them) and `.aphelocoma/specs/T16.md` (untracked) are pre-existing orchestrator-owned
+  dirt from before this task started, confirmed untouched by any command run here. No state-changing
+  git command was run. `docs/release-v0.3.0.md`'s own step 4 already describes this task per the spec's
+  non-scope note and was intentionally left alone. Ready for qa-engineer review.
+- 2026-07-26T11:15:00Z — artifact_written — CP4 pass closed both findings from the independent review
+  (which re-proved the break/restore work — 8/8 literals load-bearing under individual mutation, whole-
+  paragraph deletion fails, full pre-T16 revert fails — and confirmed CI #1 against the GitHub API:
+  run_number 1, head_sha `e8d87de`, branch `develop`, conclusion success, four jobs named exactly as the
+  report says, four Node 20 annotations one per job). (1, should-fix) The 7-literal evidence loop pinned
+  the run's identity but not its outcome — the reviewer demonstrated a report that names the right
+  run/commit/jobs while its surrounding prose claims every leg was red still passed. Added two more
+  literals to the same loop, taken verbatim from the report's own wording: `"Result: success, all four
+  matrix jobs"` (Decision section) and `"success on all four matrix"` (CI inspection section) — two
+  locations rather than one, so flipping either independently is caught. (2, nit) The drift guard
+  compared the literal `"Hosted runner execution: pending"` against the raw file text, so a markdown
+  line wrap between "runner" and "execution:" slipped past it (reviewer's exact defeat). Added
+  `import re` and normalize the report's whitespace (`re.sub(r"\s+", " ", report)`, collapsing any run
+  of spaces/newlines to one) before that specific check, so a wrap can no longer split the phrase; every
+  other assertion in the test still runs against the raw, unnormalized text, so this doesn't loosen
+  anything else or make the guard tolerant of near-misses — it only tolerates whitespace shape.
+- 2026-07-26T11:15:00Z — handoff — Proved both fixes live, both directions, using the same scratchpad-
+  backup + `cp`-restore discipline as before (md5 `17b59bd3...` confirmed identical before and after
+  every restore; never `git checkout`). Outcome assertion: flipped the report's wording to match the
+  reviewer's exact exploit — `"CI has now run, once, on hosted runners, and every leg was red."` and
+  `"FAILED on every one of the four matrix jobs"` in both the Decision bullet and the CI-inspection
+  paragraph — reran: FAILED, exactly the two new `subTest`s (`'Result: success, all four matrix jobs'`,
+  `'success on all four matrix'`), all 7 identity literals still passed unaffected; restored
+  (md5-confirmed), reran clean. Whitespace guard: reproduced the reviewer's defeat verbatim — inserted
+  `Hosted runner\nexecution: pending first CI run` (the exact wrap point that beat the pre-fix guard) —
+  reran: FAILED, `AssertionError: 'Hosted runner execution: pending' unexpectedly found in ...` against
+  the whitespace-normalized text, confirming the hole is closed; restored (md5-confirmed), reran clean.
+  Then, and report here: `python3 -m unittest tests.test_release_smoke -v` — 16 passed. `python3 -m
+  unittest discover -s tests -q` — 226 passed. `aph doctor` — healthy, exit 0. `bash -n install.sh` —
+  exit 0. `git status --porcelain` — still only `docs/release-readiness-v0.3.md` and
+  `tests/test_release_smoke.py` modified from this task (plus this ledger); the same pre-existing
+  orchestrator-owned `.aphelocoma/` dirt as before, untouched. No state-changing git command was run.
+  Not touched, per the coordinator's note: `docs/release-v0.3.0.md` step 4 (being handled separately)
+  and no new test on the Node.js-warning paragraph (out of T16 scope). Ready for qa-engineer review.

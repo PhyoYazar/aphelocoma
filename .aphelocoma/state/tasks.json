@@ -1,8 +1,8 @@
 {
   "project": "aphelocoma-hamilton-reset",
   "size": "custom",
-  "phase": "done",
-  "updated": "2026-07-26T10:20:00Z",
+  "phase": "implementation",
+  "updated": "2026-07-26T10:45:00Z",
   "tasks": [
     {
       "id": "T1",
@@ -310,6 +310,21 @@
         "docs/release-v0.3.0.md"
       ],
       "updated": "2026-07-26T10:10:00Z"
+    },
+    {
+      "id": "T16",
+      "title": "Record the green CI run in the readiness report",
+      "owner": "technical-writer",
+      "status": "done",
+      "dependencies": [
+        "T15"
+      ],
+      "spec": ".aphelocoma/specs/T16.md",
+      "artifacts": [
+        "docs/release-readiness-v0.3.md",
+        "tests/test_release_smoke.py"
+      ],
+      "updated": "2026-07-26T11:40:00Z"
     }
   ]
 }

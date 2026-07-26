@@ -11,6 +11,7 @@ import copy
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -196,9 +197,44 @@ class ReleaseContractTests(unittest.TestCase):
             (REPOSITORY / "VERSION").read_text(encoding="utf-8").strip(),
             "0.3.0",
         )
-        self.assertIn("Status: READY", report)
+        self.assertIn("Status: READY TO RELEASE", report)
         self.assertIn("Release version: `0.3.0`", report)
-        self.assertIn("Hosted runner execution: pending first CI run", report)
+
+        # The report must name the actual hosted CI run that verified this
+        # release (run reference, commit, and every matrix job) rather than
+        # merely not saying "pending". Each literal below is evidence a
+        # reader could use to go check the run themselves; removing or
+        # emptying that evidence from the report must fail this test.
+        # The last two literals pin the run's *outcome*, not just its
+        # identity: a report could name the right run/commit/jobs and still
+        # lie about what happened, so passing/success wording is asserted
+        # explicitly and must fail if the report describes that run as
+        # anything other than green.
+        for evidence in (
+            "Hosted runner execution: CI #1",
+            "https://github.com/PhyoYazar/aphelocoma/actions/runs/30197582782",
+            "e8d87de15ef793d4ebe02f0d86b4bf0b34cdde2c",
+            "ubuntu-latest / Python 3.9",
+            "ubuntu-latest / Python 3.x",
+            "macos-latest / Python 3.9",
+            "macos-latest / Python 3.x",
+            "Result: success, all four matrix jobs",
+            "success on all four matrix",
+        ):
+            with self.subTest(evidence=evidence):
+                self.assertIn(evidence, report)
+
+        # Guard against the claim drifting back to "pending" while some of
+        # the literals above happen to still be present elsewhere. Targets
+        # the claim itself ("execution: pending"), not a longer phrase that
+        # a paragraph could legitimately quote historically (e.g. "What
+        # remains before release" names the retired wording it replaced).
+        # Checked against whitespace-normalized text (runs of spaces/
+        # newlines collapsed to one space) so a markdown line wrap inserted
+        # between "execution:" and "pending" can't slip the phrase past a
+        # literal substring check.
+        normalized_report = re.sub(r"\s+", " ", report)
+        self.assertNotIn("Hosted runner execution: pending", normalized_report)
 
 
 class DeploymentReleaseSmokeTests(unittest.TestCase):

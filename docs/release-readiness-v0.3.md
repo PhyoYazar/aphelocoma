@@ -1,6 +1,6 @@
 # Aphelocoma v0.3 release readiness
 
-Status: READY FOR CI — NOT YET READY TO RELEASE
+Status: READY TO RELEASE — CI GREEN ON ALL FOUR LEGS, NOT YET TAGGED OR PUBLISHED
 
 Release version: `0.3.0`
 
@@ -9,18 +9,25 @@ between (see "What changed since T6").
 
 ## Decision
 
-**CI has never run on this code.** Every result in this document was produced locally, once, on macOS
-with Python `3.14.4`. That is real evidence the code, its tests, and its packaging are internally
-consistent — it is not evidence for Linux, and it is not evidence for the Python `3.9` floor this
-project advertises. Neither has been exercised anywhere, on this machine or any other.
+**CI has now run, once, on hosted runners, and passed.** Every result earlier in this document was
+produced locally, on macOS with Python `3.14.4` — real evidence the code, its tests, and its packaging
+are internally consistent, but not evidence for Linux or the Python `3.9` floor this project advertises.
+That gap is now closed:
 
-- **Verified:** macOS (Darwin), Python `3.14.4`, locally, as recorded below.
-- **Pending, named explicitly:** Linux (the `ubuntu-latest` CI runner) and Python `3.9` (the advertised
-  minimum). Both remain untested until the GitHub Actions matrix runs once.
+- Run: CI #1, <https://github.com/PhyoYazar/aphelocoma/actions/runs/30197582782>
+- Commit: `e8d87de15ef793d4ebe02f0d86b4bf0b34cdde2c`, branch `develop`
+- Result: success, all four matrix jobs, about one minute
+- Jobs: `ubuntu-latest / Python 3.9`, `ubuntu-latest / Python 3.x`, `macos-latest / Python 3.9`,
+  `macos-latest / Python 3.x`
 
-Do not tag or publish `v0.3.0` until the hosted CI matrix — `ubuntu-latest` and `macos-latest`, each on
-Python `3.9` and `3.x` — has run once and is green on all four legs. `docs/release-v0.3.0.md` carries
-the exact push/CI/tag/publish sequence, including the second pass on this document once that happens.
+Full detail, including the four warnings the run produced, is in "CI inspection" below.
+
+- **Verified locally:** macOS (Darwin), Python `3.14.4`, as recorded below.
+- **Verified on hosted CI:** Linux (`ubuntu-latest`) and Python `3.9` (the advertised minimum), each
+  alongside macOS and the current Python 3.x — see the run above.
+
+`docs/release-v0.3.0.md` carries the exact push/CI/tag/publish sequence. The push and CI legs are now
+complete; merge, tag, and publish remain to be carried out from there.
 
 ## What changed since the T6 assessment
 
@@ -52,8 +59,9 @@ Re-verified today, 2026-07-26:
 The installed Claude Code and Codex both meet the v0.3 minimum-version policy (Claude Code `2.1.0`,
 Codex `0.145.0`); Claude Code here is newer than the last version this project explicitly tested
 (`2.1.217`), which `aph doctor` treats as healthy since only the floor is enforced. Python `3.9` is not
-installed on this machine — it has not been exercised locally at all. It is a separate CI matrix entry,
-on both supported hosted operating systems, that has not yet run.
+installed on this machine, so it has never been exercised locally — but it has been exercised on both
+supported hosted operating systems, in CI #1 (see "Decision" above and "CI inspection" below), where it
+passed.
 
 ## Current local verification (2026-07-26)
 
@@ -116,7 +124,8 @@ python3 bin/aph doctor
 Result: `Aphelocoma doctor: healthy` — installation, both deployments, host tool versions, Hamilton
 project state, and privacy all reported `[ok]` on this machine.
 
-None of the above touched a Linux runner or Python `3.9`. That gap is exactly what CI is for.
+None of the above touched a Linux runner or Python `3.9`. That coverage now comes from CI #1 — see
+"Decision" above and "CI inspection" below.
 
 ## T6 audit record (2026-07-24, historical)
 
@@ -181,17 +190,25 @@ Every combination runs the full standard-library suite, the independent Hamilton
 syntax validation, package/release inventory tests, and an isolated installed-version smoke test. The
 workflow uses read-only repository permissions and does not publish artifacts or releases.
 
-Hosted runner execution: pending first CI run
+Hosted runner execution: CI #1, <https://github.com/PhyoYazar/aphelocoma/actions/runs/30197582782>,
+commit `e8d87de15ef793d4ebe02f0d86b4bf0b34cdde2c` on branch `develop` — success on all four matrix
+jobs, about one minute: `ubuntu-latest / Python 3.9`, `ubuntu-latest / Python 3.x`,
+`macos-latest / Python 3.9`, `macos-latest / Python 3.x`.
 
-The workflow was inspected and its contract was exercised locally; GitHub-hosted Ubuntu and macOS
-runners cannot be executed from this local task. All 23 commits that make up v0.3 are local — the last
-push to `origin/develop` predates this work — so the workflow itself has never actually run on any
-host. Publication must remain blocked until the first hosted matrix run passes on all four legs.
+The workflow was inspected and its contract was exercised locally before this; that local exercise is
+now confirmed by an actual hosted pass on both operating systems and both Python versions the project
+advertises. The run also logged four Node.js deprecation warnings — `actions/checkout@v4` and
+`actions/setup-python@v5` target Node.js 20, which GitHub is deprecating in favor of Node.js 24 —
+raised by the runner platform, not by this project's code. They did not fail any job and are recorded
+here as a known, harmless warning; fixing the action versions is separate follow-up work, out of scope
+for this task so it doesn't invalidate the run being recorded.
 
 ## What remains before release
 
-1. Push `develop` and let the hosted CI matrix run for the first time.
-2. If any leg is red, fix it there — do not weaken or skip that leg's checks to get green.
-3. Once CI is green on all four legs, give this document its second pass: replace "pending first CI
-   run" with the actual result, and only then can the status line honestly read as fully ready.
+1. Push `develop` and let the hosted CI matrix run for the first time. **Done** — CI #1 ran and passed
+   on all four legs (see "Decision" and "CI inspection").
+2. If any leg is red, fix it there — do not weaken or skip that leg's checks to get green. **N/A** —
+   nothing was red.
+3. Once CI is green on all four legs, give this document its second pass, replacing "pending first CI
+   run" with the actual result. **Done** — this pass.
 4. Merge, tag, and publish following `docs/release-v0.3.0.md`.
